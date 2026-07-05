@@ -157,52 +157,71 @@
 
     {{-- ════════════ SIDEBAR ════════════ --}}
     <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
-            <span class="brand">CBMA</span>
-            <span class="brand-sub">Academic Coordination</span>
-        </div>
+    <div class="sidebar-logo">
+        <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
+        <span class="brand">CBMA</span>
+        <span class="brand-sub">Academic Coordination</span>
+    </div>
 
-        <ul class="nav-list">
-            <li class="active">
-                <a href="{{ url('/program-head/dashboard') }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                    Dashboard
-                </a>
-            </li>
-            <li>
-                <a href="{{ url('/program-head/template-review') }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Template Review
-                </a>
-            </li>
-            <li>
-                <a href="{{ url('/program-head/course-oversight') }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                    Course Oversight
-                </a>
-            </li>
-            <li>
-                <a href="{{ url('/program-head/account-management') }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                    Account Management
-                </a>
-            </li>
-            <li>
-                <a href="{{ url('/program-head/announcements') }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                    Announcements
-                </a>
-            </li>
-        </ul>
-
-        <div class="sidebar-logout">
-            <a href="#" onclick="handleLogout()">
-                <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Log out
+    <ul class="nav-list">
+        @if($navPermissions['dashboard'] ?? true)
+        <li class="{{ request()->is('program-head/dashboard') ? 'active' : '' }}">
+            <a href="{{ url('/program-head/dashboard') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                Dashboard
             </a>
-        </div>
-    </aside>
+        </li>
+        @endif
+        @if($navPermissions['template-review'] ?? true)
+        <li class="{{ request()->is('program-head/template-review*') ? 'active' : '' }}">
+            <a href="{{ url('/program-head/template-review') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Template Review
+            </a>
+        </li>
+        @endif
+        @if($navPermissions['course-oversight'] ?? true)
+        <li class="{{ request()->is('program-head/course-oversight*') ? 'active' : '' }}">
+            <a href="{{ url('/program-head/course-oversight') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                Course Oversight
+            </a>
+        </li>
+        @endif
+        @if($navPermissions['account-management'] ?? true)
+        <li class="{{ request()->is('program-head/account-management*') ? 'active' : '' }}">
+            <a href="{{ url('/program-head/account-management') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                Account Management
+            </a>
+        </li>
+        @endif
+        @if($navPermissions['announcements'] ?? true)
+        <li class="{{ request()->is('program-head/announcements*') ? 'active' : '' }}">
+            <a href="{{ url('/program-head/announcements') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                Announcements
+            </a>
+        </li>
+        @endif
+        @if($navPermissions['calendar'] ?? true)
+        <li class="{{ request()->is('program-head/calendar*') ? 'active' : '' }}">
+            <a href="{{ url('/program-head/calendar') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Calendar of Activities
+            </a>
+        </li>
+        @endif
+    </ul>
+
+    <div class="sidebar-logout">
+        <a href="#" onclick="document.getElementById('logout-form').submit()">
+            <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Log out
+        </a>
+        <form id="logout-form" method="POST" action="{{ url('/logout') }}" style="display:none;">@csrf</form>
+    </div>
+</aside>
 
     {{-- ════════════ MAIN ════════════ --}}
     <div class="main">

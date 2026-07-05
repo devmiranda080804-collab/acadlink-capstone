@@ -15,55 +15,35 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email'    => 'required|email',
             'password' => 'required',
-            'login_as' => 'required'
         ]);
 
-        if (Auth::attempt([
-            'email' => $request->email,
-            'password' => $request->password
-        ]))
-        {
-            $user = Auth::user();
-
-            if ($user->role !== $request->login_as)
-            {
-                Auth::logout();
-
-                return back()->withErrors([
-                    'login' => 'Selected role does not match your account.'
-                ]);
-            }
-
-            $request->session()->regenerate();
-
-            switch ($user->role)
-            {
-                case 'admin':
-                    return redirect('/admin/dashboard');
-
-                case 'program_head':
-                    return redirect('/program-head/dashboard');
-
-                case 'secretary':
-                    return redirect('/secretary/dashboard');
-
-                case 'faculty':
-                    return redirect('/faculty/dashboard');
-
-                default:
-                    Auth::logout();
-
-                    return back()->withErrors([
-                        'login' => 'Unauthorized role.'
-                    ]);
-            }
+        if (! Auth::attempt([
+            'email'    => $request->email,
+            'password' => $request->password,
+        ])) {
+            return back()->withErrors([
+                'login' => 'Invalid email or password.',
+            ])->onlyInput('email');
         }
 
-        return back()->withErrors([
-            'login' => 'Invalid email or password.'
-        ]);
+        $user = Auth::user();
+
+        if (! $user->is_active) {
+            Auth::logout();
+            return back()->withErrors([
+                'login' => 'Your account has been deactivated. Please contact the admin.',
+            ]);
+        }
+
+        $request->session()->regenerate();
+
+        if ($user->must_change_password) {
+            return redirect('/change-password');
+        }
+
+        return redirect($this->dashboardFor($user->role));
     }
 
     public function logout(Request $request)
@@ -74,5 +54,16 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/login');
+    }
+
+    protected function dashboardFor(string $role): string
+    {
+        return match ($role) {
+            'admin'        => '/admin/dashboard',
+            'program_head' => '/program-head/dashboard',
+            'secretary'    => '/secretary/dashboard',
+            'faculty'      => '/faculty/dashboard',
+            default        => '/login',
+        };
     }
 }

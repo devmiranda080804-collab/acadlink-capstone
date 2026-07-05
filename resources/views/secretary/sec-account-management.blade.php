@@ -70,7 +70,6 @@
         .btn-icon { background: none; border: none; cursor: pointer; color: #888; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: color 0.15s, background 0.15s; }
         .btn-icon svg { width: 15px; height: 15px; }
         .btn-icon:hover { color: #0f2557; background: #f0f4ff; }
-        .btn-icon.del:hover { color: #ef4444; background: #fee2e2; }
 
         .pagination { display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding: 14px 16px; border-top: 1px solid #f0f0f0; }
         .page-btn { height: 30px; min-width: 30px; padding: 0 10px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #444; font-size: 12px; cursor: pointer; transition: background 0.15s; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
@@ -105,28 +104,79 @@
 <body>
 
     <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
-            <span class="brand">CBMA</span>
-            <span class="brand-sub">Academic Coordination</span>
-        </div>
+    <div class="sidebar-logo">
+        <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
+        <span class="brand">CBMA</span>
+        <span class="brand-sub">Academic Coordination</span>
+    </div>
 
-        <ul class="nav-list">
-            <li><a href="{{ url('/secretary/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
-            <li><a href="{{ url('/secretary/document-repository') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Document Repository</a></li>
-            <li><a href="{{ url('/secretary/template-distribution') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>Template Distribution</a></li>
-            <li><a href="{{ url('/secretary/course-filing') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Filing</a></li>
-            <li class="active"><a href="{{ url('/secretary/account-management') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Account Management</a></li>
-            <li><a href="{{ url('/secretary/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a></li>
-        </ul>
-
-        <div class="sidebar-logout">
-            <a href="#" onclick="handleLogout()">
-                <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Log out
+    <ul class="nav-list">
+        @if($navPermissions['dashboard'] ?? true)
+        <li class="{{ request()->is('secretary/dashboard') ? 'active' : '' }}">
+            <a href="{{ url('/secretary/dashboard') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                Dashboard
             </a>
-        </div>
-    </aside>
+        </li>
+        @endif
+        @if($navPermissions['document-repository'] ?? true)
+        <li class="{{ request()->is('secretary/document-repository*') ? 'active' : '' }}">
+            <a href="{{ url('/secretary/document-repository') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Document Repository
+            </a>
+        </li>
+        @endif
+        @if($navPermissions['template-distribution'] ?? true)
+        <li class="{{ request()->is('secretary/template-distribution*') ? 'active' : '' }}">
+            <a href="{{ url('/secretary/template-distribution') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                Template Distribution
+            </a>
+        </li>
+        @endif
+        @if($navPermissions['course-filing'] ?? true)
+        <li class="{{ request()->is('secretary/course-filing*') ? 'active' : '' }}">
+            <a href="{{ url('/secretary/course-filing') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                Course Filing
+            </a>
+        </li>
+        @endif
+        @if($navPermissions['account-management'] ?? true)
+        <li class="{{ request()->is('secretary/account-management*') ? 'active' : '' }}">
+            <a href="{{ url('/secretary/account-management') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+                Account Management
+            </a>
+        </li>
+        @endif
+        @if($navPermissions['announcements'] ?? true)
+        <li class="{{ request()->is('secretary/announcements*') ? 'active' : '' }}">
+            <a href="{{ url('/secretary/announcements') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                Announcements
+            </a>
+        </li>
+        @endif
+        @if($navPermissions['calendar'] ?? true)
+        <li class="{{ request()->is('secretary/calendar*') ? 'active' : '' }}">
+            <a href="{{ url('/secretary/calendar') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Calendar of Activities
+            </a>
+        </li>
+        @endif
+    </ul>
+
+    <div class="sidebar-logout">
+        <a href="#" onclick="document.getElementById('logout-form').submit()">
+            <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Log out
+        </a>
+        <form id="logout-form" method="POST" action="{{ url('/logout') }}" style="display:none;">@csrf</form>
+    </div>
+</aside>
 
     <div class="main">
 
@@ -163,7 +213,7 @@
 
             <div class="acc-panel">
 
-                {{-- Program tabs (secretary can manage faculty across all programs) --}}
+                {{-- Program tabs --}}
                 <div class="role-tabs">
                     <a class="role-tab {{ request('program') == null ? 'active' : '' }}"
                        href="{{ url('/secretary/account-management') }}">ALL</a>
@@ -175,11 +225,20 @@
                        href="{{ url('/secretary/account-management?program=BAD') }}">BAD</a>
                 </div>
 
+                {{-- Status tabs --}}
+                <div class="role-tabs" style="border-top:1px solid #f0f0f0;">
+                    <a class="role-tab {{ request('status') != 'archived' ? 'active' : '' }}"
+                       href="{{ request()->fullUrlWithQuery(['status' => null, 'page' => null]) }}">Active</a>
+                    <a class="role-tab {{ request('status') == 'archived' ? 'active' : '' }}"
+                       href="{{ request()->fullUrlWithQuery(['status' => 'archived', 'page' => null]) }}">Archived</a>
+                </div>
+
                 <div class="filters-row">
                     <div class="search-wrap">
                         <form method="GET">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                             <input type="hidden" name="program" value="{{ request('program') }}">
+                            <input type="hidden" name="status" value="{{ request('status') }}">
                             <input type="hidden" name="academic_year" value="{{ request('academic_year') }}">
                             <input type="text" name="search" value="{{ request('search') }}"
                                 placeholder="Search by name or employee id" onkeyup="this.form.submit()">
@@ -188,6 +247,7 @@
 
                     <form method="GET">
                         <input type="hidden" name="program" value="{{ request('program') }}">
+                        <input type="hidden" name="status" value="{{ request('status') }}">
                         <input type="hidden" name="search" value="{{ request('search') }}">
                         <select name="academic_year" class="filter-select" onchange="this.form.submit()">
                             <option value="">All Year</option>
@@ -218,20 +278,26 @@
                                 <td>{{ $account->academic_year }}</td>
                                 <td>
                                     <div class="action-btns">
-                                        <button type="button" class="btn-icon" title="Edit"
-                                            onclick="openEditModal(
-                                                '{{ $account->id }}',
-                                                '{{ $account->name }}',
-                                                '{{ $account->email }}',
-                                                '{{ $account->program }}',
-                                                '{{ $account->academic_year }}'
-                                            )">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                        </button>
-                                        <button type="button" class="btn-icon del" title="Delete"
-                                            onclick="openDeleteModal('{{ $account->id }}', '{{ $account->name }}')">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-                                        </button>
+                                        @if(is_null($account->archived_at))
+                                            <button type="button" class="btn-icon" title="Edit"
+                                                onclick="openEditModal(
+                                                    '{{ $account->id }}',
+                                                    '{{ $account->name }}',
+                                                    '{{ $account->program }}',
+                                                    '{{ $account->academic_year }}'
+                                                )">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                            </button>
+                                            <button type="button" class="btn-icon" title="Archive"
+                                                onclick="openArchiveModal('{{ $account->id }}', '{{ $account->name }}')">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                                            </button>
+                                        @else
+                                            <button type="button" class="btn-icon" title="Restore"
+                                                onclick="restoreAccount('{{ $account->id }}')">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -307,7 +373,7 @@
                     </select>
                 </div>
 
-                <div class="modal-field">
+                <div class="modal-field" id="email-field-wrap">
                     <label>Email <span style="color:#ef4444">*</span></label>
                     <input type="email" id="f-email" name="email" placeholder="email@cbma.edu">
                 </div>
@@ -320,21 +386,21 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="delete-overlay">
+    <div class="modal-overlay" id="archive-overlay">
         <div class="modal delete-modal" style="width:380px;">
-            <div class="modal-title">Delete Account</div>
-            <p>Are you sure you want to delete <strong id="delete-name"></strong>?</p>
-            <p style="color:#888;">This action cannot be undone.</p>
+            <div class="modal-title">Archive Account</div>
+            <p>Are you sure you want to archive <strong id="archive-name"></strong>?</p>
+            <p style="color:#888;">Hindi na siya makaka-login habang archived, pero pwede mo siyang i-restore anumang oras.</p>
             <div class="modal-actions">
-                <button type="button" class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
-                <button type="button" class="btn-save btn-danger" onclick="confirmDelete()">Delete</button>
+                <button type="button" class="btn-cancel" onclick="closeArchiveModal()">Cancel</button>
+                <button type="button" class="btn-save btn-danger" onclick="confirmArchive()">Archive</button>
             </div>
         </div>
     </div>
 
-    <form id="deleteForm" method="POST" style="display:none;">
+    <form id="actionForm" method="POST" style="display:none;">
         @csrf
-        @method('DELETE')
+        @method('PATCH')
     </form>
 
     <script>
@@ -346,6 +412,10 @@
             if (methodField) methodField.remove();
 
             clearForm();
+
+            document.getElementById('email-field-wrap').style.display = '';
+            document.getElementById('f-email').required = true;
+
             document.getElementById('modal-overlay').classList.add('open');
         }
 
@@ -366,18 +436,21 @@
             if (e.target === this) closeModal();
         });
 
-        function openEditModal(id, name, email, program, year) {
+        // Walang email param dito kasi hindi na ito ide-edit
+        function openEditModal(id, name, program, year) {
             document.getElementById('modal-overlay').classList.add('open');
             document.getElementById('modal-title').innerText = 'Edit Account';
             document.getElementById('modal-error').style.display = 'none';
 
-            document.getElementById('f-email').value = email;
             document.getElementById('f-program').value = program;
             document.getElementById('f-year').value = year;
 
             var parts = name.split(' ');
             document.getElementById('f-firstname').value = parts[0];
             document.getElementById('f-lastname').value = parts.slice(1).join(' ');
+
+            document.getElementById('email-field-wrap').style.display = 'none';
+            document.getElementById('f-email').required = false;
 
             document.getElementById('accountForm').action = '{{ url('/secretary/account-management') }}/' + id;
 
@@ -392,22 +465,27 @@
             }
         }
 
-        function openDeleteModal(id, name) {
-            document.getElementById('delete-name').innerText = name;
-            document.getElementById('deleteForm').action = '{{ url('/secretary/account-management') }}/' + id;
-            document.getElementById('delete-overlay').classList.add('open');
+        function openArchiveModal(id, name) {
+            document.getElementById('archive-name').innerText = name;
+            document.getElementById('actionForm').action = '{{ url('/secretary/account-management') }}/' + id + '/archive';
+            document.getElementById('archive-overlay').classList.add('open');
         }
 
-        function closeDeleteModal() {
-            document.getElementById('delete-overlay').classList.remove('open');
+        function closeArchiveModal() {
+            document.getElementById('archive-overlay').classList.remove('open');
         }
 
-        function confirmDelete() {
-            document.getElementById('deleteForm').submit();
+        function confirmArchive() {
+            document.getElementById('actionForm').submit();
         }
 
-        document.getElementById('delete-overlay').addEventListener('click', function (e) {
-            if (e.target === this) closeDeleteModal();
+        function restoreAccount(id) {
+            document.getElementById('actionForm').action = '{{ url('/secretary/account-management') }}/' + id + '/unarchive';
+            document.getElementById('actionForm').submit();
+        }
+
+        document.getElementById('archive-overlay').addEventListener('click', function (e) {
+            if (e.target === this) closeArchiveModal();
         });
 
         function handleLogout() {
@@ -424,7 +502,7 @@
         @if(session('success'))
             document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('modal-overlay').classList.remove('open');
-                document.getElementById('delete-overlay').classList.remove('open');
+                document.getElementById('archive-overlay').classList.remove('open');
             });
         @endif
     </script>

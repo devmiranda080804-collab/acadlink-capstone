@@ -186,64 +186,48 @@
             {{-- Form --}}
             <div class="form-panel">
                 <form method="POST" action="{{ route('login.submit') }}">
-    @csrf
+                @csrf
 
-```
-<h1>CBMA System</h1>
-<p class="sub">Academic Coordination and Instructional Management</p>
+                <h1>CBMA System</h1>
+                <p class="sub">Academic Coordination and Instructional Management</p>
 
-@if($errors->any())
-    <div class="error-msg" style="display:block;">
-        {{ $errors->first() }}
-    </div>
-@endif
+                @if($errors->any())
+                    <div class="error-msg" style="display:block;">
+                        {{ $errors->first() }}
+                    </div>
+                @endif
 
-<div class="field">
-    <label for="email">Email Address</label>
-    <input
-        type="email"
-        id="email"
-        name="email"
-        value="{{ old('email') }}"
-        placeholder="Enter your email address"
-        required>
-</div>
+                <div class="field">
+                    <label for="email">Email Address</label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value="{{ old('email') }}"
+                        placeholder="Enter your email address"
+                        required>
+                </div>
 
-<div class="field">
-    <label for="password">Password</label>
-    <input
-        type="password"
-        id="password"
-        name="password"
-        placeholder="Enter your password"
-        required>
-</div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        placeholder="Enter your password"
+                        required>
+                </div>
 
-<div class="field">
-    <label for="login_as">Login As</label>
-    <select id="login_as" name="login_as" required>
-        <option value="">Select Role</option>
-        <option value="faculty">Faculty</option>
-        <option value="admin">Admin/Dean</option>
-        <option value="program_head">Program Head</option>
-        <option value="secretary">Secretary</option>
-    </select>
-</div>
+                <button type="submit" class="btn-sign-in">
+                    Sign In
+                </button>
 
-<button type="submit" class="btn-sign-in">
-    Sign In
-</button>
+               <div class="forgot"><a href="{{ route('password.request') }}">Forgot your password?</a></div>
 
-<div class="forgot">
-    <a href="#">Forgot your password?</a>
-</div>
-
-<p class="copyright">
-    © 2026 CBMA System. All rights reserved.
-</p>
-```
-
-</form>
+                <p class="copyright">
+                    © 2026 CBMA System. All rights reserved.
+                </p>
+            </form>
 
 
         </div>
