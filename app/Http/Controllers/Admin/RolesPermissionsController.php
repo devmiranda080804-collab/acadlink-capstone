@@ -10,15 +10,6 @@ class RolesPermissionsController extends Controller
 {
     // Lahat ng modules per role — order nito = order ng sidebar
     protected array $roleModules = [
-        'admin' => [
-            'dashboard'          => 'Dashboard',
-            'account-management' => 'Account Management',
-            'roles-permissions'  => 'Roles & Permissions',
-            'template-approvals' => 'Template Approvals',
-            'audit-logs'         => 'Audit Logs',
-            'announcements'      => 'Announcements',
-            'calendar'           => 'Calendar of Activities',
-        ],
         'program_head' => [
             'dashboard'          => 'Dashboard',
             'template-review'    => 'Template Review',
@@ -52,7 +43,7 @@ class RolesPermissionsController extends Controller
 
     public function index()
     {
-        return redirect('/admin/roles-permissions/admin');
+        return redirect('/admin/roles-permissions/program_head');
     }
 
     public function show(string $role)
@@ -87,8 +78,12 @@ class RolesPermissionsController extends Controller
         $modules = array_keys($this->roleModules[$role]);
 
         foreach ($modules as $module) {
-            // Kung nacheck = true, kung hindi nacheck (wala sa form) = false
-            $isEnabled = $request->has("permissions.{$module}");
+            // Dashboard ay laging enabled — hindi pwedeng i-disable
+            if ($module === 'dashboard') {
+                $isEnabled = true;
+            } else {
+                $isEnabled = $request->has("permissions.{$module}");
+            }
 
             DB::table('role_permissions')->updateOrInsert(
                 ['role' => $role, 'module' => $module],

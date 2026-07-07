@@ -65,6 +65,8 @@
         .perm-check { width: 18px; height: 18px; accent-color: #1d4ed8; cursor: pointer; }
 
         svg { display: inline-block; vertical-align: middle; }
+
+        .perm-check:disabled { opacity: 0.6; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -180,9 +182,9 @@
 
                 {{-- Role tabs --}}
                 <div class="role-sidebar">
-                    @foreach(['admin' => 'Admin/Dean', 'program_head' => 'Program Head', 'secretary' => 'Secretary', 'faculty' => 'Faculty'] as $roleKey => $roleLabel)
+                    @foreach(['program_head' => 'Program Head', 'secretary' => 'Secretary', 'faculty' => 'Faculty'] as $roleKey => $roleLabel)
                         <a href="{{ url('/admin/roles-permissions/' . $roleKey) }}"
-                           class="role-tab {{ $selectedRole === $roleKey ? 'active' : '' }}">
+                        class="role-tab {{ $selectedRole === $roleKey ? 'active' : '' }}">
                             {{ $roleLabel }}
                         </a>
                     @endforeach
@@ -204,11 +206,17 @@
                                     <tr>
                                         <td>{{ $label }}</td>
                                         <td>
-                                            <input
-                                                type="checkbox"
-                                                class="perm-check"
-                                                name="permissions[{{ $slug }}]"
-                                                {{ ($permissions[$slug] ?? true) ? 'checked' : '' }}>
+                                            @if($slug === 'dashboard')
+                                                {{-- Dashboard ay laging naka-check at hindi ma-uncheck --}}
+                                                <input type="checkbox" class="perm-check" checked disabled title="Dashboard is always enabled">
+                                                <input type="hidden" name="permissions[dashboard]" value="1">
+                                            @else
+                                                <input
+                                                    type="checkbox"
+                                                    class="perm-check"
+                                                    name="permissions[{{ $slug }}]"
+                                                    {{ ($permissions[$slug] ?? true) ? 'checked' : '' }}>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach

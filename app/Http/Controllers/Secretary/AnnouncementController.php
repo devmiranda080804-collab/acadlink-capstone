@@ -10,21 +10,8 @@ class AnnouncementController extends Controller
 {
     public function index()
     {
-        $announcements = Announcement::with('user')
-            ->where(function ($q) {
-                // Admin posts
-                $q->whereHas('user', fn($u) => $u->where('role', 'admin'))
-                  ->where('visibility', 'all');
-            })
-            ->orWhere(function ($q) {
-                // Program Head posts (lahat ng program)
-                $q->whereHas('user', fn($u) => $u->where('role', 'program_head'))
-                  ->where('visibility', 'program');
-            })
-            ->orWhere(function ($q) {
-                // Sariling posts ng Secretary
-                $q->where('user_id', auth()->id());
-            })
+        // Secretary nakakakita ng lahat (institutional oversight)
+        $announcements = Announcement::with(['user', 'programs'])
             ->latest()
             ->get();
 
@@ -34,19 +21,21 @@ class AnnouncementController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'body'  => 'required|string',
-            'tag'   => 'required|in:general,priority,faculty,urgent',
+            'title'      => 'required|string|max:255',
+            'body'       => 'required|string',
+            'programs'   => 'required|array|min:1',
+            'programs.*' => 'in:FMAD,OFD,BAD',
         ]);
 
-        Announcement::create([
-            'user_id'    => auth()->id(),
-            'title'      => $request->title,
-            'body'       => $request->body,
-            'tag'        => $request->tag,
-            'visibility' => 'all', // Secretary posts visible sa lahat
-            'program'    => null,
+        $announcement = Announcement::create([
+            'user_id' => auth()->id(),
+            'title'   => $request->title,
+            'body'    => $request->body,
         ]);
+
+        foreach ($request->programs as $program) {
+            $announcement->programs()->create(['program' => $program]);
+        }
 
         return back()->with('success', 'Announcement posted successfully.');
     }

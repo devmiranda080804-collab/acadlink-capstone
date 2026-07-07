@@ -74,6 +74,9 @@
         .btn-save-modal { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
         .btn-save-modal:hover { background: #1a3a7a; }
         svg { display: inline-block; vertical-align: middle; }
+        .program-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+        .program-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #eef2ff; color: #0f2557; }
+        .source-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f0f4ff; color: #0f2557; margin-left: 6px; }
     </style>
 </head>
 <body>
@@ -162,12 +165,16 @@
                                 <div class="ann-title">{{ $ann->title }}</div>
                                 <div class="ann-meta">
                                     Posted by <strong>{{ $ann->user->name }}</strong>
-                                    <span class="source-badge">{{ ucfirst($ann->user->role === 'program_head' ? 'Program Head' : ucfirst($ann->user->role)) }}</span>
+                                    <span class="source-badge">{{ $ann->user->role === 'program_head' ? 'Program Head' : ucfirst($ann->user->role) }}</span>
                                     · {{ $ann->created_at->diffForHumans() }}
                                 </div>
                             </div>
                             <div class="ann-actions">
-                                <span class="badge badge-{{ $ann->tag }}">{{ ucfirst($ann->tag) }}</span>
+                                <div class="program-badges">
+                                    @foreach($ann->program_list as $prog)
+                                        <span class="program-badge">{{ $prog }}</span>
+                                    @endforeach
+                                </div>
                                 @if($ann->user_id === auth()->id())
                                     <form method="POST" action="{{ url('/program-head/announcements/' . $ann->id) }}" style="display:inline;">
                                         @csrf
@@ -206,13 +213,9 @@
                 </div>
 
                 <div class="modal-field">
-                    <label>Tag</label>
-                    <select name="tag">
-                        <option value="general" {{ old('tag') == 'general' ? 'selected' : '' }}>General</option>
-                        <option value="priority" {{ old('tag') == 'priority' ? 'selected' : '' }}>Priority</option>
-                        <option value="faculty" {{ old('tag') == 'faculty' ? 'selected' : '' }}>Faculty only</option>
-                        <option value="urgent" {{ old('tag') == 'urgent' ? 'selected' : '' }}>Urgent</option>
-                    </select>
+                    <label>Target Program</label>
+                    <input type="text" value="{{ auth()->user()->program }}" disabled style="background:#f3f4f6;color:#777;">
+                    <div style="font-size:10.5px;color:#999;margin-top:6px;">Ang announcement mo ay makikita lang ng faculty sa program na ito.</div>
                 </div>
 
                 <div class="modal-field">

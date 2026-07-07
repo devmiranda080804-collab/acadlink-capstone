@@ -11,23 +11,9 @@ class AnnouncementController extends Controller
     {
         $myProgram = auth()->user()->program;
 
-        $announcements = Announcement::with('user')
-            ->where(function ($q) {
-                // Admin posts
-                $q->whereHas('user', fn($u) => $u->where('role', 'admin'))
-                  ->where('visibility', 'all');
-            })
-            ->orWhere(function ($q) {
-                // Secretary posts
-                $q->whereHas('user', fn($u) => $u->where('role', 'secretary'))
-                  ->where('visibility', 'all');
-            })
-            ->orWhere(function ($q) use ($myProgram) {
-                // PH posts — sariling program lang ng faculty
-                $q->whereHas('user', fn($u) => $u->where('role', 'program_head'))
-                  ->where('visibility', 'program')
-                  ->where('program', $myProgram);
-            })
+        // Faculty nakakakita lang ng announcements na target ang sariling program
+        $announcements = Announcement::with(['user', 'programs'])
+            ->whereHas('programs', fn($p) => $p->where('program', $myProgram))
             ->latest()
             ->get();
 
