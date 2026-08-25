@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Template;
 use Illuminate\Http\Request;
+use App\Models\AuditLog;
 
 class TemplateApprovalController extends Controller
 {
@@ -28,6 +29,7 @@ class TemplateApprovalController extends Controller
             'approved_by' => auth()->id(),
             'review_note' => null,
         ]);
+        AuditLog::record('Template Approved (Final)', "{$template->title} approved by " . auth()->user()->name);
 
         return back()->with('success', 'Template approved. Available na ito para sa distribution.');
     }
@@ -45,6 +47,7 @@ class TemplateApprovalController extends Controller
             'approved_by' => auth()->id(),
             'review_note' => $request->review_note,
         ]);
+        AuditLog::record('Template Rejected', "{$template->title} rejected by " . auth()->user()->name);
 
         return back()->with('success', 'Template rejected and returned to faculty.');
     }

@@ -17,4 +17,8 @@ class Course extends Model
 {
     return $this->hasMany(CollaborativeDocument::class);
 }
+public function assignments()
+{
+    return $this->hasMany(CourseAssignment::class);
+}
 }

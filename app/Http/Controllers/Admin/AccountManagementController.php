@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Models\AuditLog;
 
 class AccountManagementController extends Controller
 {
@@ -76,6 +77,8 @@ class AccountManagementController extends Controller
             'must_change_password' => true,
         ]);
 
+        AuditLog::record('Account Created', "Created {$user->role} account for {$user->name} ({$user->email})");
+
         Mail::to($user->email)->send(new NewAccountCredentials($user, $temporaryPassword));
 
         return redirect()->back()
@@ -119,6 +122,8 @@ class AccountManagementController extends Controller
             'is_active'   => false,
             'archived_at' => now(),
         ]);
+
+        AuditLog::record('Account Archived', "Archived account: {$user->name} ({$user->email})");
 
         return back()->with('success', 'Account archived successfully.');
     }

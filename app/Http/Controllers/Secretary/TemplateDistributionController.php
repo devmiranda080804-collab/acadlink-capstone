@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Secretary;
 use App\Http\Controllers\Controller;
 use App\Models\Template;
 use Illuminate\Http\Request;
+use App\Models\AuditLog;
 
 class TemplateDistributionController extends Controller
 {
@@ -32,6 +33,7 @@ class TemplateDistributionController extends Controller
             'distributed_at' => now(),
             'distributed_by' => auth()->id(),
         ]);
+        AuditLog::record('Template Distributed', "{$template->title} distributed by " . auth()->user()->name);
 
         return back()->with('success', 'Template distributed successfully. Available na ito sa faculty.');
     }

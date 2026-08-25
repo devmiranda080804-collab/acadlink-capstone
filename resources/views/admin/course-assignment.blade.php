@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Template Approvals – CBMA System</title>
+    <title>Course Assignment – CBMA System</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background-color: #f0f0f0; display: flex; height: 100vh; overflow: hidden; }
-
         .sidebar { width: 210px; background-color: #0f2557; display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
         .sidebar-logo { display: flex; flex-direction: column; align-items: center; padding: 22px 16px 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logo img { width: 72px; height: 72px; border-radius: 50%; object-fit: contain; background: #1b3d7a; }
@@ -39,52 +38,45 @@
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .page-sub { font-size: 11.5px; color: #888; margin-bottom: 20px; }
 
-        .filter-tabs { display: flex; gap: 4px; margin-bottom: 18px; }
-        .filter-tab { padding: 7px 16px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; user-select: none; }
-        .filter-tab:hover { border-color: #0f2557; color: #0f2557; }
-        .filter-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
+        .filters-row { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+        .filter-select { height: 36px; padding: 0 32px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 12.5px; color: #333; background: #fff; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; min-width: 160px; }
+        .filter-select:focus { border-color: #0f2557; }
 
-        .approval-panel { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; overflow: hidden; }
-        .approval-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-        .approval-table thead tr { background: #fafafa; border-bottom: 1px solid #eee; }
-        .approval-table th { padding: 12px 16px; text-align: left; font-size: 11.5px; font-weight: 700; color: #666; }
-        .approval-table td { padding: 13px 16px; border-bottom: 1px solid #f5f5f5; color: #333; vertical-align: middle; }
-        .approval-table tbody tr:last-child td { border-bottom: none; }
-        .approval-table tbody tr:hover { background: #fafbff; }
-        .approval-table td.empty-row { text-align: center; color: #999; padding: 40px 16px; }
+        .assign-panel { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; overflow: hidden; }
+        .assign-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+        .assign-table thead tr { background: #fafafa; border-bottom: 1px solid #eee; }
+        .assign-table th { padding: 12px 16px; text-align: left; font-size: 11.5px; font-weight: 700; color: #666; }
+        .assign-table td { padding: 13px 16px; border-bottom: 1px solid #f5f5f5; color: #333; vertical-align: middle; }
+        .assign-table tbody tr:last-child td { border-bottom: none; }
+        .assign-table td.empty-row { text-align: center; color: #999; padding: 40px 16px; }
 
-        .type-label { color: #0f2557; font-weight: 600; }
+        .course-code { font-weight: 700; color: #0f2557; }
         .program-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f0f4ff; color: #0f2557; }
 
-        .status-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
-        .status-pending_approval { background: #fef9c3; color: #92400e; }
-        .status-approved         { background: #d1fae5; color: #065f46; }
-        .status-rejected         { background: #f3f4f6; color: #6b7280; }
-        .status-pending_review   { background: #dbeafe; color: #1e40af; }
-        .status-needs_revision   { background: #fee2e2; color: #991b1b; }
+        .faculty-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .faculty-chip { display: inline-flex; align-items: center; gap: 6px; background: #eef2ff; color: #0f2557; font-size: 11px; font-weight: 600; padding: 4px 6px 4px 10px; border-radius: 14px; }
+        .chip-remove { background: none; border: none; color: #6b7280; cursor: pointer; padding: 0; display: flex; }
+        .chip-remove:hover { color: #ef4444; }
+        .chip-remove svg { width: 11px; height: 11px; }
+        .no-faculty { color: #bbb; font-size: 11.5px; font-style: italic; }
 
-        .action-buttons { display: flex; gap: 6px; }
-        .btn-approve { display: inline-flex; align-items: center; gap: 4px; background: #0f2557; color: #fff; border: none; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
-        .btn-approve:hover { background: #1a3a7a; }
-        .btn-reject { display: inline-flex; align-items: center; gap: 4px; background: #ef4444; color: #fff; border: none; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
-        .btn-reject:hover { background: #dc2626; }
-        .btn-view { display: inline-flex; align-items: center; gap: 4px; background: #fff; color: #444; border: 1px solid #d0d0d0; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 5px; text-decoration: none; }
-        .btn-view:hover { background: #f5f5f5; }
-        .btn-approve svg, .btn-reject svg, .btn-view svg { width: 11px; height: 11px; }
+        .btn-assign { display: inline-flex; align-items: center; gap: 4px; background: #0f2557; color: #fff; border: none; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
+        .btn-assign:hover { background: #1a3a7a; }
 
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
-        .modal { background: #fff; border-radius: 10px; padding: 24px 26px; width: 440px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
-        .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
+        .modal { background: #fff; border-radius: 10px; padding: 24px 26px; width: 420px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
+        .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
         .modal-sub { font-size: 11.5px; color: #888; margin-bottom: 16px; }
+        .modal-field { margin-bottom: 13px; }
         .modal-field label { display: block; font-size: 11.5px; font-weight: 700; color: #333; margin-bottom: 4px; }
-        .modal-field textarea { width: 100%; min-height: 90px; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; outline: none; font-family: Arial, sans-serif; resize: vertical; }
-        .modal-field textarea:focus { border-color: #0f2557; }
+        .modal-field select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; color: #333; outline: none; appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E") no-repeat right 10px center; cursor: pointer; }
+        .modal-field select:focus { border-color: #0f2557; }
         .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
         .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 5px; cursor: pointer; }
         .btn-cancel:hover { background: #f5f5f5; }
-        .btn-submit-reject { background: #ef4444; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
-        .btn-submit-reject:hover { background: #dc2626; }
+        .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-save:hover { background: #1a3a7a; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -148,117 +140,120 @@
         </div>
 
         <div class="content">
-
             @if(session('success'))
                 <div class="alert-success">{{ session('success') }}</div>
             @endif
 
-            <div class="page-title">Template Approvals</div>
-            <div class="page-sub">Review and approve pending templates and formats</div>
+            <div class="page-title">Course Assignment</div>
+            <div class="page-sub">I-assign ang faculty sa mga courses per school year at semester</div>
 
-            {{-- Filter tabs (JS-based) --}}
-            <div class="filter-tabs">
-                <span class="filter-tab active" onclick="filterRows('all', this)">All</span>
-                <span class="filter-tab" onclick="filterRows('pending_approval', this)">Pending Approval</span>
-                <span class="filter-tab" onclick="filterRows('approved', this)">Approved</span>
-                <span class="filter-tab" onclick="filterRows('rejected', this)">Rejected</span>
+            <div class="filters-row">
+                <form method="GET" style="display:flex; gap:10px;">
+                    <select name="program" class="filter-select" onchange="this.form.submit()">
+                        <option value="">All Programs</option>
+                        <option value="FMAD" {{ $program == 'FMAD' ? 'selected' : '' }}>FMAD</option>
+                        <option value="OFD" {{ $program == 'OFD' ? 'selected' : '' }}>OFD</option>
+                        <option value="BAD" {{ $program == 'BAD' ? 'selected' : '' }}>BAD</option>
+                    </select>
+                    <select name="school_year" class="filter-select" onchange="this.form.submit()">
+                        @foreach([$schoolYear, ($schoolYear != '2025-2026' ? '2025-2026' : '2026-2027')] as $sy)
+                            <option value="{{ $sy }}" {{ $schoolYear == $sy ? 'selected' : '' }}>{{ $sy }}</option>
+                        @endforeach
+                    </select>
+                    <select name="semester" class="filter-select" onchange="this.form.submit()">
+                        <option value="First Semester" {{ $semester == 'First Semester' ? 'selected' : '' }}>First Semester</option>
+                        <option value="Second Semester" {{ $semester == 'Second Semester' ? 'selected' : '' }}>Second Semester</option>
+                        <option value="Summer" {{ $semester == 'Summer' ? 'selected' : '' }}>Summer</option>
+                    </select>
+                </form>
             </div>
 
-            <div class="approval-panel">
-                <table class="approval-table">
+            <div class="assign-panel">
+                <table class="assign-table">
                     <thead>
                         <tr>
-                            <th>Type</th>
-                            <th>Title</th>
+                            <th>Course Code</th>
+                            <th>Course Name</th>
                             <th>Program</th>
-                            <th>Submitted By</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <th>Assigned Faculty</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
-                    <tbody id="approval-tbody">
-                        @forelse($templates as $template)
-                            <tr data-status="{{ $template->status }}">
-                                <td><span class="type-label">{{ ucwords(str_replace('_', ' ', $template->type)) }}</span></td>
-                                <td>{{ $template->title }}</td>
-                                <td><span class="program-tag">{{ $template->program }}</span></td>
-                                <td>{{ $template->faculty->name }}</td>
-                                <td>{{ $template->created_at->format('Y-m-d') }}</td>
-                                <td><span class="status-badge status-{{ $template->status }}">{{ $template->status_label }}</span></td>
+                    <tbody>
+                        @forelse($courses as $course)
+                            @php $courseAssignments = $assignments->get($course->id, collect()); @endphp
+                            <tr>
+                                <td><span class="course-code">{{ $course->code }}</span></td>
+                                <td>{{ $course->title }}</td>
+                                <td><span class="program-tag">{{ $course->program }}</span></td>
                                 <td>
-                                    <div class="action-buttons">
-                                        <a class="btn-view" href="{{ Storage::url($template->file_path) }}" target="_blank">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                            View
-                                        </a>
-                                        @if($template->status === 'pending_approval')
-                                            <form method="POST" action="{{ url('/admin/template-approvals/' . $template->id . '/approve') }}" style="display:inline;">
-                                                @csrf
-                                                <button type="submit" class="btn-approve">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                                                    Approve
-                                                </button>
-                                            </form>
-                                            <button type="button" class="btn-reject"
-                                                onclick="openRejectModal('{{ url('/admin/template-approvals/' . $template->id . '/reject') }}', '{{ addslashes($template->title) }}')">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                                Reject
-                                            </button>
-                                        @endif
+                                    <div class="faculty-chips">
+                                        @forelse($courseAssignments as $a)
+                                            <span class="faculty-chip">
+                                                {{ $a->faculty->name }}
+                                                <form method="POST" action="{{ url('/admin/course-assignment/' . $a->id) }}" onsubmit="return confirm('Remove this assignment?')" style="display:inline;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="chip-remove" title="Remove">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                                    </button>
+                                                </form>
+                                            </span>
+                                        @empty
+                                            <span class="no-faculty">Walang naka-assign</span>
+                                        @endforelse
                                     </div>
+                                </td>
+                                <td>
+                                    <button class="btn-assign" onclick='openAssignModal({{ $course->id }}, "{{ addslashes($course->code) }}")'>+ Assign</button>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="empty-row">Wala pang templates para sa approval.</td></tr>
+                            <tr><td colspan="5" class="empty-row">Walang courses na nakita.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-
         </div>
     </div>
 
-    {{-- Reject Modal --}}
-    <div class="modal-overlay" id="reject-overlay">
+    <div class="modal-overlay" id="assign-overlay">
         <div class="modal">
-            <form id="reject-form" method="POST">
+            <form method="POST" action="{{ url('/admin/course-assignment') }}">
                 @csrf
-                <div class="modal-title">Reject Template</div>
-                <div class="modal-sub" id="reject-sub">Bigyan ng dahilan kung bakit tinatanggihan ang template.</div>
+                <input type="hidden" name="course_id" id="f-course-id">
+                <input type="hidden" name="school_year" value="{{ $schoolYear }}">
+                <input type="hidden" name="semester" value="{{ $semester }}">
+
+                <div class="modal-title">Assign Faculty</div>
+                <div class="modal-sub" id="modal-course-label">—</div>
+
                 <div class="modal-field">
-                    <label>Rejection Reason <span style="color:#ef4444">*</span></label>
-                    <textarea name="review_note" placeholder="Halimbawa: Hindi sumusunod sa opisyal na format ng syllabus..." required></textarea>
+                    <label>Faculty <span style="color:#ef4444">*</span></label>
+                    <select name="faculty_id" required>
+                        <option value="">Select faculty...</option>
+                        @foreach($facultyList as $f)
+                            <option value="{{ $f->id }}">{{ $f->name }} ({{ $f->program }})</option>
+                        @endforeach
+                    </select>
                 </div>
+
                 <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeRejectModal()">Cancel</button>
-                    <button type="submit" class="btn-submit-reject">Reject Template</button>
+                    <button type="button" class="btn-cancel" onclick="closeAssignModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Assign</button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-        function filterRows(status, el) {
-            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            document.querySelectorAll('#approval-tbody tr').forEach(row => {
-                if (!row.dataset.status) return; // empty row
-                row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
-            });
+        function openAssignModal(courseId, courseCode) {
+            document.getElementById('f-course-id').value = courseId;
+            document.getElementById('modal-course-label').textContent = 'Course: ' + courseCode + ' — ' + '{{ $schoolYear }} · {{ $semester }}';
+            document.getElementById('assign-overlay').classList.add('open');
         }
-
-        function openRejectModal(action, title) {
-            document.getElementById('reject-form').action = action;
-            document.getElementById('reject-sub').textContent = 'Tinatanggihan ang: ' + title;
-            document.getElementById('reject-overlay').classList.add('open');
-        }
-        function closeRejectModal() {
-            document.getElementById('reject-overlay').classList.remove('open');
-        }
-        document.getElementById('reject-overlay').addEventListener('click', function(e) {
-            if (e.target === this) closeRejectModal();
-        });
+        function closeAssignModal() { document.getElementById('assign-overlay').classList.remove('open'); }
+        document.getElementById('assign-overlay').addEventListener('click', function(e) { if (e.target === this) closeAssignModal(); });
     </script>
 
 </body>

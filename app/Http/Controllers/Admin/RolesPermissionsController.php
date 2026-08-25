@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\AuditLog;
 
 class RolesPermissionsController extends Controller
 {
@@ -14,6 +15,8 @@ class RolesPermissionsController extends Controller
             'dashboard'          => 'Dashboard',
             'template-review'    => 'Template Review',
             'course-oversight'   => 'Course Oversight',
+            'course-assignment'  => 'Course Assignment',
+            'submissions'        => 'Submissions and Deadline',
             'account-management' => 'Account Management',
             'announcements'      => 'Announcements',
             'calendar'           => 'Calendar of Activities',
@@ -23,6 +26,7 @@ class RolesPermissionsController extends Controller
             'document-repository'    => 'Document Repository',
             'template-distribution'  => 'Template Distribution',
             'course-filing'          => 'Course Filing',
+            'course-assignment'  => 'Course Assignment',
             'account-management'     => 'Account Management',
             'announcements'          => 'Announcements',
             'calendar'               => 'Calendar of Activities',
@@ -90,6 +94,7 @@ class RolesPermissionsController extends Controller
                 ['is_enabled' => $isEnabled, 'updated_at' => now()]
             );
         }
+        AuditLog::record('Permissions Updated', "Updated module permissions for role: {$role} by " . auth()->user()->name);
 
         return back()->with('success', 'Permissions updated successfully.');
     }

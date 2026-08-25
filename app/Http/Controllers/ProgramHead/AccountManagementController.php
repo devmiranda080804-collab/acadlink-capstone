@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Mail\NewAccountCredentials;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Models\AuditLog;
 
 class AccountManagementController extends Controller
 {
@@ -72,6 +73,7 @@ class AccountManagementController extends Controller
             'program'       => $myProgram, // server-derived, hindi galing sa form
             'academic_year' => $request->academic_year,
         ]);
+        AuditLog::record('Account Created', "Created faculty account for {$user->name} ({$user->email})");
 
         Mail::to($user->email)->send(new NewAccountCredentials($user, $temporaryPassword));
 
