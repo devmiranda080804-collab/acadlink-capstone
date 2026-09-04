@@ -5,175 +5,183 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login – CBMA System</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html, body {
-            width: 100%;
-            height: 100%;
-            font-family: Arial, sans-serif;
-        }
+    html, body {
+        width: 100%;
+        height: 100%;
+        font-family: Arial, sans-serif;
+    }
 
-        .page-bg {
-            position: relative;
-            width: 100%;
-            height: 100vh;
-            background-color: #4a6b4a;
-            background-image: url('{{ asset("images/bg-campus.jpg") }}');
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+    .bg-blur {
+        position: fixed;
+        inset: 0;
+        background-color: #4a6b4a;
+        background-image: url('{{ asset("images/bg-campus.jpg") }}');
+        background-size: cover;
+        background-position: center;
+        filter: blur(6px);
+        transform: scale(1.08);
+        z-index: 0;
+    }
 
-        .page-bg::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.28);
-        }
+    .page-bg {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-        .card-wrap {
-            position: relative;
-            display: flex;
-            align-items: stretch;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 6px 28px rgba(0,0,0,0.5);
-            width: 520px;
-        }
+    .page-bg::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.28);
+    }
 
-        /* Left blue logo panel */
-        .logo-panel {
-            width: 185px;
-            flex-shrink: 0;
-            background-color: #1b3d7a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 28px 18px;
-        }
+    .card-wrap {
+        position: relative;
+        display: flex;
+        align-items: stretch;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 6px 28px rgba(0,0,0,0.5);
+        width: 520px;
+    }
 
-        .logo-panel img {
-            width: 148px;
-            height: 148px;
-            object-fit: contain;
-            border-radius: 50%;
-        }
+    .logo-panel {
+        width: 185px;
+        flex-shrink: 0;
+        background-color: #1b3d7a;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 28px 18px;
+    }
 
-        /* Right white form panel */
-        .form-panel {
-            flex: 1;
-            background-color: #ffffff;
-            padding: 26px 26px 18px 26px;
-            display: flex;
-            flex-direction: column;
-        }
+    .logo-panel img {
+        width: 148px;
+        height: 148px;
+        object-fit: contain;
+        border-radius: 50%;
+    }
 
-        .form-panel h1 {
-            font-size: 17px;
-            font-weight: 700;
-            color: #111;
-            text-align: center;
-            margin-bottom: 2px;
-        }
+    .form-panel {
+        flex: 1;
+        background-color: #ffffff;
+        padding: 26px 26px 18px 26px;
+        display: flex;
+        flex-direction: column;
+    }
 
-        .form-panel .sub {
-            font-size: 10.5px;
-            color: #555;
-            text-align: center;
-            margin-bottom: 16px;
-            line-height: 1.4;
-        }
+    .form-panel h1 {
+        font-size: 17px;
+        font-weight: 700;
+        color: #111;
+        text-align: center;
+        margin-bottom: 2px;
+    }
 
-        .field { margin-bottom: 11px; }
+    .form-panel .sub {
+        font-size: 10.5px;
+        color: #555;
+        text-align: center;
+        margin-bottom: 16px;
+        line-height: 1.4;
+    }
 
-        .field label {
-            display: block;
-            font-size: 11.5px;
-            font-weight: 700;
-            color: #222;
-            margin-bottom: 3px;
-        }
+    .field { margin-bottom: 11px; }
 
-        .field input,
-        .field select {
-            width: 100%;
-            height: 32px;
-            padding: 0 10px;
-            border: 1px solid #c8c8c8;
-            border-radius: 4px;
-            font-size: 12px;
-            color: #333;
-            background: #fff;
-            outline: none;
-            transition: border-color .15s;
-        }
+    .field label {
+        display: block;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: #222;
+        margin-bottom: 3px;
+    }
 
-        .field input:focus,
-        .field select:focus { border-color: #2563eb; }
+    .field input,
+    .field select {
+        width: 100%;
+        height: 32px;
+        padding: 0 10px;
+        border: 1px solid #c8c8c8;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #333;
+        background: #fff;
+        outline: none;
+        transition: border-color .15s;
+    }
 
-        .field input::placeholder { color: #b0b0b0; font-size: 11.5px; }
+    .field input:focus,
+    .field select:focus { border-color: #2563eb; }
 
-        .field select {
-            appearance: none;
-            -webkit-appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            cursor: pointer;
-        }
+    .field input::placeholder { color: #b0b0b0; font-size: 11.5px; }
 
-        .field input.invalid,
-        .field select.invalid { border-color: #ef4444; }
+    .field select {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        cursor: pointer;
+    }
 
-        .error-msg {
-            display: none;
-            background-color: #fee2e2;
-            border: 1px solid #fca5a5;
-            color: #b91c1c;
-            font-size: 11px;
-            padding: 6px 10px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
+    .field input.invalid,
+    .field select.invalid { border-color: #ef4444; }
 
-        .btn-sign-in {
-            width: 100%;
-            height: 34px;
-            margin-top: 2px;
-            background-color: #1d4ed8;
-            color: #fff;
-            font-size: 13.5px;
-            font-weight: 600;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            letter-spacing: 0.2px;
-            transition: background-color .15s;
-        }
+    .error-msg {
+        display: none;
+        background-color: #fee2e2;
+        border: 1px solid #fca5a5;
+        color: #b91c1c;
+        font-size: 11px;
+        padding: 6px 10px;
+        border-radius: 4px;
+        margin-bottom: 10px;
+    }
 
-        .btn-sign-in:hover { background-color: #1e40af; }
+    .btn-sign-in {
+        width: 100%;
+        height: 34px;
+        margin-top: 2px;
+        background-color: #1d4ed8;
+        color: #fff;
+        font-size: 13.5px;
+        font-weight: 600;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        letter-spacing: 0.2px;
+        transition: background-color .15s;
+    }
 
-        .forgot { text-align: center; margin-top: 9px; }
+    .btn-sign-in:hover { background-color: #1e40af; }
 
-        .forgot a {
-            font-size: 11px;
-            color: #2563eb;
-            text-decoration: none;
-        }
+    .forgot { text-align: center; margin-top: 9px; }
 
-        .forgot a:hover { text-decoration: underline; }
+    .forgot a {
+        font-size: 11px;
+        color: #2563eb;
+        text-decoration: none;
+    }
 
-        .copyright {
-            text-align: center;
-            font-size: 9.5px;
-            color: #999;
-            margin-top: 13px;
-        }
-    </style>
+    .forgot a:hover { text-decoration: underline; }
+
+    .copyright {
+        text-align: center;
+        font-size: 9.5px;
+        color: #999;
+        margin-top: 13px;
+    }
+</style>
 </head>
 <body>
+    <div class="bg-blur"></div>
 
     <div class="page-bg">
         <div class="card-wrap">

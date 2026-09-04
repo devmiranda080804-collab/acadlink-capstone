@@ -82,7 +82,7 @@
         .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 18px; }
         .modal-field { margin-bottom: 13px; }
         .modal-field label { display: block; font-size: 11.5px; font-weight: 700; color: #333; margin-bottom: 4px; }
-        .modal-field input[type=text], .modal-field input[type=file], .modal-field select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; color: #333; outline: none; }
+        .modal-field input[type=text], .modal-field input[type=date], .modal-field input[type=file], .modal-field select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; color: #333; outline: none; }
         .modal-field input:focus, .modal-field select:focus { border-color: #0f2557; }
         .modal-field select { appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E") no-repeat right 10px center; cursor: pointer; }
         .modal-hint { font-size: 10.5px; color: #999; margin-top: 4px; }
@@ -197,7 +197,10 @@
 
                         <div class="card-title">{{ $template->title }}</div>
                         <div class="card-meta">
-                            {{ strtoupper($template->file_type) }} • {{ $template->readable_size }} • {{ $template->updated_at->format('Y-m-d') }}
+                            {{ strtoupper($template->file_type) }} • {{ $template->readable_size }} • Updated {{ $template->updated_at->format('Y-m-d') }}
+                            @if($template->submission_date)
+                                • Due {{ $template->submission_date->format('Y-m-d') }}
+                            @endif
                         </div>
 
                         @if($template->review_note && in_array($template->status, ['needs_revision', 'rejected']))
@@ -206,7 +209,7 @@
 
                         <div class="card-actions">
                             <button class="btn-sm btn-edit"
-                                onclick="openEditModal('{{ $template->id }}', '{{ addslashes($template->title) }}')">
+                                onclick="openEditModal('{{ $template->id }}', '{{ addslashes($template->title) }}', '{{ $template->submission_date ? $template->submission_date->format('Y-m-d') : '' }}')">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 Edit
                             </button>
@@ -254,6 +257,12 @@
                 </div>
 
                 <div class="modal-field">
+                    <label>Submission Date</label>
+                    <input type="date" name="submission_date">
+                    <div class="modal-hint">Petsa kung kailan dapat i-submit ang dokumentong ito.</div>
+                </div>
+
+                <div class="modal-field">
                     <label>File <span style="color:#ef4444">*</span></label>
                     <input type="file" name="file" accept=".pdf,.doc,.docx" required>
                     <div class="modal-hint">Allowed: PDF, Word · Max 20MB · Isu-submit ito para sa review.</div>
@@ -281,6 +290,11 @@
                 </div>
 
                 <div class="modal-field">
+                    <label>Submission Date</label>
+                    <input type="date" id="edit-submission-date" name="submission_date">
+                </div>
+
+                <div class="modal-field">
                     <label>Replace File (optional)</label>
                     <input type="file" name="file" accept=".pdf,.doc,.docx">
                     <div class="modal-hint">Iwanan blangko kung ayaw palitan ang file. Kapag na-reject/needs revision, ang pag-edit ay magre-resubmit para sa review.</div>
@@ -298,8 +312,9 @@
         function openCreateModal() { document.getElementById('create-overlay').classList.add('open'); }
         function closeCreateModal() { document.getElementById('create-overlay').classList.remove('open'); }
 
-        function openEditModal(id, title) {
+        function openEditModal(id, title, submissionDate) {
             document.getElementById('edit-title').value = title;
+            document.getElementById('edit-submission-date').value = submissionDate || '';
             document.getElementById('edit-form').action = '{{ url('/faculty/my-template') }}/' + id;
             document.getElementById('edit-overlay').classList.add('open');
         }

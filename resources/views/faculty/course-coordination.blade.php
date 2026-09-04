@@ -205,11 +205,11 @@
             <div class="page-sub">Access master course folder and instructor collaboration</div>
 
             <div class="course-select-box">
-                <label>Select Course</label>
+                <label>Select Program</label>
                 <div class="course-select-wrap">
                     <form method="GET" id="course-form">
                         <select name="course_id" onchange="document.getElementById('course-form').submit()">
-                            <option value="" disabled {{ !$selectedCourse ? 'selected' : '' }}>— Select a course —</option>
+                            <option value="" disabled {{ !$selectedCourse ? 'selected' : '' }}>— Select a program —</option>
                             @foreach($courses as $course)
                                 <option value="{{ $course->id }}" {{ $selectedCourse && $selectedCourse->id == $course->id ? 'selected' : '' }}>
                                     {{ $course->code }} – {{ $course->title }}

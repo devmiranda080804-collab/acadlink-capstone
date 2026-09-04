@@ -10,9 +10,14 @@ use Illuminate\Support\Str;
 
 class ResetPasswordController extends Controller
 {
-    public function show(string $token)
+    public function show(Request $request, string $token)
     {
-        return view('auth.reset-password', ['token' => $token]);
+        $email = $request->query('email');
+
+        return view('auth.reset-password', [
+            'token' => $token,
+            'email' => $email,
+        ]);
     }
 
     public function update(Request $request)

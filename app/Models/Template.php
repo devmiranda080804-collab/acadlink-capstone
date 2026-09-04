@@ -10,10 +10,11 @@ class Template extends Model
         'faculty_id', 'program', 'title', 'type',
         'file_path', 'file_name', 'file_type', 'file_size',
         'status', 'review_note', 'reviewed_by', 'approved_by',
-        'distributed_at', 'distributed_by',
+        'distributed_at', 'distributed_by', 'submission_date',
     ];
     protected $casts = [
-        'distributed_at' => 'datetime',
+        'submission_date' => 'date',
+        'distributed_at'  => 'datetime',
     ];
 
     public function distributor()

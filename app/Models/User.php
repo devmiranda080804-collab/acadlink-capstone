@@ -62,4 +62,14 @@ class User extends Authenticatable
     }
     return $initials ?: '?';
 }
+
+public function sendPasswordResetNotification($token)
+{
+    $url = url(route('password.reset', [
+        'token' => $token,
+        'email' => $this->email,
+    ], false));
+
+    $this->notify(new \App\Notifications\ResetPasswordNotification($url));
+}
 }
