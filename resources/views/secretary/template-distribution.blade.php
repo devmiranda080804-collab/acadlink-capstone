@@ -146,9 +146,9 @@
             {{-- Program filter tabs --}}
             <div class="program-tabs">
                 <a class="program-tab {{ !request('program') ? 'active' : '' }}" href="{{ url('/secretary/template-distribution') }}">All Programs</a>
-                <a class="program-tab {{ request('program') == 'FMAD' ? 'active' : '' }}" href="{{ url('/secretary/template-distribution?program=FMAD') }}">FMAD</a>
-                <a class="program-tab {{ request('program') == 'OFD' ? 'active' : '' }}" href="{{ url('/secretary/template-distribution?program=OFD') }}">OFD</a>
-                <a class="program-tab {{ request('program') == 'BAD' ? 'active' : '' }}" href="{{ url('/secretary/template-distribution?program=BAD') }}">BAD</a>
+                <a class="program-tab {{ request('program') == 'BSA' ? 'active' : '' }}" href="{{ url('/secretary/template-distribution?program=BSA') }}">BSA</a>
+                <a class="program-tab {{ request('program') == 'BSMA' ? 'active' : '' }}" href="{{ url('/secretary/template-distribution?program=BSMA') }}">BSMA</a>
+                <a class="program-tab {{ request('program') == 'BSOA' ? 'active' : '' }}" href="{{ url('/secretary/template-distribution?program=BSOA') }}">BSOA</a>
             </div>
 
             <div class="dist-panel">

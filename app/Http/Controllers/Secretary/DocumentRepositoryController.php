@@ -116,7 +116,7 @@ class DocumentRepositoryController extends Controller
     {
         $request->validate([
             'title'    => 'required|string|max:255',
-            'program'  => 'nullable|in:FMAD,OFD,BAD',
+            'program'  => 'nullable|in:BSA,BSMA,BSOA',
             'doc_type' => 'required|string|max:50',
             'file'     => 'required|file|mimes:pdf,doc,docx,xls,xlsx|max:20480',
         ]);

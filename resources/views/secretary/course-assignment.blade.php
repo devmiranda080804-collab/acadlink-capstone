@@ -151,9 +151,9 @@
                 <form method="GET" style="display:flex; gap:10px;">
                     <select name="program" class="filter-select" onchange="this.form.submit()">
                         <option value="">All Programs</option>
-                        <option value="FMAD" {{ $program == 'FMAD' ? 'selected' : '' }}>FMAD</option>
-                        <option value="OFD" {{ $program == 'OFD' ? 'selected' : '' }}>OFD</option>
-                        <option value="BAD" {{ $program == 'BAD' ? 'selected' : '' }}>BAD</option>
+                        <option value="BSA" {{ $program == 'BSA' ? 'selected' : '' }}>BSA</option>
+                        <option value="BSMA" {{ $program == 'BSMA' ? 'selected' : '' }}>BSMA</option>
+                        <option value="BSOA" {{ $program == 'BSOA' ? 'selected' : '' }}>BSOA</option>
                     </select>
                     <select name="school_year" class="filter-select" onchange="this.form.submit()">
                         @foreach([$schoolYear, ($schoolYear != '2025-2026' ? '2025-2026' : '2026-2027')] as $sy)

@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('templates', function (Blueprint $table) {
             $table->id();
             $table->foreignId('faculty_id')->constrained('users')->onDelete('cascade');
-            $table->string('program'); // FMAD, OFD, BAD — para sa PH routing
+            $table->string('program'); // BSA, BSMA, BSOA — para sa PH routing
             $table->string('title');
             $table->enum('type', ['syllabus', 'lesson_plan', 'course_guide', 'module']);
             $table->string('file_path');

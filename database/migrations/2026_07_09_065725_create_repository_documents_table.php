@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('uploaded_by')->constrained('users')->onDelete('cascade');
             $table->string('title');
-            $table->string('program')->nullable(); // FMAD, OFD, BAD, o null kung general
+            $table->string('program')->nullable(); // BSA, BSMA, BSOA, o null kung general
             $table->string('doc_type')->default('other'); // syllabus, lesson_plan, memo, form, other
             $table->string('file_path');
             $table->string('file_name');

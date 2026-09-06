@@ -136,9 +136,9 @@
                 <form method="GET">
                     <select name="program" class="filter-select" onchange="this.form.submit()">
                         <option value="">All Programs</option>
-                        <option value="FMAD" {{ $program == 'FMAD' ? 'selected' : '' }}>FMAD</option>
-                        <option value="OFD" {{ $program == 'OFD' ? 'selected' : '' }}>OFD</option>
-                        <option value="BAD" {{ $program == 'BAD' ? 'selected' : '' }}>BAD</option>
+                        <option value="BSA" {{ $program == 'BSA' ? 'selected' : '' }}>BSA</option>
+                        <option value="BSMA" {{ $program == 'BSMA' ? 'selected' : '' }}>BSMA</option>
+                        <option value="BSOA" {{ $program == 'BSOA' ? 'selected' : '' }}>BSOA</option>
                     </select>
                 </form>
             </div>

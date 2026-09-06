@@ -220,12 +220,12 @@
                 <div class="role-tabs">
                     <a class="role-tab {{ request('program') == null ? 'active' : '' }}"
                        href="{{ url('/secretary/account-management') }}">ALL</a>
-                    <a class="role-tab {{ request('program') == 'FMAD' ? 'active' : '' }}"
-                       href="{{ url('/secretary/account-management?program=FMAD') }}">FMAD</a>
-                    <a class="role-tab {{ request('program') == 'OFD' ? 'active' : '' }}"
-                       href="{{ url('/secretary/account-management?program=OFD') }}">OFD</a>
-                    <a class="role-tab {{ request('program') == 'BAD' ? 'active' : '' }}"
-                       href="{{ url('/secretary/account-management?program=BAD') }}">BAD</a>
+                    <a class="role-tab {{ request('program') == 'BSA' ? 'active' : '' }}"
+                       href="{{ url('/secretary/account-management?program=BSA') }}">BSA</a>
+                    <a class="role-tab {{ request('program') == 'BSMA' ? 'active' : '' }}"
+                       href="{{ url('/secretary/account-management?program=BSMA') }}">BSMA</a>
+                    <a class="role-tab {{ request('program') == 'BSOA' ? 'active' : '' }}"
+                       href="{{ url('/secretary/account-management?program=BSOA') }}">BSOA</a>
                 </div>
 
                 {{-- Status tabs --}}
@@ -361,9 +361,9 @@
                         <label>Program <span style="color:#ef4444">*</span></label>
                         <select id="f-program" name="program">
                             <option value="" disabled selected>Select program</option>
-                            <option value="FMAD">FMAD</option>
-                            <option value="OFD">OFD</option>
-                            <option value="BAD">BAD</option>
+                            <option value="BSA">BSA</option>
+                            <option value="BSMA">BSMA</option>
+                            <option value="BSOA">BSOA</option>
                         </select>
                     </div>
                 </div>

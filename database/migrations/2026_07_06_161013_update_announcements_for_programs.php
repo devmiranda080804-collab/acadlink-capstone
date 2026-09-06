@@ -25,7 +25,7 @@ return new class extends Migration
         Schema::create('announcement_programs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('announcement_id')->constrained()->onDelete('cascade');
-            $table->string('program'); // FMAD, OFD, BAD
+            $table->string('program'); // BSA, BSMA, BSOA
             $table->timestamps();
             $table->unique(['announcement_id', 'program']);
         });

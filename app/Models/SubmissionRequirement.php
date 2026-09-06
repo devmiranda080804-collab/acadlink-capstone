@@ -27,7 +27,7 @@ class SubmissionRequirement extends Model
     // Ilang araw na lang bago mag-due (negative = late na)
     public function getDaysLeftAttribute(): int
     {
-        return now()->startOfDay()->diffInDays($this->deadline, false);
+        return now()->startBSMAay()->diffInDays($this->deadline, false);
     }
 
     public function getIsOverdueAttribute(): bool

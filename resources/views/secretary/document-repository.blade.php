@@ -311,9 +311,9 @@
                         <label>Program</label>
                         <select name="program">
                             <option value="">General (All)</option>
-                            <option value="FMAD">FMAD</option>
-                            <option value="OFD">OFD</option>
-                            <option value="BAD">BAD</option>
+                            <option value="BSA">BSA</option>
+                            <option value="BSMA">BSMA</option>
+                            <option value="BSOA">BSOA</option>
                         </select>
                     </div>
                     <div class="modal-field">

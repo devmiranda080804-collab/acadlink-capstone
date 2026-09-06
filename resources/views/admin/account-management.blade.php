@@ -256,9 +256,9 @@
                         <input type="hidden" name="academic_year" value="{{ request('academic_year') }}">
                         <select name="program" class="filter-select" onchange="this.form.submit()">
                             <option value="">All Program</option>
-                            <option value="FMAD" {{ request('program') == 'FMAD' ? 'selected' : '' }}>FMAD</option>
-                            <option value="OFD" {{ request('program') == 'OFD' ? 'selected' : '' }}>OFD</option>
-                            <option value="BAD" {{ request('program') == 'BAD' ? 'selected' : '' }}>BAD</option>
+                            <option value="BSA" {{ request('program') == 'BSA' ? 'selected' : '' }}>BSA</option>
+                            <option value="BSMA" {{ request('program') == 'BSMA' ? 'selected' : '' }}>BSMA</option>
+                            <option value="BSOA" {{ request('program') == 'BSOA' ? 'selected' : '' }}>BSOA</option>
                         </select>
                     </form>
 
@@ -387,9 +387,9 @@
                         <label>Program <span style="color:#ef4444">*</span></label>
                         <select id="f-program" name="program">
                             <option value="" disabled selected>Select program</option>
-                            <option value="FMAD">FMAD</option>
-                            <option value="OFD">OFD</option>
-                            <option value="BAD">BAD</option>
+                            <option value="BSA">BSA</option>
+                            <option value="BSMA">BSMA</option>
+                            <option value="BSOA">BSOA</option>
                         </select>
                     </div>
                     <div class="modal-field" id="year-field-wrap">

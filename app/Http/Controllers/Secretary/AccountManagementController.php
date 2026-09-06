@@ -51,7 +51,7 @@ class AccountManagementController extends Controller
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
-            'program'       => 'required|in:FMAD,OFD,BAD',
+            'program'       => 'required|in:BSA,BSMA,BSOA',
             'academic_year' => 'required',
         ]);
 
@@ -87,7 +87,7 @@ class AccountManagementController extends Controller
         $request->validate([
             'full_name'     => 'required|string|max:255',
             'role'          => 'required|in:program_head,secretary',
-            'program'       => 'required_if:role,program_head|nullable|in:FMAD,OFD,BAD',
+            'program'       => 'required_if:role,program_head|nullable|in:BSA,BSMA,BSOA',
             'academic_year' => 'required',
         ]);
 

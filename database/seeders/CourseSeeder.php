@@ -10,12 +10,12 @@ class CourseSeeder extends Seeder
     public function run(): void
     {
         $courses = [
-            ['code' => 'CAE1', 'title' => 'Financial Accounting and Reporting', 'program' => 'FMAD'],
-            ['code' => 'CAE2', 'title' => 'Marketing Management', 'program' => 'FMAD'],
-            ['code' => 'CAE3', 'title' => 'Intermediate Accounting 1', 'program' => 'BAD'],
-            ['code' => 'CAE4', 'title' => 'Cost Accounting and Control', 'program' => 'BAD'],
-            ['code' => 'CAE5', 'title' => 'Business Laws and Regulations', 'program' => 'OFD'],
-            ['code' => 'CS 101', 'title' => 'Introduction to Programming', 'program' => 'OFD'],
+            ['code' => 'CAE1', 'title' => 'Financial Accounting and Reporting', 'program' => 'BSA'],
+            ['code' => 'CAE2', 'title' => 'Marketing Management', 'program' => 'BSA'],
+            ['code' => 'CAE3', 'title' => 'Intermediate Accounting 1', 'program' => 'BSOA'],
+            ['code' => 'CAE4', 'title' => 'Cost Accounting and Control', 'program' => 'BSOA'],
+            ['code' => 'CAE5', 'title' => 'Business Laws and Regulations', 'program' => 'BSMA'],
+            ['code' => 'CS 101', 'title' => 'Introduction to Programming', 'program' => 'BSMA'],
         ];
 
         foreach ($courses as $c) {

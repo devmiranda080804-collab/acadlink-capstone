@@ -18,7 +18,7 @@ class Announcement extends Model
         return $this->hasMany(AnnouncementProgram::class);
     }
 
-    // Helper: kunin ang listahan ng program codes (e.g. ['FMAD', 'OFD'])
+    // Helper: kunin ang listahan ng program codes (e.g. ['BSA', 'BSMA'])
     public function getProgramListAttribute(): array
     {
         return $this->programs->pluck('program')->toArray();

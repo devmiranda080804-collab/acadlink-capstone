@@ -193,9 +193,9 @@
                 <div class="modal-field">
                     <label>Target Programs <span style="color:#ef4444">*</span></label>
                     <div class="checkbox-group">
-                        <label class="checkbox-item"><input type="checkbox" name="programs[]" value="FMAD"> FMAD</label>
-                        <label class="checkbox-item"><input type="checkbox" name="programs[]" value="OFD"> OFD</label>
-                        <label class="checkbox-item"><input type="checkbox" name="programs[]" value="BAD"> BAD</label>
+                        <label class="checkbox-item"><input type="checkbox" name="programs[]" value="BSA"> BSA</label>
+                        <label class="checkbox-item"><input type="checkbox" name="programs[]" value="BSMA"> BSMA</label>
+                        <label class="checkbox-item"><input type="checkbox" name="programs[]" value="BSOA"> BSOA</label>
                     </div>
                     <div style="font-size:10.5px;color:#999;margin-top:6px;">Pumili ng isa o marami. Ang faculty ng napiling program lang ang makakakita.</div>
                 </div>

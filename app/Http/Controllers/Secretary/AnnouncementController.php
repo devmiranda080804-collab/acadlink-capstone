@@ -24,7 +24,7 @@ class AnnouncementController extends Controller
             'title'      => 'required|string|max:255',
             'body'       => 'required|string',
             'programs'   => 'required|array|min:1',
-            'programs.*' => 'in:FMAD,OFD,BAD',
+            'programs.*' => 'in:BSA,BSMA,BSOA',
         ]);
 
         $announcement = Announcement::create([
