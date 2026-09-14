@@ -9,13 +9,14 @@ class AnnouncementController extends Controller
 {
     public function index()
     {
-        $myProgram = auth()->user()->program;
-
-        // Faculty nakakakita lang ng announcements na target ang sariling program
+        // Faculty can only see announcements targeting their own program
         $announcements = Announcement::with(['user', 'programs'])
-            ->whereHas('programs', fn($p) => $p->where('program', $myProgram))
+            ->active()
+            ->visibleTo(auth()->user())
             ->latest()
             ->get();
+
+        Announcement::markReadBy($announcements, auth()->user());
 
         return view('faculty.announcements', compact('announcements'));
     }

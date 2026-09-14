@@ -10,10 +10,13 @@ class AnnouncementController extends Controller
 {
     public function index()
     {
-        // Admin nakakakita ng lahat ng announcements
+        // Admin can see all announcements
         $announcements = Announcement::with(['user', 'programs'])
+            ->active()
             ->latest()
             ->get();
+
+        Announcement::markReadBy($announcements, auth()->user());
 
         return view('admin.admin-announcements', compact('announcements'));
     }
@@ -25,12 +28,14 @@ class AnnouncementController extends Controller
             'body'       => 'required|string',
             'programs'   => 'required|array|min:1',
             'programs.*' => 'in:BSA,BSMA,BSOA',
+            'expires_at' => 'nullable|date|after:now',
         ]);
 
         $announcement = Announcement::create([
-            'user_id' => auth()->id(),
-            'title'   => $request->title,
-            'body'    => $request->body,
+            'user_id'    => auth()->id(),
+            'title'      => $request->title,
+            'body'       => $request->body,
+            'expires_at' => $request->expires_at,
         ]);
 
         foreach ($request->programs as $program) {
@@ -42,7 +47,7 @@ class AnnouncementController extends Controller
 
     public function destroy(Announcement $announcement)
     {
-        $announcement->delete(); // cascade na ang programs
+        $announcement->delete(); // programs are cascaded
         return back()->with('success', 'Announcement deleted.');
     }
 }

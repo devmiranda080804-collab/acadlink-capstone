@@ -24,7 +24,7 @@ class SubmissionRequirement extends Model
         return $this->hasMany(Submission::class, 'requirement_id');
     }
 
-    // Ilang araw na lang bago mag-due (negative = late na)
+    // Number of days left before the due date (negative = overdue)
     public function getDaysLeftAttribute(): int
     {
         return now()->startOfDay()->diffInDays($this->deadline, false);

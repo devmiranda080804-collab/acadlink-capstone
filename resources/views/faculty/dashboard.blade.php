@@ -17,6 +17,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -35,6 +36,13 @@
         .content { flex: 1; overflow-y: auto; padding: 24px 28px 28px; }
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .page-sub { font-size: 12px; color: #888; margin-bottom: 22px; }
+
+        .announcement-banner { display: flex; align-items: center; gap: 10px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
+        .announcement-banner svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .announcement-banner-text { flex: 1; }
+        .announcement-banner-text strong { font-weight: 700; }
+        .announcement-banner-link { color: #1d4ed8; font-weight: 600; text-decoration: none; font-size: 12px; white-space: nowrap; }
+        .announcement-banner-link:hover { text-decoration: underline; }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
         .stat-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
@@ -84,7 +92,7 @@
             <li class="{{ request()->is('faculty/dashboard') ? 'active' : '' }}"><a href="{{ url('/faculty/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
             @endif
             @if($navPermissions['my-template'] ?? true)
-            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>My Template</a></li>
+            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates</a></li>
             @endif
             @if($navPermissions['exam-generator'] ?? true)
             <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}"><a href="{{ url('/faculty/exam-generator') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Exam Generator</a></li>
@@ -102,7 +110,11 @@
             <li class="{{ request()->is('faculty/calendar*') ? 'active' : '' }}"><a href="{{ url('/faculty/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
             @endif
             @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}"><a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a></li>
+            <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}"><a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
+                @if(($unreadAnnouncementsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+                @endif
+            </a></li>
             @endif
             @if($navPermissions['submissions'] ?? true)
             <li class="{{ request()->is('faculty/submissions*') ? 'active' : '' }}"><a href="{{ url('/faculty/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
@@ -137,35 +149,46 @@
 
         <div class="content">
             <div class="page-title">Welcome back, {{ auth()->user()->name }}!</div>
-            <div class="page-sub">Buod ng iyong templates at mga update.</div>
+            <div class="page-sub">Summary of your templates and updates.</div>
+
+            @if($unreadAnnouncements->isNotEmpty())
+                <div class="announcement-banner">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                    <div class="announcement-banner-text">
+                        <strong>{{ $unreadAnnouncementsCount }} new announcement{{ $unreadAnnouncementsCount > 1 ? 's' : '' }}:</strong>
+                        {{ $unreadAnnouncements->pluck('title')->implode(' · ') }}
+                    </div>
+                    <a href="{{ url('/faculty/announcements') }}" class="announcement-banner-link">View →</a>
+                </div>
+            @endif
 
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $totalTemplates }}</div>
-                        <div class="stat-label">My Templates</div>
+                        <div class="stat-value">{{ $syllabusCount }}</div>
+                        <div class="stat-label">Syllabus Templates</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+                    <div class="stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $needsRevision }}</div>
-                        <div class="stat-label">Needs Revision</div>
+                        <div class="stat-value">{{ $lessonPlanCount }}</div>
+                        <div class="stat-label">Lesson Plan Templates</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $pendingCount }}</div>
-                        <div class="stat-label">Pending</div>
+                        <div class="stat-value">{{ $courseGuideCount }}</div>
+                        <div class="stat-label">Course Guide Templates</div>
                     </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $approvedCount }}</div>
-                        <div class="stat-label">Approved</div>
+                        <div class="stat-value">{{ $moduleCount }}</div>
+                        <div class="stat-label">Module Templates</div>
                     </div>
                 </div>
             </div>
@@ -173,8 +196,8 @@
             <div class="dash-row">
                 <div class="panel">
                     <div class="panel-title">
-                        Needs Your Revision
-                        <a href="{{ url('/faculty/my-template') }}">My Templates →</a>
+                        Recently Distributed Templates
+                        <a href="{{ url('/faculty/my-template') }}">Templates →</a>
                     </div>
                     @forelse($revisionTemplates as $template)
                         <div class="list-item">
@@ -182,13 +205,13 @@
                                 <span class="li-icon">@if($template->file_type == 'pdf') 📄 @else 📝 @endif</span>
                                 <div>
                                     <div class="li-title">{{ $template->title }}</div>
-                                    <div class="li-meta">{{ ucwords(str_replace('_',' ',$template->type)) }}</div>
+                                    <div class="li-meta">{{ str_replace('_',' ',$template->type) }}</div>
                                 </div>
                             </div>
-                            <span class="li-badge">Revise</span>
+                            <span class="li-badge">New</span>
                         </div>
                     @empty
-                        <div class="empty-mini">Walang templates na kailangang ayusin. 🎉</div>
+                        <div class="empty-mini">No templates have been distributed to your program yet.</div>
                     @endforelse
                 </div>
 
@@ -203,7 +226,7 @@
                             <div class="ann-meta">{{ $ann->user->name }} · {{ $ann->created_at->diffForHumans() }}</div>
                         </div>
                     @empty
-                        <div class="empty-mini">Walang announcements.</div>
+                        <div class="empty-mini">No announcements.</div>
                     @endforelse
                 </div>
             </div>
@@ -227,7 +250,7 @@
                         </div>
                     </div>
                 @empty
-                    <div class="empty-mini">Walang paparating na activities.</div>
+                    <div class="empty-mini">No upcoming activities.</div>
                 @endforelse
             </div>
             <div class="panel" style="margin-top:20px;">
@@ -245,7 +268,7 @@
                     </div>
                 </div>
             @empty
-                <div class="empty-mini">Wala ka pang assigned courses sa kasalukuyang semester.</div>
+                <div class="empty-mini">You have no assigned courses this semester.</div>
             @endforelse
         </div>
 

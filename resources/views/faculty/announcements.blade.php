@@ -17,6 +17,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -68,7 +69,7 @@
             @endif
             @if($navPermissions['my-template'] ?? true)
             <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}">
-                <a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>My Template</a>
+                <a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates</a>
             </li>
             @endif
             @if($navPermissions['exam-generator'] ?? true)
@@ -98,7 +99,11 @@
             @endif
             @if($navPermissions['announcements'] ?? true)
             <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}">
-                <a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a>
+                <a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
+                    @if(($unreadAnnouncementsCount ?? 0) > 0)
+                        <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+                    @endif
+                </a>
             </li>
             @endif
             @if($navPermissions['submissions'] ?? true)
@@ -139,7 +144,7 @@
         <div class="content">
             <div class="page-header">
                 <div class="page-title">Announcements</div>
-                <div class="page-sub">Mga anunsyo para sa program na <strong>{{ auth()->user()->program }}</strong></div>
+                <div class="page-sub">Announcements for the <strong>{{ auth()->user()->program }}</strong> program</div>
             </div>
 
             <div class="ann-panel">
@@ -156,12 +161,14 @@
                                     · {{ $ann->created_at->diffForHumans() }}
                                 </div>
                             </div>
-                            <span class="badge badge-{{ $ann->tag }}">{{ ucfirst($ann->tag) }}</span>
+                            @if($ann->expires_at)
+                                <span class="badge" style="background:#fef3c7;color:#92400e;">Expires {{ $ann->expires_at->format('M d, Y g:i A') }}</span>
+                            @endif
                         </div>
                         <div class="ann-body">{{ $ann->body }}</div>
                     </div>
                 @empty
-                    <div class="ann-empty">Wala pang announcements para sa iyong program.</div>
+                    <div class="ann-empty">No announcements yet for your program.</div>
                 @endforelse
             </div>
         </div>

@@ -18,6 +18,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -72,6 +73,24 @@
         .btn-del svg { width: 15px; height: 15px; }
         .folder-empty { text-align: center; padding: 36px; color: #bbb; font-size: 12.5px; }
 
+        .sub-tabs { display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 18px; }
+        .sub-tab { padding: 7px 18px; font-size: 12.5px; color: #666; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; user-select: none; }
+        .sub-tab:hover { color: #0f2557; }
+        .sub-tab.active { color: #0f2557; font-weight: 700; border-bottom: 2px solid #0f2557; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .outcome-code { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 10px; background: #eef2ff; color: #0f2557; margin-right: 8px; flex-shrink: 0; }
+        .co-card { padding: 13px 18px; border-bottom: 1px solid #f5f5f5; }
+        .co-card:last-child { border-bottom: none; }
+        .co-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+        .co-activities { font-size: 11px; color: #777; margin-top: 8px; line-height: 1.5; background: #fafbff; border-radius: 5px; padding: 7px 10px; }
+        .co-po-list { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+        .co-po-label { font-size: 10.5px; color: #999; font-weight: 600; margin-right: 2px; }
+        .po-chip { font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: 10px; border: 1px solid #ddd; background: #fff; color: #999; cursor: pointer; transition: all 0.15s; }
+        .po-chip:hover { border-color: #0f2557; }
+        .po-chip.mapped { background: #0f2557; color: #fff; border-color: #0f2557; }
+
         /* Modal */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
@@ -79,8 +98,9 @@
         .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 18px; }
         .modal-field { margin-bottom: 13px; }
         .modal-field label { display: block; font-size: 11.5px; font-weight: 700; color: #333; margin-bottom: 4px; }
-        .modal-field input[type=text], .modal-field input[type=file] { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; color: #333; outline: none; }
-        .modal-field input:focus { border-color: #0f2557; }
+        .modal-field input[type=text], .modal-field input[type=file], .modal-field select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; color: #333; outline: none; font-family: Arial, sans-serif; }
+        .modal-field input:focus, .modal-field select:focus { border-color: #0f2557; }
+        .modal-field select { appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E") no-repeat right 10px center; cursor: pointer; }
         .modal-error { display: none; background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; font-size: 11px; padding: 8px 10px; border-radius: 4px; margin-bottom: 12px; }
         .modal-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
         .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
@@ -108,7 +128,7 @@
             @endif
             @if($navPermissions['template-review'] ?? true)
             <li class="{{ request()->is('program-head/template-review*') ? 'active' : '' }}">
-                <a href="{{ url('/program-head/template-review') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Template Review</a>
+                <a href="{{ url('/program-head/template-review') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Template Distribution</a>
             </li>
             @endif
             @if($navPermissions['course-oversight'] ?? true)
@@ -116,8 +136,8 @@
                 <a href="{{ url('/program-head/course-oversight') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Oversight</a>
             </li>
             @endif
-            @if($navPermissions['course-assignment'] ?? true)
-            <li class="{{ request()->is('program-head/course-assignment*') ? 'active' : '' }}"><a href="{{ url('/program-head/course-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Course Assignment</a></li>
+            @if($navPermissions['program-assignment'] ?? true)
+            <li class="{{ request()->is('program-head/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/program-head/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
             @endif
             @if($navPermissions['submissions'] ?? true)
             <li class="{{ request()->is('program-head/submissions*') ? 'active' : '' }}"><a href="{{ url('/program-head/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
@@ -129,7 +149,11 @@
             @endif
             @if($navPermissions['announcements'] ?? true)
             <li class="{{ request()->is('program-head/announcements*') ? 'active' : '' }}">
-                <a href="{{ url('/program-head/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a>
+                <a href="{{ url('/program-head/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
+                @if(($unreadAnnouncementsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+                @endif
+            </a>
             </li>
             @endif
             @if($navPermissions['calendar'] ?? true)
@@ -172,7 +196,7 @@
             @endif
 
             <div class="page-title">Course Oversight</div>
-            <div class="page-sub">Manage master course materials para sa program: <strong>{{ $myProgram }}</strong></div>
+            <div class="page-sub">Manage master course materials for the program: <strong>{{ $myProgram }}</strong></div>
 
             {{-- Course selector + Upload --}}
             <div class="course-select-box">
@@ -197,57 +221,206 @@
                 </button>
             </div>
 
-            {{-- Materials list --}}
+            {{-- Sub tabs --}}
+            <div class="sub-tabs">
+                <span class="sub-tab active" onclick="switchSubTab('materials', this)">Materials</span>
+                <span class="sub-tab" onclick="switchSubTab('outcomes', this)">Outcomes (OBE)</span>
+            </div>
+
+            {{-- ═══ MATERIALS ═══ --}}
+            <div class="tab-content active" id="tab-materials">
             @if(!$selectedCourse)
                 <div class="folder-panel">
                     <div class="folder-empty">📁 Please select a course above to manage its materials.</div>
                 </div>
             @else
-                <div class="folder-panel">
-                    <div class="folder-panel-header">
-                        <span class="folder-icon">📁</span>
-                        <div>
-                            <div class="folder-title">{{ $selectedCourse->code }} – Master Folder</div>
-                            <div class="folder-sub">Ang mga file dito ay makikita ng lahat ng faculty na humahawak ng course na ito</div>
+                @foreach(\App\Models\CourseMaterial::TYPES as $typeKey => $typeLabel)
+                    <div class="folder-panel" style="margin-bottom: 14px;">
+                        <div class="folder-panel-header">
+                            <span class="folder-icon">📁</span>
+                            <div>
+                                <div class="folder-title">{{ $typeLabel }}</div>
+                                <div class="folder-sub">{{ $selectedCourse->code }} — visible to all faculty members handling this course</div>
+                            </div>
                         </div>
-                    </div>
 
-                    @forelse($materials as $material)
-                        <div class="file-row">
-                            <div class="file-left">
-                                <span class="file-icon">
-                                    @switch($material->file_type)
-                                        @case('pdf') 📄 @break
-                                        @case('xls') @case('xlsx') 📊 @break
-                                        @case('doc') @case('docx') 📝 @break
-                                        @case('zip') 📚 @break
-                                        @default 📎
-                                    @endswitch
-                                </span>
-                                <div>
-                                    <div class="file-name">{{ $material->title }}</div>
-                                    <div class="file-meta">
-                                        {{ strtoupper($material->file_type) }} • {{ $material->version }} • {{ $material->readable_size }} • {{ $material->created_at->format('M d, Y') }}
+                        @forelse($materials->get($typeKey, collect()) as $material)
+                            <div class="file-row">
+                                <div class="file-left">
+                                    <span class="file-icon">
+                                        @switch($material->file_type)
+                                            @case('pdf') 📄 @break
+                                            @case('xls') @case('xlsx') 📊 @break
+                                            @case('doc') @case('docx') 📝 @break
+                                            @case('zip') 📚 @break
+                                            @default 📎
+                                        @endswitch
+                                    </span>
+                                    <div>
+                                        <div class="file-name">{{ $material->title }}</div>
+                                        <div class="file-meta">
+                                            {{ strtoupper($material->file_type) }} • {{ $material->version }} • {{ $material->readable_size }} • {{ $material->created_at->format('M d, Y') }}
+                                        </div>
                                     </div>
                                 </div>
+                                <div class="file-actions">
+                                    <a class="btn-view" href="{{ Storage::url($material->file_path) }}" target="_blank">View</a>
+                                    <form method="POST" action="{{ url('/program-head/course-oversight/materials/' . $material->id) }}" onsubmit="return confirm('Delete this material?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-del" title="Delete">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
-                            <div class="file-actions">
-                                <a class="btn-view" href="{{ Storage::url($material->file_path) }}" target="_blank">View</a>
-                                <form method="POST" action="{{ url('/program-head/course-oversight/materials/' . $material->id) }}" onsubmit="return confirm('Delete this material?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn-del" title="Delete">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                                    </button>
-                                </form>
+                        @empty
+                            <div class="folder-empty">Nothing uploaded yet.</div>
+                        @endforelse
+                    </div>
+                @endforeach
+            @endif
+            </div>
+
+            {{-- ═══ OUTCOMES (OBE) ═══ --}}
+            <div class="tab-content" id="tab-outcomes">
+
+                {{-- Program Outcomes --}}
+                <div class="folder-panel" style="margin-bottom: 14px;">
+                    <div class="folder-panel-header">
+                        <span class="folder-icon">🎯</span>
+                        <div>
+                            <div class="folder-title">Program Outcomes (PO)</div>
+                            <div class="folder-sub">Applies to the whole {{ $myProgram }} program</div>
+                        </div>
+                        <button class="btn-upload" style="margin-left:auto;" type="button" onclick="openPoModal()">+ Add PO</button>
+                    </div>
+
+                    @forelse($programOutcomes as $po)
+                        <div class="file-row">
+                            <div class="file-left">
+                                <span class="outcome-code">{{ $po->code }}</span>
+                                <div class="file-name" style="font-weight:400;">{{ $po->description }}</div>
                             </div>
+                            <form method="POST" action="{{ url('/program-head/course-oversight/program-outcomes/' . $po->id) }}" onsubmit="return confirm('Remove this Program Outcome?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn-del" title="Delete">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                </button>
+                            </form>
                         </div>
                     @empty
-                        <div class="folder-empty">Wala pang materials na na-upload para sa course na ito.</div>
+                        <div class="folder-empty">No Program Outcomes defined yet.</div>
                     @endforelse
                 </div>
-            @endif
 
+                {{-- Course Outcomes --}}
+                @if(!$selectedCourse)
+                    <div class="folder-panel">
+                        <div class="folder-empty">📁 Select a course above to manage its Course Outcomes and CO–PO mapping.</div>
+                    </div>
+                @else
+                    <div class="folder-panel">
+                        <div class="folder-panel-header">
+                            <span class="folder-icon">🎯</span>
+                            <div>
+                                <div class="folder-title">Course Outcomes (CO) — {{ $selectedCourse->code }}</div>
+                                <div class="folder-sub">Core academic content faculty should keep consistent across sections</div>
+                            </div>
+                            <button class="btn-upload" style="margin-left:auto;" type="button" onclick="openCoModal()" {{ $programOutcomes->isEmpty() ? 'disabled title="Add a Program Outcome first"' : '' }}>+ Add CO</button>
+                        </div>
+
+                        @forelse($courseOutcomes as $co)
+                            <div class="co-card">
+                                <div class="co-card-top">
+                                    <div>
+                                        <span class="outcome-code">{{ $co->code }}</span>
+                                        <span class="file-name" style="font-weight:400;">{{ $co->description }}</span>
+                                    </div>
+                                    <form method="POST" action="{{ url('/program-head/course-oversight/course-outcomes/' . $co->id) }}" onsubmit="return confirm('Remove this Course Outcome?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-del" title="Delete">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+
+                                @if($co->sample_activities)
+                                    <div class="co-activities"><strong>Sample activities:</strong> {{ $co->sample_activities }}</div>
+                                @endif
+
+                                <div class="co-po-list">
+                                    <span class="co-po-label">Mapped POs:</span>
+                                    @foreach($programOutcomes as $po)
+                                        <form method="POST" action="{{ url('/program-head/course-oversight/course-outcomes/' . $co->id . '/mapping/' . $po->id) }}" style="display:inline;">
+                                            @csrf
+                                            <button type="submit" class="po-chip {{ $co->isMappedTo($po->id) ? 'mapped' : '' }}">{{ $po->code }}</button>
+                                        </form>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @empty
+                            <div class="folder-empty">No Course Outcomes defined yet for this course.</div>
+                        @endforelse
+                    </div>
+                @endif
+            </div>
+
+        </div>
+    </div>
+
+    {{-- Add Program Outcome Modal --}}
+    <div class="modal-overlay" id="po-overlay">
+        <div class="modal">
+            <form method="POST" action="{{ url('/program-head/course-oversight/program-outcomes') }}">
+                @csrf
+                <div class="modal-title">Add Program Outcome</div>
+                <div class="modal-row">
+                    <div class="modal-field">
+                        <label>Code <span style="color:#ef4444">*</span></label>
+                        <input type="text" name="code" placeholder="e.g. PO1" required>
+                    </div>
+                </div>
+                <div class="modal-field">
+                    <label>Description <span style="color:#ef4444">*</span></label>
+                    <textarea name="description" rows="3" placeholder="e.g. Apply core accounting principles to real-world business problems." required style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closePoModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Add Course Outcome Modal --}}
+    <div class="modal-overlay" id="co-overlay">
+        <div class="modal">
+            <form method="POST" action="{{ url('/program-head/course-oversight/course-outcomes') }}">
+                @csrf
+                <input type="hidden" name="course_id" value="{{ $selectedCourse->id ?? '' }}">
+                <div class="modal-title">Add Course Outcome</div>
+                <div class="modal-row">
+                    <div class="modal-field">
+                        <label>Code <span style="color:#ef4444">*</span></label>
+                        <input type="text" name="code" placeholder="e.g. CO1" required>
+                    </div>
+                </div>
+                <div class="modal-field">
+                    <label>Description <span style="color:#ef4444">*</span></label>
+                    <textarea name="description" rows="3" placeholder="e.g. Prepare basic financial statements." required style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
+                </div>
+                <div class="modal-field">
+                    <label>Sample Learning Activities <span style="font-size:10px;color:#999;">(optional)</span></label>
+                    <textarea name="sample_activities" rows="3" placeholder="e.g. Group case study preparing an income statement from raw ledger data." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeCoModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Add</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -258,6 +431,15 @@
                 @csrf
                 <input type="hidden" name="course_id" value="{{ $selectedCourse->id ?? '' }}">
                 <div class="modal-title">Upload Course Material</div>
+
+                <div class="modal-field">
+                    <label>Category <span style="color:#ef4444">*</span></label>
+                    <select name="type" required>
+                        @foreach(\App\Models\CourseMaterial::TYPES as $typeKey => $typeLabel)
+                            <option value="{{ $typeKey }}">{{ $typeLabel }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
                 <div class="modal-row">
                     <div class="modal-field">
@@ -294,6 +476,29 @@
         document.getElementById('upload-overlay').addEventListener('click', function(e) {
             if (e.target === this) closeUploadModal();
         });
+
+        function switchSubTab(tabName, el) {
+            document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+        }
+
+        function openPoModal() { document.getElementById('po-overlay').classList.add('open'); }
+        function closePoModal() { document.getElementById('po-overlay').classList.remove('open'); }
+        document.getElementById('po-overlay').addEventListener('click', function(e) { if (e.target === this) closePoModal(); });
+
+        function openCoModal() { document.getElementById('co-overlay').classList.add('open'); }
+        function closeCoModal() { document.getElementById('co-overlay').classList.remove('open'); }
+        document.getElementById('co-overlay').addEventListener('click', function(e) { if (e.target === this) closeCoModal(); });
+
+        // Re-open the Outcomes tab after a redirect if there was a validation error there
+        @if($errors->any())
+            document.addEventListener('DOMContentLoaded', function() {
+                var outcomesTab = document.querySelectorAll('.sub-tab')[1];
+                if (outcomesTab) switchSubTab('outcomes', outcomesTab);
+            });
+        @endif
     </script>
 
 </body>

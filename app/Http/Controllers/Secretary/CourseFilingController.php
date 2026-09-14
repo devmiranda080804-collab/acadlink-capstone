@@ -19,25 +19,25 @@ class CourseFilingController extends Controller
             ->orderBy('code')
             ->get();
 
-        // Para sa bawat course, tignan ang filing status
+        // For each course, check the filing status
         $filing = $courses->map(function ($course) {
-            // Materials ng course na ito
+            // Materials for this course
             $materials = CourseMaterial::where('course_id', $course->id)->get();
 
-            // Syllabus: may approved syllabus template sa program, o material na may "syllabus"
+            // Syllabus: has an approved syllabus template for the program, or a material containing "syllabus"
             $hasSyllabus = Template::where('program', $course->program)
                 ->where('type', 'syllabus')
                 ->where('status', 'approved')
                 ->exists()
                 || $materials->contains(fn($m) => stripos($m->title, 'syllabus') !== false);
 
-            // TOS: material na may "TOS" o "table of specification"
+            // TOS: a material containing "TOS" or "table of specification"
             $hasTos = $materials->contains(fn($m) =>
                 stripos($m->title, 'tos') !== false ||
                 stripos($m->title, 'specification') !== false
             );
 
-            // Exam Bank: material na may "exam", "bank", o "item"
+            // Exam Bank: a material containing "exam", "bank", or "item"
             $hasExamBank = $materials->contains(fn($m) =>
                 stripos($m->title, 'exam') !== false ||
                 stripos($m->title, 'bank') !== false ||

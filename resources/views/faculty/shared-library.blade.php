@@ -17,6 +17,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -75,8 +76,9 @@
         .modal-sub { font-size: 11.5px; color: #888; margin-bottom: 16px; }
         .modal-field { margin-bottom: 13px; }
         .modal-field label { display: block; font-size: 11.5px; font-weight: 700; color: #333; margin-bottom: 4px; }
-        .modal-field input[type=text], .modal-field input[type=file], .modal-field textarea { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; color: #333; outline: none; font-family: Arial, sans-serif; }
-        .modal-field input:focus, .modal-field textarea:focus { border-color: #0f2557; }
+        .modal-field input[type=text], .modal-field input[type=file], .modal-field textarea, .modal-field select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; color: #333; outline: none; font-family: Arial, sans-serif; }
+        .modal-field input:focus, .modal-field textarea:focus, .modal-field select:focus { border-color: #0f2557; }
+        .modal-field select { appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E") no-repeat right 10px center; cursor: pointer; }
         .modal-field textarea { resize: vertical; min-height: 60px; }
         .modal-hint { font-size: 10.5px; color: #999; margin-top: 4px; }
         .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
@@ -101,7 +103,7 @@
             <li class="{{ request()->is('faculty/dashboard') ? 'active' : '' }}"><a href="{{ url('/faculty/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
             @endif
             @if($navPermissions['my-template'] ?? true)
-            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>My Template</a></li>
+            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates</a></li>
             @endif
             @if($navPermissions['exam-generator'] ?? true)
             <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}"><a href="{{ url('/faculty/exam-generator') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Exam Generator</a></li>
@@ -119,7 +121,11 @@
             <li class="{{ request()->is('faculty/calendar*') ? 'active' : '' }}"><a href="{{ url('/faculty/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
             @endif
             @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}"><a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a></li>
+            <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}"><a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
+                @if(($unreadAnnouncementsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+                @endif
+            </a></li>
             @endif
             @if($navPermissions['submissions'] ?? true)
             <li class="{{ request()->is('faculty/submissions*') ? 'active' : '' }}"><a href="{{ url('/faculty/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
@@ -163,7 +169,7 @@
             <div class="page-header">
                 <div>
                     <div class="page-title">Shared Library</div>
-                    <div class="page-sub">Mga resources para sa program mo: <strong>{{ $myProgram }}</strong></div>
+                    <div class="page-sub">Resources for your program: <strong>{{ $myProgram }}</strong></div>
                 </div>
                 <button class="btn-share" onclick="openShareModal()">
                     <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -213,7 +219,7 @@
                         </div>
                     </div>
                 @empty
-                    <div class="empty-state">Wala pang resources sa filter na ito. Mag-share ng resource para makatulong sa kapwa faculty!</div>
+                    <div class="empty-state">No resources yet for this filter. Share a resource to help fellow faculty!</div>
                 @endforelse
             </div>
         </div>
@@ -225,7 +231,16 @@
             <form method="POST" action="{{ url('/faculty/shared-library') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-title">Share a Resource</div>
-                <div class="modal-sub">Makikita ito ng lahat ng faculty sa program na <strong>{{ $myProgram }}</strong>.</div>
+                <div class="modal-sub">This will be visible to all faculty in the <strong>{{ $myProgram }}</strong> program.</div>
+
+                <div class="modal-field">
+                    <label>Category <span style="color:#ef4444">*</span></label>
+                    <select name="type" required>
+                        @foreach(\App\Models\SharedResource::TYPES as $typeKey => $typeLabel)
+                            <option value="{{ $typeKey }}">{{ $typeLabel }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
                 <div class="modal-field">
                     <label>Title <span style="color:#ef4444">*</span></label>
@@ -234,7 +249,7 @@
 
                 <div class="modal-field">
                     <label>Description</label>
-                    <textarea name="description" placeholder="Maikling paliwanag tungkol sa resource..."></textarea>
+                    <textarea name="description" placeholder="Brief description of the resource..."></textarea>
                 </div>
 
                 <div class="modal-field">

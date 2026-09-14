@@ -19,6 +19,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -68,7 +69,20 @@
         .file-meta { font-size: 10.5px; color: #aaa; }
         .btn-view { background: #fff; border: 1px solid #d0d0d0; color: #333; font-size: 11.5px; font-weight: 600; padding: 5px 16px; border-radius: 4px; cursor: pointer; text-decoration: none; }
         .btn-view:hover { background: #f5f5f5; }
+        .file-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .btn-del { background: none; border: none; color: #ccc; cursor: pointer; padding: 5px 8px; border-radius: 4px; transition: color 0.15s, background 0.15s; }
+        .btn-del:hover { color: #ef4444; background: #fee2e2; }
+        .btn-del svg { width: 15px; height: 15px; }
         .folder-empty { text-align: center; padding: 36px; color: #bbb; font-size: 12.5px; }
+
+        .outcome-code { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 9px; border-radius: 10px; background: #eef2ff; color: #0f2557; margin-right: 8px; flex-shrink: 0; }
+        .co-card { padding: 13px 18px; border-bottom: 1px solid #f5f5f5; }
+        .co-card:last-child { border-bottom: none; }
+        .co-activities { font-size: 11px; color: #777; margin-top: 8px; line-height: 1.5; background: #fafbff; border-radius: 5px; padding: 7px 10px; }
+        .co-po-list { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+        .co-po-label { font-size: 10.5px; color: #999; font-weight: 600; margin-right: 2px; }
+        .po-chip { font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: 10px; border: 1px solid #ddd; background: #fff; color: #999; }
+        .po-chip.mapped { background: #0f2557; color: #fff; border-color: #0f2557; cursor: default; }
 
         /* Collaboration */
         .collab-layout { display: grid; grid-template-columns: 240px 1fr 220px; gap: 16px; align-items: start; }
@@ -126,6 +140,7 @@
         .modal-field label { display: block; font-size: 11.5px; font-weight: 700; color: #333; margin-bottom: 4px; }
         .modal-field input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; outline: none; }
         .modal-field input:focus { border-color: #0f2557; }
+        .modal-hint { font-size: 10.5px; color: #999; margin-top: -6px; margin-bottom: 14px; line-height: 1.4; }
         .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
         .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 5px; cursor: pointer; }
         .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
@@ -149,7 +164,7 @@
             <li class="{{ request()->is('faculty/dashboard') ? 'active' : '' }}"><a href="{{ url('/faculty/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
             @endif
             @if($navPermissions['my-template'] ?? true)
-            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>My Template</a></li>
+            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates</a></li>
             @endif
             @if($navPermissions['exam-generator'] ?? true)
             <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}"><a href="{{ url('/faculty/exam-generator') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Exam Generator</a></li>
@@ -167,7 +182,11 @@
             <li class="{{ request()->is('faculty/calendar*') ? 'active' : '' }}"><a href="{{ url('/faculty/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
             @endif
             @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}"><a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a></li>
+            <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}"><a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
+                @if(($unreadAnnouncementsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+                @endif
+            </a></li>
             @endif
             @if($navPermissions['submissions'] ?? true)
             <li class="{{ request()->is('faculty/submissions*') ? 'active' : '' }}"><a href="{{ url('/faculty/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
@@ -222,6 +241,7 @@
 
             <div class="sub-tabs">
                 <span class="sub-tab active" onclick="switchSubTab('master-folder', this)">Master Folder</span>
+                <span class="sub-tab" onclick="switchSubTab('outcomes', this)">Outcomes (OBE)</span>
                 <span class="sub-tab" onclick="switchSubTab('collaboration', this)">Collaboration</span>
             </div>
 
@@ -230,35 +250,75 @@
                 @if(!$selectedCourse)
                     <div class="folder-panel"><div class="folder-empty">📁 Please select a course above to view its master folder.</div></div>
                 @else
+                    @foreach(\App\Models\CourseMaterial::TYPES as $typeKey => $typeLabel)
+                        <div class="folder-panel" style="margin-bottom: 14px;">
+                            <div class="folder-panel-header">
+                                <span class="folder-icon">📁</span>
+                                <div>
+                                    <div class="folder-title">{{ $typeLabel }}</div>
+                                    <div class="folder-sub">{{ $selectedCourse->code }} — read only, same for every section/instructor</div>
+                                </div>
+                            </div>
+                            @forelse($materials->get($typeKey, collect()) as $material)
+                                <div class="file-row">
+                                    <div class="file-left">
+                                        <span class="file-icon">
+                                            @switch($material->file_type)
+                                                @case('pdf') 📄 @break
+                                                @case('xls') @case('xlsx') 📊 @break
+                                                @case('doc') @case('docx') 📝 @break
+                                                @case('zip') 📚 @break
+                                                @default 📎
+                                            @endswitch
+                                        </span>
+                                        <div>
+                                            <div class="file-name">{{ $material->title }}</div>
+                                            <div class="file-meta">{{ strtoupper($material->file_type) }} • {{ $material->version }} • {{ $material->readable_size }} • Updated {{ $material->created_at->format('M d, Y') }}</div>
+                                        </div>
+                                    </div>
+                                    <a class="btn-view" href="{{ Storage::url($material->file_path) }}" target="_blank">View</a>
+                                </div>
+                            @empty
+                                <div class="folder-empty">Nothing uploaded yet.</div>
+                            @endforelse
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+
+            {{-- ═══ OUTCOMES (OBE) ═══ --}}
+            <div class="tab-content" id="tab-outcomes">
+                @if(!$selectedCourse)
+                    <div class="folder-panel"><div class="folder-empty">🎯 Please select a course above to view its outcomes.</div></div>
+                @else
                     <div class="folder-panel">
                         <div class="folder-panel-header">
-                            <span class="folder-icon">📁</span>
+                            <span class="folder-icon">🎯</span>
                             <div>
-                                <div class="folder-title">{{ $selectedCourse->code }} – Official Course Materials</div>
-                                <div class="folder-sub">Read only access to master course folder</div>
+                                <div class="folder-title">{{ $selectedCourse->code }} – Course Outcomes</div>
+                                <div class="folder-sub">Keep this course's core content consistent across sections/instructors</div>
                             </div>
                         </div>
-                        @forelse($materials as $material)
-                            <div class="file-row">
-                                <div class="file-left">
-                                    <span class="file-icon">
-                                        @switch($material->file_type)
-                                            @case('pdf') 📄 @break
-                                            @case('xls') @case('xlsx') 📊 @break
-                                            @case('doc') @case('docx') 📝 @break
-                                            @case('zip') 📚 @break
-                                            @default 📎
-                                        @endswitch
-                                    </span>
-                                    <div>
-                                        <div class="file-name">{{ $material->title }}</div>
-                                        <div class="file-meta">{{ strtoupper($material->file_type) }} • {{ $material->version }} • {{ $material->readable_size }} • Updated {{ $material->created_at->format('M d, Y') }}</div>
-                                    </div>
+                        @forelse($courseOutcomes as $co)
+                            <div class="co-card">
+                                <div>
+                                    <span class="outcome-code">{{ $co->code }}</span>
+                                    <span class="file-name" style="font-weight:400;">{{ $co->description }}</span>
                                 </div>
-                                <a class="btn-view" href="{{ Storage::url($material->file_path) }}" target="_blank">View</a>
+                                @if($co->sample_activities)
+                                    <div class="co-activities"><strong>Sample activities:</strong> {{ $co->sample_activities }}</div>
+                                @endif
+                                @if($co->programOutcomes->isNotEmpty())
+                                    <div class="co-po-list">
+                                        <span class="co-po-label">Mapped POs:</span>
+                                        @foreach($co->programOutcomes as $po)
+                                            <span class="po-chip mapped" title="{{ $po->description }}">{{ $po->code }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
                         @empty
-                            <div class="folder-empty">Wala pang materials na na-upload para sa course na ito.</div>
+                            <div class="folder-empty">No Course Outcomes have been defined yet for this course.</div>
                         @endforelse
                     </div>
                 @endif
@@ -268,43 +328,19 @@
             <div class="tab-content" id="tab-collaboration">
                 @if(!$selectedCourse)
                     <div class="folder-panel"><div class="folder-empty">🤝 Please select a course above to start collaborating.</div></div>
+                @elseif(!auth()->user()->google_email)
+                    <div class="folder-panel"><div class="folder-empty">🤝 Ask your Program Head, Secretary, or Admin to add your Google email to your account before you can use shared documents.</div></div>
                 @else
-                    <div class="collab-layout">
-                        <div class="docs-panel">
-                            <div class="docs-header">
-                                <span class="title">Documents</span>
-                                <button class="btn-new-doc" onclick="openNewDocModal()">+ New</button>
+                    <div class="folder-panel">
+                        <div class="folder-panel-header">
+                            <span class="folder-icon">🤝</span>
+                            <div>
+                                <div class="folder-title">{{ $selectedCourse->code }} – Shared Documents</div>
+                                <div class="folder-sub">Live-edited together in Google Docs — same content, every instructor of this course</div>
                             </div>
-                            <div id="docs-list"><div class="docs-empty">Loading...</div></div>
+                            <button class="btn-new-doc" style="margin-left:auto;" onclick="openNewDocModal()">+ New Document</button>
                         </div>
-
-                        <div class="editor-panel">
-                            <div class="editor-toolbar">
-                                <span class="editor-title" id="editor-title">No document selected</span>
-                                <div style="display:flex; align-items:center; gap:10px;">
-                                    <button class="btn-toolbar" id="btn-share" onclick="shareDocument()" style="display:none;">
-                                        <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                                        Share
-                                    </button>
-                                    <button class="btn-toolbar" id="btn-export" onclick="exportDocument()" style="display:none;">
-                                        <svg style="width:12px;height:12px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                        Export
-                                    </button>
-                                    <span class="save-status" id="save-status"></span>
-                                </div>
-                            </div>
-                            <div class="editor-empty" id="editor-empty">Pumili o gumawa ng document sa kaliwa para magsimula.</div>
-                            <textarea class="editor-textarea" id="editor-textarea" style="display:none;" placeholder="Simulan mag-type dito..." oninput="onContentChange()"></textarea>
-                        </div>
-
-                        <div class="side-panel">
-                            <div class="side-tabs">
-                                <div class="side-tab active" onclick="switchSideTab('presence', this)">Editing</div>
-                                <div class="side-tab" onclick="switchSideTab('versions', this)">History</div>
-                            </div>
-                            <div class="side-tab-content active" id="side-presence"><div class="presence-empty">Walang document na bukas.</div></div>
-                            <div class="side-tab-content" id="side-versions"><div class="side-empty">Walang document na bukas.</div></div>
-                        </div>
+                        <div id="docs-list"><div class="docs-empty">Loading...</div></div>
                     </div>
                 @endif
             </div>
@@ -319,6 +355,7 @@
                 <label>Document Title</label>
                 <input type="text" id="new-doc-title" placeholder="e.g. Lesson Plan – Week 1">
             </div>
+            <div class="modal-hint">This creates a real Google Doc and shares it with every instructor who has taught this course.</div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeNewDocModal()">Cancel</button>
                 <button class="btn-save" onclick="createDocument()">Create</button>
@@ -332,14 +369,7 @@
         const CSRF = document.querySelector('meta[name="csrf-token"]').content;
         const COURSE_ID = {{ $selectedCourse->id ?? 'null' }};
         const BASE = '{{ url('/faculty') }}';
-
-        let currentDocId = null;
-        let currentDocTitle = '';
-        let saveTimer = null;
-        let pollTimer = null;
-        let heartbeatTimer = null;
-        let lastSavedContent = '';
-        let lastKnownUpdatedAt = null;
+        const MY_ID = {{ auth()->id() }};
 
         function switchSubTab(tabName, el) {
             document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
@@ -347,193 +377,60 @@
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById('tab-' + tabName).classList.add('active');
             if (tabName === 'collaboration' && COURSE_ID) loadDocuments();
-            else stopTimers();
-        }
-
-        function switchSideTab(tabName, el) {
-            document.querySelectorAll('.side-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            document.querySelectorAll('.side-tab-content').forEach(c => c.classList.remove('active'));
-            document.getElementById('side-' + tabName).classList.add('active');
-            if (tabName === 'versions' && currentDocId) loadVersions();
         }
 
         async function loadDocuments() {
             if (!COURSE_ID) return;
+            const list = document.getElementById('docs-list');
+            if (!list) return; // Google email not set — panel isn't rendered
             const res = await fetch(`${BASE}/collab/courses/${COURSE_ID}/documents`, { headers: { 'Accept': 'application/json' } });
             const docs = await res.json();
-            const list = document.getElementById('docs-list');
-            if (docs.length === 0) { list.innerHTML = '<div class="docs-empty">Wala pang documents.<br>Gumawa ng bago.</div>'; return; }
+            if (docs.length === 0) { list.innerHTML = '<div class="docs-empty">No shared documents yet.<br>Create a new one.</div>'; return; }
             list.innerHTML = '';
             docs.forEach(doc => {
                 const item = document.createElement('div');
-                item.className = 'doc-list-item' + (doc.id === currentDocId ? ' active' : '');
-                item.onclick = () => openDocument(doc.id);
-                const editor = doc.last_editor ? doc.last_editor.name : 'No edits yet';
-                item.innerHTML = `<div class="doc-item-title">${escapeHtml(doc.title)}</div><div class="doc-item-meta">Last edit: ${escapeHtml(editor)}</div>`;
+                item.className = 'file-row';
+                const creator = doc.creator ? doc.creator.name : 'Unknown';
+                const deleteBtn = doc.created_by === MY_ID
+                    ? `<button type="button" class="btn-del" title="Delete" onclick="deleteDocument(${doc.id}, '${escapeHtml(doc.title).replace(/'/g, "\\'")}')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                       </button>`
+                    : '';
+                item.innerHTML = `
+                    <div class="file-left">
+                        <span class="file-icon">🤝</span>
+                        <div>
+                            <div class="file-name">${escapeHtml(doc.title)}</div>
+                            <div class="file-meta">Created by ${escapeHtml(creator)}</div>
+                        </div>
+                    </div>
+                    <div class="file-actions">
+                        <a class="btn-view" href="${doc.google_edit_url}" target="_blank" rel="noopener">Open in Google Docs ↗</a>
+                        ${deleteBtn}
+                    </div>
+                `;
                 list.appendChild(item);
             });
         }
-
-        async function openDocument(docId) {
-            currentDocId = docId;
-            stopTimers();
-            const res = await fetch(`${BASE}/collab/documents/${docId}`, { headers: { 'Accept': 'application/json' } });
-            const doc = await res.json();
-
-            currentDocTitle = doc.title;
-            document.getElementById('editor-title').textContent = doc.title;
-            document.getElementById('editor-empty').style.display = 'none';
-            document.getElementById('btn-share').style.display = 'flex';
-            document.getElementById('btn-export').style.display = 'flex';
-
-            const textarea = document.getElementById('editor-textarea');
-            textarea.style.display = 'block';
-            textarea.value = doc.content || '';
-            lastSavedContent = doc.content || '';
-            lastKnownUpdatedAt = doc.updated_at;
-
-            setSaveStatus('saved', 'Saved');
-            loadDocuments();
-            startPolling();
-            startHeartbeat();
-        }
-
-        function onContentChange() {
-            setSaveStatus('saving', 'Saving...');
-            clearTimeout(saveTimer);
-            saveTimer = setTimeout(() => saveContent(false), 1500);
-        }
-
-        async function saveContent(saveVersion) {
-            if (!currentDocId) return;
-            const content = document.getElementById('editor-textarea').value;
-            const res = await fetch(`${BASE}/collab/documents/${currentDocId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-                body: JSON.stringify({ content: content, save_version: saveVersion })
-            });
-            const data = await res.json();
-            lastSavedContent = content;
-            lastKnownUpdatedAt = data.updated_at;
-            setSaveStatus('saved', 'Saved');
-        }
-
-        function startPolling() {
-            pollTimer = setInterval(async () => {
-                if (!currentDocId) return;
-                const textarea = document.getElementById('editor-textarea');
-                if (textarea.value !== lastSavedContent) return;
-                const res = await fetch(`${BASE}/collab/documents/${currentDocId}`, { headers: { 'Accept': 'application/json' } });
-                const doc = await res.json();
-                if (doc.updated_at !== lastKnownUpdatedAt && doc.content !== textarea.value) {
-                    textarea.value = doc.content || '';
-                    lastSavedContent = doc.content || '';
-                    lastKnownUpdatedAt = doc.updated_at;
-                    setSaveStatus('saved', 'Updated by ' + (doc.last_edited_by || 'someone'));
-                }
-            }, 3500);
-        }
-
-        function startHeartbeat() {
-            sendHeartbeat();
-            heartbeatTimer = setInterval(sendHeartbeat, 4000);
-        }
-
-        async function sendHeartbeat() {
-            if (!currentDocId) return;
-            const res = await fetch(`${BASE}/collab/documents/${currentDocId}/heartbeat`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
-            });
-            const data = await res.json();
-            renderPresence(data.active);
-        }
-
-        function renderPresence(names) {
-            const panel = document.getElementById('side-presence');
-            if (!names || names.length === 0) { panel.innerHTML = '<div class="presence-empty">Walang ibang nag-eedit.</div>'; return; }
-            panel.innerHTML = names.map(n => `<div class="presence-item"><span class="presence-dot"></span>${escapeHtml(n)}</div>`).join('');
-        }
-
-        async function loadVersions() {
-            if (!currentDocId) return;
-            const res = await fetch(`${BASE}/collab/documents/${currentDocId}/versions`, { headers: { 'Accept': 'application/json' } });
-            const versions = await res.json();
-            const panel = document.getElementById('side-versions');
-            if (versions.length === 0) {
-                panel.innerHTML = '<div class="side-empty">Wala pang saved versions.</div>' + saveVersionButton();
-                return;
-            }
-            panel.innerHTML = versions.map(v => `
-                <div class="version-item">
-                    <div class="version-editor">${escapeHtml(v.editor)}</div>
-                    <div class="version-time">${escapeHtml(v.created_at)}</div>
-                    <div class="version-preview">${escapeHtml(v.preview || '(empty)')}</div>
-                    <button class="btn-restore" onclick="restoreVersion(${v.id})">Restore</button>
-                </div>`).join('') + saveVersionButton();
-        }
-
-        function saveVersionButton() {
-            return '<button class="btn-save" style="width:100%;margin-top:8px;" onclick="saveVersionSnapshot()">Save Current as Version</button>';
-        }
-
-        async function saveVersionSnapshot() {
-            await saveContent(true);
-            loadVersions();
-            showToast('Version saved!');
-        }
-
-        async function restoreVersion(versionId) {
-            if (!confirm('I-restore ang version na ito? Mapapalitan ang current content.')) return;
-            const res = await fetch(`${BASE}/collab/documents/${currentDocId}/versions/${versionId}/restore`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
-            });
-            const data = await res.json();
-            document.getElementById('editor-textarea').value = data.content || '';
-            lastSavedContent = data.content || '';
-            setSaveStatus('saved', 'Restored');
-            showToast('Version restored!');
-        }
-
-        // ── Export as .docx (backend) ──
-        function exportDocument() {
-            if (!currentDocId) return;
-            window.location.href = `${BASE}/collab/documents/${currentDocId}/export`;
-            showToast('Preparing your Word document...');
-        }
-
-        // ── Share: copy link ──
-        function shareDocument() {
-            if (!currentDocId) return;
-            const link = `${window.location.origin}${BASE}/course-coordination?course_id=${COURSE_ID}&doc=${currentDocId}`;
-            navigator.clipboard.writeText(link).then(() => {
-                showToast('Link copied! Ibahagi ito sa kapwa faculty.');
-            }).catch(() => {
-                showToast('Hindi ma-copy ang link. Subukan ulit.');
-            });
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2500);
-        }
-
-        function setSaveStatus(cls, text) {
-            const el = document.getElementById('save-status');
-            el.className = 'save-status ' + cls;
-            el.innerHTML = '<span class="save-dot"></span>' + text;
-        }
-
-        function stopTimers() { clearInterval(pollTimer); clearInterval(heartbeatTimer); }
 
         function escapeHtml(str) {
             const div = document.createElement('div');
             div.textContent = str == null ? '' : str;
             return div.innerHTML;
+        }
+
+        async function deleteDocument(docId, title) {
+            if (!confirm(`Delete "${title}"? This removes it from Google Drive too — other instructors will lose access.`)) return;
+            const res = await fetch(`${BASE}/collab/documents/${docId}`, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.message || 'Could not delete the document.');
+                return;
+            }
+            loadDocuments();
         }
 
         function openNewDocModal() {
@@ -544,36 +441,22 @@
 
         async function createDocument() {
             const title = document.getElementById('new-doc-title').value.trim();
-            if (!title) { alert('Maglagay ng title.'); return; }
+            if (!title) { alert('Please enter a title.'); return; }
             const res = await fetch(`${BASE}/collab/courses/${COURSE_ID}/documents`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
                 body: JSON.stringify({ title: title })
             });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                alert(err.message || 'Could not create the document.');
+                return;
+            }
             const doc = await res.json();
             closeNewDocModal();
             await loadDocuments();
-            openDocument(doc.id);
+            window.open(`https://docs.google.com/document/d/${doc.google_doc_id}/edit`, '_blank');
         }
-
-        // Auto-open shared document mula sa ?doc= sa URL
-        document.addEventListener('DOMContentLoaded', function() {
-            const params = new URLSearchParams(window.location.search);
-            const sharedDocId = params.get('doc');
-            if (sharedDocId && COURSE_ID) {
-                const collabTab = document.querySelectorAll('.sub-tab')[1];
-                if (collabTab) {
-                    switchSubTab('collaboration', collabTab);
-                    setTimeout(() => openDocument(parseInt(sharedDocId)), 400);
-                }
-            }
-        });
-
-        window.addEventListener('beforeunload', function() {
-            if (currentDocId && document.getElementById('editor-textarea').value !== lastSavedContent) {
-                navigator.sendBeacon(`${BASE}/collab/documents/${currentDocId}`);
-            }
-        });
     </script>
 
 </body>

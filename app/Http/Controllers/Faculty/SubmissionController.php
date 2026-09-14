@@ -54,7 +54,7 @@ class SubmissionController extends Controller
 
         $isLate = $requirement->deadline->isPast() && !$requirement->deadline->isToday();
 
-        // Update or create — kasi isa lang na pasa per requirement per faculty
+        // Update or create — only one submission per requirement per faculty
         Submission::updateOrCreate(
             ['requirement_id' => $requirement->id, 'faculty_id' => auth()->id()],
             [

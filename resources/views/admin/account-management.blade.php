@@ -18,6 +18,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -68,6 +69,7 @@
 
         .role-program_head { color: #0891b2; font-weight: 600; }
         .role-secretary { color: #7c3aed; font-weight: 600; }
+        .role-faculty { color: #16a34a; font-weight: 600; }
 
         .action-btns { display: flex; align-items: center; gap: 4px; }
         .btn-icon { background: none; border: none; cursor: pointer; color: #888; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: color 0.15s, background 0.15s; }
@@ -141,12 +143,20 @@
     <li class="{{ request()->is('admin/template-approvals*') ? 'active' : '' }}">
         <a href="{{ url('/admin/template-approvals') }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-            Template Approvals
+            Templates
         </a>
     </li>
-    @if($navPermissions['course-assignment'] ?? true)
-    <li class="{{ request()->is('admin/course-assignment*') ? 'active' : '' }}"><a href="{{ url('/admin/course-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Course Assignment</a></li>
     @endif
+    @if($navPermissions['cms'] ?? true)
+    <li class="{{ request()->is('admin/cms*') ? 'active' : '' }}">
+        <a href="{{ url('/admin/cms') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            CMS
+        </a>
+    </li>
+    @endif
+    @if($navPermissions['program-assignment'] ?? true)
+    <li class="{{ request()->is('admin/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/admin/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
     @endif
     @if($navPermissions['audit-logs'] ?? true)
     <li class="{{ request()->is('admin/audit-logs*') ? 'active' : '' }}">
@@ -161,6 +171,9 @@
         <a href="{{ url('/admin/announcements') }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
             Announcements
+            @if(($unreadAnnouncementsCount ?? 0) > 0)
+                <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+            @endif
         </a>
     </li>
     @endif
@@ -204,10 +217,6 @@
             @if(session('success'))
                 <div class="alert-success">
                     <strong class="title">{{ session('success') }}</strong>
-                    @if(session('employee_id'))
-                        Employee ID: <strong>{{ session('employee_id') }}</strong><br>
-                        Temporary Password: <strong>{{ session('temp_password') }}</strong>
-                    @endif
                 </div>
             @endif
 
@@ -226,6 +235,8 @@
                        href="{{ url('/admin/account-management?role=program_head') }}">Program Head</a>
                     <a class="role-tab {{ request('role') == 'secretary' ? 'active' : '' }}"
                        href="{{ url('/admin/account-management?role=secretary') }}">Secretary</a>
+                    <a class="role-tab {{ request('role') == 'faculty' ? 'active' : '' }}"
+                       href="{{ url('/admin/account-management?role=faculty') }}">Faculty</a>
                 </div>
 
                 {{-- Active/Archived tabs --}}
@@ -245,7 +256,7 @@
                             <input type="hidden" name="program" value="{{ request('program') }}">
                             <input type="hidden" name="academic_year" value="{{ request('academic_year') }}">
                             <input type="text" name="search" value="{{ request('search') }}"
-                                placeholder="Search by name or employee id" onkeyup="this.form.submit()">
+                                placeholder="Search by name or email" onkeyup="this.form.submit()">
                         </form>
                     </div>
 
@@ -279,7 +290,6 @@
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Employee ID</th>
                             <th>Role</th>
                             <th>Program</th>
                             <th>Email</th>
@@ -291,7 +301,6 @@
                         @forelse($accounts as $account)
                             <tr>
                                 <td>{{ $account->name }}</td>
-                                <td>{{ $account->employee_id }}</td>
                                 <td><span class="role-{{ $account->role }}">{{ ucwords(str_replace('_',' ', $account->role)) }}</span></td>
                                 <td>{{ $account->role === 'secretary' ? 'All Programs' : $account->program }}</td>
                                 <td>{{ $account->email }}</td>
@@ -305,7 +314,8 @@
                                                     '{{ addslashes($account->name) }}',
                                                     '{{ $account->role }}',
                                                     '{{ $account->program }}',
-                                                    '{{ $account->academic_year }}'
+                                                    '{{ $account->academic_year }}',
+                                                    '{{ addslashes($account->google_email ?? '') }}'
                                                 )">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                             </button>
@@ -324,7 +334,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="empty-row">No accounts found</td>
+                                <td colspan="6" class="empty-row">No accounts found</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -378,6 +388,7 @@
                             <option value="" disabled selected>Select role</option>
                             <option value="program_head">Program Head</option>
                             <option value="secretary">Secretary</option>
+                            <option value="faculty">Faculty</option>
                         </select>
                     </div>
                 </div>
@@ -406,6 +417,11 @@
                     <input type="email" id="f-email" name="email" placeholder="email@cbma.edu">
                 </div>
 
+                <div class="modal-field">
+                    <label>Google Email <span style="font-size:10px;color:#999;">(optional — needed for shared Google Docs)</span></label>
+                    <input type="email" id="f-google-email" name="google_email" placeholder="personal@gmail.com">
+                </div>
+
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn-save">Save</button>
@@ -419,7 +435,7 @@
         <div class="modal delete-modal" style="width:380px;">
             <div class="modal-title">Archive Account</div>
             <p>Are you sure you want to archive <strong id="archive-name"></strong>?</p>
-            <p style="color:#888;">Hindi na siya makaka-login habang archived, pero pwede mo siyang i-restore anumang oras.</p>
+            <p style="color:#888;">They won't be able to log in while archived, but you can restore them at any time.</p>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeArchiveModal()">Cancel</button>
                 <button type="button" class="btn-save btn-danger" onclick="confirmArchive()">Archive</button>
@@ -463,7 +479,7 @@
         }
 
         function clearForm() {
-            ['f-firstname', 'f-lastname', 'f-email'].forEach(function (id) {
+            ['f-firstname', 'f-lastname', 'f-email', 'f-google-email'].forEach(function (id) {
                 document.getElementById(id).value = '';
             });
             document.getElementById('f-role').selectedIndex = 0;
@@ -481,13 +497,13 @@
             if (e.target === this) closeModal();
         });
 
-        function openEditModal(id, name, role, program, year) {
+        function openEditModal(id, name, role, program, year, googleEmail) {
             document.getElementById('modal-overlay').classList.add('open');
             document.getElementById('modal-title').innerText = 'Edit Account';
             document.getElementById('modal-error').style.display = 'none';
 
-            // FIX: gamitin ang indexOf para hanapin ang UNANG space lang
-            // kaya kahit "Jun Rosse Miranda" ay magiging firstname="Jun", lastname="Rosse Miranda"
+            // FIX: use indexOf to find only the FIRST space
+            // so even "Jun Rosse Miranda" becomes firstname="Jun", lastname="Rosse Miranda"
             var spaceIndex = name.indexOf(' ');
             if (spaceIndex !== -1) {
                 document.getElementById('f-firstname').value = name.substring(0, spaceIndex);
@@ -500,9 +516,10 @@
             document.getElementById('f-role').value = role;
             document.getElementById('f-program').value = program;
             document.getElementById('f-year').value = year;
+            document.getElementById('f-google-email').value = googleEmail || '';
             toggleProgramField(role);
 
-            // Itago ang Email field sa edit — hindi na ito pwedeng palitan
+            // Hide the Email field on edit — this can no longer be changed
             document.getElementById('email-field-wrap').style.display = 'none';
             document.getElementById('f-email').required = false;
 

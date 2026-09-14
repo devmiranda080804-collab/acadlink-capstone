@@ -19,6 +19,7 @@ use App\Http\Controllers\Faculty\CollaborationController;
 use App\Http\Controllers\Faculty\TemplateController;
 use App\Http\Controllers\ProgramHead\TemplateReviewController;
 use App\Http\Controllers\Admin\TemplateApprovalController;
+use App\Http\Controllers\Admin\TemplateElementsController;
 use App\Http\Controllers\Secretary\TemplateDistributionController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -30,7 +31,9 @@ use App\Http\Controllers\Secretary\CourseFilingController;
 use App\Http\Controllers\Faculty\SharedLibraryController;
 use App\Http\Controllers\ProgramHead\SubmissionController as PHSubmissionController;
 use App\Http\Controllers\Faculty\SubmissionController as FacultySubmissionController;
-use App\Http\Controllers\CourseAssignmentController;
+use App\Http\Controllers\Faculty\ExamGeneratorController;
+use App\Http\Controllers\Faculty\TemplateGuideController;
+use App\Http\Controllers\ProgramAssignmentController;
 use App\Http\Controllers\Admin\AuditLogController;
 
 /*
@@ -65,10 +68,14 @@ Route::post('/change-password', [ChangePasswordController::class, 'update']);
 Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::get('/dashboard', [FacultyDashboardController::class, 'index']);
     Route::get('/my-template', [TemplateController::class, 'index']);
-    Route::post('/my-template', [TemplateController::class, 'store']);
-    Route::put('/my-template/{template}', [TemplateController::class, 'update']);
-    Route::delete('/my-template/{template}', [TemplateController::class, 'destroy']);
-    Route::get('/exam-generator', fn () => view('faculty.exam-generator'));
+    Route::post('/my-template/{template}/copy', [TemplateController::class, 'makeCopy']);
+    Route::get('/exam-generator', [ExamGeneratorController::class, 'index']);
+    Route::post('/exam-generator', [ExamGeneratorController::class, 'store']);
+    Route::get('/exam-generator/{exam}', [ExamGeneratorController::class, 'show']);
+    Route::put('/exam-generator/{exam}', [ExamGeneratorController::class, 'update']);
+    Route::get('/exam-generator/{exam}/tos', [ExamGeneratorController::class, 'tos']);
+    Route::post('/exam-generator/{exam}/finalize', [ExamGeneratorController::class, 'finalize']);
+    Route::delete('/exam-generator/{exam}', [ExamGeneratorController::class, 'destroy']);
     Route::get('/shared-library', [SharedLibraryController::class, 'index']);
     Route::post('/shared-library', [SharedLibraryController::class, 'store']);
     Route::delete('/shared-library/{resource}', [SharedLibraryController::class, 'destroy']);
@@ -78,17 +85,14 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::get('/announcements', [FacultyAnnouncementController::class, 'index']);
     Route::get('/submissions', [FacultySubmissionController::class, 'index']);
     Route::post('/submissions/{requirement}', [FacultySubmissionController::class, 'store']);
-    Route::get('/cms', fn () => view('faculty.cms'));
+    Route::get('/cms', [TemplateGuideController::class, 'index']);
 
-    // Collaboration API
+    // Collaboration API (Google Docs-backed)
     Route::get('/collab/courses/{course}/documents', [CollaborationController::class, 'index']);
     Route::post('/collab/courses/{course}/documents', [CollaborationController::class, 'store']);
     Route::get('/collab/documents/{document}', [CollaborationController::class, 'show']);
-    Route::put('/collab/documents/{document}', [CollaborationController::class, 'update']);
-    Route::get('/collab/documents/{document}/versions', [CollaborationController::class, 'versions']);
-    Route::post('/collab/documents/{document}/versions/{version}/restore', [CollaborationController::class, 'restoreVersion']);
-    Route::post('/collab/documents/{document}/heartbeat', [CollaborationController::class, 'heartbeat']);
-    Route::get('/collab/documents/{document}/export', [CollaborationController::class, 'export']);
+    Route::post('/collab/documents/{document}/resync', [CollaborationController::class, 'resync']);
+    Route::delete('/collab/documents/{document}', [CollaborationController::class, 'destroy']);
 });
 
 /*
@@ -114,8 +118,16 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
 
     // Template Approvals (dating System Approvals)
     Route::get('/template-approvals', [TemplateApprovalController::class, 'index']);
-    Route::post('/template-approvals/{template}/approve', [TemplateApprovalController::class, 'approve']);
-    Route::post('/template-approvals/{template}/reject', [TemplateApprovalController::class, 'reject']);
+    Route::post('/template-approvals', [TemplateApprovalController::class, 'store']);
+    Route::delete('/template-approvals/{template}', [TemplateApprovalController::class, 'destroy']);
+
+    // CMS — Template Elements
+    Route::get('/cms', [TemplateElementsController::class, 'index']);
+    Route::post('/cms', [TemplateElementsController::class, 'store']);
+    Route::put('/cms/{templateElement}', [TemplateElementsController::class, 'update']);
+    Route::post('/cms/{templateElement}/reorder', [TemplateElementsController::class, 'reorder']);
+    Route::post('/cms/{templateElement}/toggle-active', [TemplateElementsController::class, 'toggleActive']);
+    Route::delete('/cms/{templateElement}', [TemplateElementsController::class, 'destroy']);
 
     Route::get('/audit-logs', [AuditLogController::class, 'index']);
 
@@ -129,9 +141,9 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
     Route::put('/calendar/{activity}', [CalendarController::class, 'update']);
     Route::delete('/calendar/{activity}', [CalendarController::class, 'destroy']);
 
-    Route::get('/course-assignment', [CourseAssignmentController::class, 'index']);
-    Route::post('/course-assignment', [CourseAssignmentController::class, 'store']);
-    Route::delete('/course-assignment/{assignment}', [CourseAssignmentController::class, 'destroy']);
+    Route::get('/program-assignment', [ProgramAssignmentController::class, 'index']);
+    Route::post('/program-assignment', [ProgramAssignmentController::class, 'store']);
+    Route::delete('/program-assignment/{assignment}', [ProgramAssignmentController::class, 'destroy']);
 });
 
 /*
@@ -143,11 +155,15 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
 Route::middleware('role:program_head')->prefix('program-head')->group(function () {
     Route::get('/dashboard', [PHDashboardController::class, 'index']);
     Route::get('/template-review', [TemplateReviewController::class, 'index']);
-    Route::post('/template-review/{template}/approve', [TemplateReviewController::class, 'approve']);
-    Route::post('/template-review/{template}/needs-revision', [TemplateReviewController::class, 'needsRevision']);
+    Route::post('/template-review/{template}/distribute', [TemplateReviewController::class, 'distribute']);
     Route::get('/course-oversight', [CourseOversightController::class, 'index']);
     Route::post('/course-oversight/materials', [CourseOversightController::class, 'store']);
     Route::delete('/course-oversight/materials/{material}', [CourseOversightController::class, 'destroy']);
+    Route::post('/course-oversight/program-outcomes', [CourseOversightController::class, 'storeProgramOutcome']);
+    Route::delete('/course-oversight/program-outcomes/{programOutcome}', [CourseOversightController::class, 'destroyProgramOutcome']);
+    Route::post('/course-oversight/course-outcomes', [CourseOversightController::class, 'storeCourseOutcome']);
+    Route::delete('/course-oversight/course-outcomes/{courseOutcome}', [CourseOversightController::class, 'destroyCourseOutcome']);
+    Route::post('/course-oversight/course-outcomes/{courseOutcome}/mapping/{programOutcome}', [CourseOversightController::class, 'toggleMapping']);
 
     // Account Management
     Route::get('/account-management', [PHAccountManagementController::class, 'index']);
@@ -168,9 +184,9 @@ Route::middleware('role:program_head')->prefix('program-head')->group(function (
     Route::put('/submissions/{requirement}', [PHSubmissionController::class, 'update']);
     Route::delete('/submissions/{requirement}', [PHSubmissionController::class, 'destroy']);
 
-    Route::get('/course-assignment', [CourseAssignmentController::class, 'index']);
-    Route::post('/course-assignment', [CourseAssignmentController::class, 'store']);
-    Route::delete('/course-assignment/{assignment}', [CourseAssignmentController::class, 'destroy']);
+    Route::get('/program-assignment', [ProgramAssignmentController::class, 'index']);
+    Route::post('/program-assignment', [ProgramAssignmentController::class, 'store']);
+    Route::delete('/program-assignment/{assignment}', [ProgramAssignmentController::class, 'destroy']);
 });
 
 /*
@@ -185,8 +201,7 @@ Route::middleware('role:secretary')->prefix('secretary')->group(function () {
     Route::post('/document-repository', [DocumentRepositoryController::class, 'store']);
     Route::delete('/document-repository/{document}', [DocumentRepositoryController::class, 'destroy']);
     Route::get('/template-distribution', [TemplateDistributionController::class, 'index']);
-    Route::post('/template-distribution/{template}/distribute', [TemplateDistributionController::class, 'distribute']);
-    Route::post('/template-distribution/{template}/undistribute', [TemplateDistributionController::class, 'undistribute']);
+    Route::post('/template-distribution/{template}/forward', [TemplateDistributionController::class, 'forward']);
     Route::get('/course-filing', [CourseFilingController::class, 'index']);
 
     // Account Management
@@ -206,7 +221,7 @@ Route::middleware('role:secretary')->prefix('secretary')->group(function () {
     Route::put('/calendar/{activity}', [CalendarController::class, 'update']);
     Route::delete('/calendar/{activity}', [CalendarController::class, 'destroy']);
 
-    Route::get('/course-assignment', [CourseAssignmentController::class, 'index']);
-    Route::post('/course-assignment', [CourseAssignmentController::class, 'store']);
-    Route::delete('/course-assignment/{assignment}', [CourseAssignmentController::class, 'destroy']);
+    Route::get('/program-assignment', [ProgramAssignmentController::class, 'index']);
+    Route::post('/program-assignment', [ProgramAssignmentController::class, 'store']);
+    Route::delete('/program-assignment/{assignment}', [ProgramAssignmentController::class, 'destroy']);
 });

@@ -12,22 +12,24 @@ class CourseCoordinationController extends Controller
     {
         $myProgram = auth()->user()->program;
 
-        // Courses sa sariling program lang ng faculty
+        // Courses limited to the faculty member's own program
         $courses = Course::where('program', $myProgram)->orderBy('code')->get();
 
         $selectedCourse = null;
         $materials = collect();
+        $courseOutcomes = collect();
 
         if ($request->filled('course_id')) {
             $selectedCourse = Course::where('id', $request->course_id)
-                ->where('program', $myProgram) // security: sariling program lang
+                ->where('program', $myProgram) // security: own program only
                 ->first();
 
             if ($selectedCourse) {
-                $materials = $selectedCourse->materials()->latest()->get();
+                $materials = $selectedCourse->materials()->latest()->get()->groupBy('type');
+                $courseOutcomes = $selectedCourse->outcomes()->with('programOutcomes')->get();
             }
         }
 
-        return view('faculty.course-coordination', compact('courses', 'selectedCourse', 'materials'));
+        return view('faculty.course-coordination', compact('courses', 'selectedCourse', 'materials', 'courseOutcomes'));
     }
 }

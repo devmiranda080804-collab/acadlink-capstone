@@ -17,6 +17,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -51,6 +52,8 @@
         .badge-faculty { background: #d1fae5; color: #065f46; }
         .badge-urgent { background: #fee2e2; color: #991b1b; }
         .source-badge { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f0f4ff; color: #0f2557; margin-left: 6px; }
+        .program-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+        .program-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #eef2ff; color: #0f2557; }
         .ann-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: 12px; }
         .btn-del { background: none; border: none; color: #ccc; cursor: pointer; padding: 3px 6px; border-radius: 4px; transition: color 0.15s, background 0.15s; }
         .btn-del:hover { color: #ef4444; background: #fee2e2; }
@@ -68,6 +71,9 @@
         .modal-field select { appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E") no-repeat right 10px center; cursor: pointer; }
         .modal-error { display: none; background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; font-size: 11px; padding: 6px 10px; border-radius: 4px; margin-bottom: 12px; }
         .modal-note { background: #eef2ff; border: 1px solid #c7d2fe; color: #3730a3; font-size: 11px; padding: 8px 10px; border-radius: 4px; margin-bottom: 12px; }
+        .checkbox-group { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; }
+        .checkbox-item { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #333; cursor: pointer; }
+        .checkbox-item input { width: 15px; height: 15px; accent-color: #0f2557; cursor: pointer; }
         .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
         .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 5px; cursor: pointer; }
         .btn-cancel:hover { background: #f5f5f5; }
@@ -97,14 +103,18 @@
         @if($navPermissions['course-filing'] ?? true)
         <li class="{{ request()->is('secretary/course-filing*') ? 'active' : '' }}"><a href="{{ url('/secretary/course-filing') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Filing</a></li>
         @endif
-        @if($navPermissions['course-assignment'] ?? true)
-        <li class="{{ request()->is('secretary/course-assignment*') ? 'active' : '' }}"><a href="{{ url('/secretary/course-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Course Assignment</a></li>
+        @if($navPermissions['program-assignment'] ?? true)
+        <li class="{{ request()->is('secretary/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/secretary/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
         @endif
         @if($navPermissions['account-management'] ?? true)
         <li class="{{ request()->is('secretary/account-management*') ? 'active' : '' }}"><a href="{{ url('/secretary/account-management') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Account Management</a></li>
         @endif
         @if($navPermissions['announcements'] ?? true)
-        <li class="{{ request()->is('secretary/announcements*') ? 'active' : '' }}"><a href="{{ url('/secretary/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a></li>
+        <li class="{{ request()->is('secretary/announcements*') ? 'active' : '' }}"><a href="{{ url('/secretary/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
+            @if(($unreadAnnouncementsCount ?? 0) > 0)
+                <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+            @endif
+        </a></li>
         @endif
         @if($navPermissions['calendar'] ?? true)
         <li class="{{ request()->is('secretary/calendar*') ? 'active' : '' }}"><a href="{{ url('/secretary/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
@@ -143,7 +153,7 @@
             <div class="page-header">
                 <div>
                     <div class="page-title">Announcements</div>
-                    <div class="page-sub">Ikaw ay naka-post para sa program: <strong>{{ auth()->user()->program }}</strong></div>
+                    <div class="page-sub">You are posting for program: <strong>{{ auth()->user()->program }}</strong></div>
                 </div>
                 <button class="btn-post" type="button" onclick="openModal()">+ Post Announcement</button>
             </div>
@@ -165,6 +175,9 @@
                                     @foreach($ann->program_list as $prog)
                                         <span class="program-badge">{{ $prog }}</span>
                                     @endforeach
+                                    @if($ann->expires_at)
+                                        <span class="program-badge" style="background:#fef3c7;color:#92400e;">Expires {{ $ann->expires_at->format('M d, Y g:i A') }}</span>
+                                    @endif
                                 </div>
                                 @if($ann->user_id === auth()->id())
                                     <form method="POST" action="{{ url('/secretary/announcements/' . $ann->id) }}" style="display:inline;">
@@ -192,7 +205,6 @@
             <form method="POST" action="{{ url('/secretary/announcements') }}">
                 @csrf
                 <div class="modal-title">Post Announcement</div>
-                <div class="modal-note">Ang post mo ay makikita ng lahat ng roles sa CBMA System. <strong>{{ auth()->user()->program }}</strong>.</div>
 
                 @if($errors->any())
                     <div class="modal-error" style="display:block;">{{ $errors->first() }}</div>
@@ -204,13 +216,19 @@
                 </div>
 
                 <div class="modal-field">
-                    <label>Tag</label>
-                    <select name="tag">
-                        <option value="general" {{ old('tag') == 'general' ? 'selected' : '' }}>General</option>
-                        <option value="priority" {{ old('tag') == 'priority' ? 'selected' : '' }}>Priority</option>
-                        <option value="faculty" {{ old('tag') == 'faculty' ? 'selected' : '' }}>Faculty only</option>
-                        <option value="urgent" {{ old('tag') == 'urgent' ? 'selected' : '' }}>Urgent</option>
-                    </select>
+                    <label>Target Programs <span style="color:#ef4444">*</span></label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item"><input type="checkbox" name="programs[]" value="BSA"> BSA</label>
+                        <label class="checkbox-item"><input type="checkbox" name="programs[]" value="BSMA"> BSMA</label>
+                        <label class="checkbox-item"><input type="checkbox" name="programs[]" value="BSOA"> BSOA</label>
+                    </div>
+                    <div style="font-size:10.5px;color:#999;margin-top:6px;">Select one or more. Only faculty in the selected program(s) will be able to see it.</div>
+                </div>
+
+                <div class="modal-field">
+                    <label>Expiration Date <span style="font-size:10px;color:#999;">(optional)</span></label>
+                    <input type="datetime-local" name="expires_at" value="{{ old('expires_at') }}">
+                    <div style="font-size:10.5px;color:#999;margin-top:6px;">Leave blank if this announcement should never expire. Once expired, it's automatically hidden.</div>
                 </div>
 
                 <div class="modal-field">

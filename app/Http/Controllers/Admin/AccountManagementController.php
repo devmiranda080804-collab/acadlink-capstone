@@ -15,7 +15,7 @@ class AccountManagementController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::query()->whereIn('role', ['program_head', 'secretary']);
+        $query = User::query()->whereIn('role', ['program_head', 'secretary', 'faculty']);
 
         if ($request->get('status') === 'archived') {
             $query->whereNotNull('archived_at');
@@ -27,7 +27,6 @@ class AccountManagementController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('employee_id', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%");
             });
         }
@@ -55,24 +54,21 @@ class AccountManagementController extends Controller
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
-            'role'          => 'required|in:program_head,secretary',
-            'program'       => 'required_if:role,program_head|nullable|in:BSA,BSMA,BSOA',
+            'role'          => 'required|in:program_head,secretary,faculty',
+            'program'       => 'required_if:role,program_head,faculty|nullable|in:BSA,BSMA,BSOA',
             'academic_year' => 'required',
+            'google_email'  => 'nullable|email|max:255',
         ]);
-
-        $lastUser = User::latest('id')->first();
-        $nextId = $lastUser ? $lastUser->id + 1 : 1;
-        $employeeId = 'EMP-' . str_pad($nextId, 3, '0', STR_PAD_LEFT);
 
         $temporaryPassword = Str::password(12);
 
         $user = User::create([
             'name'                 => $request->first_name . ' ' . $request->last_name,
             'email'                => $request->email,
+            'google_email'         => $request->google_email,
             'password'             => Hash::make($temporaryPassword),
-            'employee_id'          => $employeeId,
             'role'                 => $request->role,
-            'program'              => $request->role === 'program_head' ? $request->program : null,
+            'program'              => in_array($request->role, ['program_head', 'faculty']) ? $request->program : null,
             'academic_year'        => $request->academic_year,
             'must_change_password' => true,
         ]);
@@ -82,28 +78,28 @@ class AccountManagementController extends Controller
         Mail::to($user->email)->send(new NewAccountCredentials($user, $temporaryPassword));
 
         return redirect()->back()
-            ->with('success', 'Account created successfully. Naipadala na ang login credentials sa email niya.')
-            ->with('employee_id', $employeeId)
-            ->with('temp_password', $temporaryPassword);
+            ->with('success', 'Account created successfully. The login credentials have been sent to their email.');
     }
 
-    // Email ay hindi na kasama dito — hindi na ito ide-edit base sa sabi ng instructor niyo
+    // Email is not included here — this should no longer be editable, per the instructor's instructions
     public function update(Request $request, User $user)
     {
         $request->validate([
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
-            'role'          => 'required|in:program_head,secretary',
-            'program'       => 'required_if:role,program_head|nullable|in:BSA,BSMA,BSOA',
+            'role'          => 'required|in:program_head,secretary,faculty',
+            'program'       => 'required_if:role,program_head,faculty|nullable|in:BSA,BSMA,BSOA',
             'academic_year' => 'required',
+            'google_email'  => 'nullable|email|max:255',
         ]);
 
         $roleChanged = $user->role !== $request->role;
 
         $user->update([
             'name'          => trim($request->first_name . ' ' . $request->last_name),
+            'google_email'  => $request->google_email,
             'role'          => $request->role,
-            'program'       => $request->role === 'program_head' ? $request->program : null,
+            'program'       => in_array($request->role, ['program_head', 'faculty']) ? $request->program : null,
             'academic_year' => $request->academic_year,
         ]);
 
@@ -116,7 +112,7 @@ class AccountManagementController extends Controller
 
     public function archive(User $user)
     {
-        abort_unless(in_array($user->role, ['program_head', 'secretary']), 403);
+        abort_unless(in_array($user->role, ['program_head', 'secretary', 'faculty']), 403);
 
         $user->update([
             'is_active'   => false,
@@ -130,7 +126,7 @@ class AccountManagementController extends Controller
 
     public function unarchive(User $user)
     {
-        abort_unless(in_array($user->role, ['program_head', 'secretary']), 403);
+        abort_unless(in_array($user->role, ['program_head', 'secretary', 'faculty']), 403);
 
         $user->update([
             'is_active'   => true,

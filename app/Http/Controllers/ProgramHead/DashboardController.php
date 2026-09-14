@@ -4,9 +4,10 @@ namespace App\Http\Controllers\ProgramHead;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Template;
+use App\Models\TemplateDocument;
 use App\Models\Course;
 use App\Models\CalendarActivity;
+use App\Models\Announcement;
 
 class DashboardController extends Controller
 {
@@ -14,29 +15,28 @@ class DashboardController extends Controller
     {
         $myProgram = auth()->user()->program;
 
-        // Faculty sa sariling program
+        // Faculty within the PH's own program
         $facultyCount = User::where('role', 'faculty')
             ->where('program', $myProgram)
             ->whereNull('archived_at')
             ->count();
 
-        // Templates pending review (kailangan niyang aksyunan) — sariling program
-        $pendingReview = Template::where('program', $myProgram)
-            ->where('status', 'pending_review')
+        // Templates the Secretary already forwarded, still waiting for this PH to distribute
+        $awaitingDistribution = TemplateDocument::whereNotNull('forwarded_at')
+            ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNull('distributed_at'))
             ->count();
 
-        // Courses sa program niya
+        // Courses within the PH's program
         $courseCount = Course::where('program', $myProgram)->count();
 
-        // Templates na na-forward na niya kay Admin
-        $forwardedCount = Template::where('program', $myProgram)
-            ->whereIn('status', ['pending_approval', 'approved'])
+        // Templates this PH has already distributed to their faculty
+        $distributedCount = TemplateDocument::whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
             ->count();
 
-        // Listahan ng templates na naghihintay ng review
-        $reviewTemplates = Template::with('faculty')
-            ->where('program', $myProgram)
-            ->where('status', 'pending_review')
+        // List of templates awaiting this PH's distribution
+        $reviewTemplates = TemplateDocument::with('creator')
+            ->whereNotNull('forwarded_at')
+            ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNull('distributed_at'))
             ->latest()
             ->take(5)
             ->get();
@@ -47,9 +47,17 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // Unread announcements, for the dashboard notification banner
+        $unreadAnnouncements = Announcement::active()->visibleTo(auth()->user())
+            ->unreadBy(auth()->user())
+            ->latest()
+            ->take(3)
+            ->get();
+
         return view('program-head.program-head-dashboard', compact(
-            'myProgram', 'facultyCount', 'pendingReview', 'courseCount',
-            'forwardedCount', 'reviewTemplates', 'upcomingActivities'
+            'myProgram', 'facultyCount', 'awaitingDistribution', 'courseCount',
+            'distributedCount', 'reviewTemplates', 'upcomingActivities',
+            'unreadAnnouncements'
         ));
     }
 }

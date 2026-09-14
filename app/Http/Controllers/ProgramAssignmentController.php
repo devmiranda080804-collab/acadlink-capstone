@@ -3,11 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
-use App\Models\CourseAssignment;
+use App\Models\ProgramAssignment;
 use App\Models\User;
 use Illuminate\Http\Request;
 
-class CourseAssignmentController extends Controller
+class ProgramAssignmentController extends Controller
 {
     protected function currentSchoolYear(): string
     {
@@ -28,13 +28,13 @@ class CourseAssignmentController extends Controller
         $schoolYear = $request->get('school_year', $this->currentSchoolYear());
         $semester   = $request->get('semester', 'First Semester');
 
-        $assignments = CourseAssignment::with('faculty')
+        $assignments = ProgramAssignment::with('faculty')
             ->where('school_year', $schoolYear)
             ->where('semester', $semester)
             ->get()
             ->groupBy('course_id');
 
-        // Faculty list para sa dropdown (naka-filter by program kung PH)
+        // Faculty list for the dropdown (filtered by program when Program Head)
         $facultyList = User::where('role', 'faculty')
             ->whereNull('archived_at')
             ->when($program, fn($q) => $q->where('program', $program))
@@ -42,9 +42,9 @@ class CourseAssignmentController extends Controller
             ->get();
 
         $viewMap = [
-            'admin'        => 'admin.course-assignment',
-            'program_head' => 'program-head.course-assignment',
-            'secretary'    => 'secretary.course-assignment',
+            'admin'        => 'admin.program-assignment',
+            'program_head' => 'program-head.program-assignment',
+            'secretary'    => 'secretary.program-assignment',
         ];
 
         return view($viewMap[$role], compact(
@@ -64,13 +64,13 @@ class CourseAssignmentController extends Controller
             'semester'    => 'required|string',
         ]);
 
-        // Kung Program Head, siguraduhing sariling program lang
+        // If Program Head, make sure only their own program is allowed
         if (auth()->user()->role === 'program_head') {
             $course = Course::findOrFail($request->course_id);
             abort_unless($course->program === auth()->user()->program, 403);
         }
 
-        CourseAssignment::firstOrCreate([
+        ProgramAssignment::firstOrCreate([
             'course_id'   => $request->course_id,
             'faculty_id'  => $request->faculty_id,
             'school_year' => $request->school_year,
@@ -82,7 +82,7 @@ class CourseAssignmentController extends Controller
         return back()->with('success', 'Faculty assigned to course.');
     }
 
-    public function destroy(CourseAssignment $assignment)
+    public function destroy(ProgramAssignment $assignment)
     {
         abort_unless(in_array(auth()->user()->role, ['admin', 'program_head', 'secretary']), 403);
 

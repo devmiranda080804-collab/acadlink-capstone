@@ -13,22 +13,12 @@ class AnnouncementController extends Controller
         $myProgram = auth()->user()->program;
 
         $announcements = Announcement::with(['user', 'programs'])
-            ->where(function ($q) use ($myProgram) {
-                // Admin posts na target ang program ng PH
-                $q->whereHas('user', fn($u) => $u->where('role', 'admin'))
-                  ->whereHas('programs', fn($p) => $p->where('program', $myProgram));
-            })
-            ->orWhere(function ($q) use ($myProgram) {
-                // Secretary posts na target ang program ng PH
-                $q->whereHas('user', fn($u) => $u->where('role', 'secretary'))
-                  ->whereHas('programs', fn($p) => $p->where('program', $myProgram));
-            })
-            ->orWhere(function ($q) {
-                // Sariling posts ng PH
-                $q->where('user_id', auth()->id());
-            })
+            ->active()
+            ->visibleTo(auth()->user())
             ->latest()
             ->get();
+
+        Announcement::markReadBy($announcements, auth()->user());
 
         return view('program-head.ph-announcements', compact('announcements', 'myProgram'));
     }
@@ -36,15 +26,17 @@ class AnnouncementController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'body'  => 'required|string',
+            'title'      => 'required|string|max:255',
+            'body'       => 'required|string',
+            'expires_at' => 'nullable|date|after:now',
         ]);
 
-        // PH locked sa sariling program — automatic, hindi pumipili
+        // PH is locked to their own program — automatic, no selection needed
         $announcement = Announcement::create([
-            'user_id' => auth()->id(),
-            'title'   => $request->title,
-            'body'    => $request->body,
+            'user_id'    => auth()->id(),
+            'title'      => $request->title,
+            'body'       => $request->body,
+            'expires_at' => $request->expires_at,
         ]);
 
         $announcement->programs()->create(['program' => auth()->user()->program]);

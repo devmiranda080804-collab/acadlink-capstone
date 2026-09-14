@@ -31,7 +31,6 @@ class AccountManagementController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                ->orWhere('employee_id', 'like', "%{$search}%")
                 ->orWhere('email', 'like', "%{$search}%");
             });
         }
@@ -49,28 +48,25 @@ class AccountManagementController extends Controller
     {
         $myProgram = auth()->user()->program;
 
-        abort_if(empty($myProgram), 403, 'Walang program na nakatalaga sa account mo. Kontakin ang Admin.');
+        abort_if(empty($myProgram), 403, 'No program is assigned to your account. Please contact the Admin.');
 
         $request->validate([
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
             'academic_year' => 'required',
+            'google_email'  => 'nullable|email|max:255',
         ]);
-
-        $lastUser = User::latest('id')->first();
-        $nextId = $lastUser ? $lastUser->id + 1 : 1;
-        $employeeId = 'EMP-' . str_pad($nextId, 3, '0', STR_PAD_LEFT);
 
         $temporaryPassword = Str::password(12);
 
        $user = User::create([
             'name'          => $request->first_name . ' ' . $request->last_name,
             'email'         => $request->email,
+            'google_email'  => $request->google_email,
             'password'      => Hash::make($temporaryPassword),
-            'employee_id'   => $employeeId,
             'role'          => 'faculty',
-            'program'       => $myProgram, // server-derived, hindi galing sa form
+            'program'       => $myProgram, // server-derived, not from the form
             'academic_year' => $request->academic_year,
         ]);
         AuditLog::record('Account Created', "Created faculty account for {$user->name} ({$user->email})");
@@ -78,24 +74,23 @@ class AccountManagementController extends Controller
         Mail::to($user->email)->send(new NewAccountCredentials($user, $temporaryPassword));
 
         return redirect()->back()
-            ->with('success', 'Faculty account created successfully.')
-            ->with('employee_id', $employeeId)
-            ->with('temp_password', $temporaryPassword);
+            ->with('success', 'Faculty account created successfully. The login credentials have been sent to their email.');
     }
 
     public function update(Request $request, User $user)
     {
+        abort_unless($user->role === 'faculty' && $user->program === auth()->user()->program, 403);
+
         $request->validate([
-            'full_name'     => 'required|string|max:255',
-            'role'          => 'required|in:program_head,secretary',
-            'program'       => 'required_if:role,program_head|nullable|in:BSA,BSMA,BSOA',
+            'first_name'    => 'required|string|max:255',
+            'last_name'     => 'required|string|max:255',
             'academic_year' => 'required',
+            'google_email'  => 'nullable|email|max:255',
         ]);
 
         $user->update([
-            'name'          => $request->full_name,
-            'role'          => $request->role,
-            'program'       => $request->role === 'program_head' ? $request->program : null,
+            'name'          => trim($request->first_name . ' ' . $request->last_name),
+            'google_email'  => $request->google_email,
             'academic_year' => $request->academic_year,
         ]);
 

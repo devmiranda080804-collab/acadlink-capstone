@@ -17,7 +17,7 @@ class AuditLogController extends Controller
             ->latest('created_at')
             ->paginate(30);
 
-        // Para sa filter dropdown — lahat ng natatanging action types
+        // For the filter dropdown — all distinct action types
         $actionTypes = AuditLog::select('action')->distinct()->pluck('action');
 
         return view('admin.audit-logs', compact('logs', 'action', 'actionTypes'));

@@ -45,6 +45,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
 
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a {
@@ -79,133 +80,20 @@
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .page-sub { font-size: 11.5px; color: #888; margin-bottom: 20px; }
 
-        /* ── Top two-column layout ── */
-        .top-grid {
-            display: grid;
-            grid-template-columns: 230px 1fr;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        /* Left CMS nav */
-        .cms-nav {
-            background: #fff;
-            border: 1px solid #e4e4e4;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .cms-nav-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 11px 16px;
-            font-size: 12.5px; color: #333;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-            transition: background 0.15s;
-            user-select: none;
-        }
-
-        .cms-nav-item:last-child { border-bottom: none; }
-        .cms-nav-item:hover { background: #f5f7ff; color: #0f2557; }
-
-        .cms-nav-item.active {
-            background: #0f2557;
-            color: #fff;
-            font-weight: 700;
-        }
-
-        .cms-nav-item.active .nav-arrow { color: #fff; }
-        .nav-arrow { font-size: 11px; color: #aaa; }
-
-        /* Right panel */
-        .cms-panel {
-            background: #fff;
-            border: 1px solid #e4e4e4;
-            border-radius: 8px;
-            padding: 18px 20px;
-            min-height: 260px;
-        }
-
-        .cms-panel-header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 8px;
-        }
-
-        .cms-panel-title { font-size: 14px; font-weight: 700; color: #1a1a2e; }
-
-        .btn-add-new {
-            background: #0f2557; color: #fff;
-            border: none; border-radius: 5px;
-            font-size: 12px; font-weight: 600;
-            padding: 7px 14px; cursor: pointer;
-            transition: background 0.15s;
-            display: flex; align-items: center; gap: 4px;
-        }
-        .btn-add-new:hover { background: #1a3a7a; }
-
-        .cms-panel-desc { font-size: 11.5px; color: #aaa; margin-bottom: 14px; }
-
-        .panel-empty {
-            text-align: center; padding: 40px 20px;
-            color: #ccc; font-size: 12px;
-        }
-
-        /* ── Sub-section panels (bottom) ── */
-        .sub-sections {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-        }
-
-        .sub-panel {
-            background: #fff;
-            border: 1px solid #e4e4e4;
-            border-radius: 8px;
-            padding: 16px;
-            display: flex; flex-direction: column;
-            min-height: 220px;
-        }
-
-        .sub-panel-header {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 12px;
-        }
-
-        .sub-panel-title { font-size: 12.5px; font-weight: 700; color: #1a1a2e; }
-
-        .btn-add-sm {
-            background: #0f2557; color: #fff;
-            border: none; border-radius: 4px;
-            font-size: 11px; font-weight: 600;
-            padding: 5px 10px; cursor: pointer;
-            transition: background 0.15s;
-        }
-        .btn-add-sm:hover { background: #1a3a7a; }
-
-        /* Sub-panel table */
-        .sub-table {
-            width: 100%; border-collapse: collapse; font-size: 11.5px;
-        }
-
-        .sub-table thead tr { background: #f9f9f9; border-bottom: 1px solid #e8e8e8; }
-        .sub-table th { padding: 7px 8px; text-align: left; font-size: 11px; font-weight: 700; color: #666; }
-        .sub-table td { padding: 8px 8px; border-bottom: 1px solid #f5f5f5; color: #444; vertical-align: middle; }
-        .sub-table tbody tr:last-child td { border-bottom: none; }
-        .sub-table tbody tr:hover { background: #fafbff; }
-
-        /* Toggle switch */
-        .toggle { position: relative; width: 30px; height: 16px; display: inline-block; cursor: pointer; }
-        .toggle input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 16px; transition: background 0.2s; }
-        .toggle-slider::before { content: ''; position: absolute; width: 12px; height: 12px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: transform 0.2s; }
-        .toggle input:checked + .toggle-slider { background: #0f2557; }
-        .toggle input:checked + .toggle-slider::before { transform: translateX(14px); }
-
-        /* Icon btn */
-        .icon-btn { background: none; border: none; cursor: pointer; color: #aaa; font-size: 13px; padding: 2px 4px; transition: color 0.15s; }
-        .icon-btn:hover { color: #ef4444; }
-
-        .sub-empty { text-align: center; padding: 20px 10px; color: #ccc; font-size: 11.5px; }
+        /* Template type cards */
+        .type-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+        .type-card-title { font-size: 13.5px; font-weight: 700; color: #1a1a2e; text-transform: capitalize; padding: 14px 18px; border-bottom: 1px solid #f0f0f0; background: #fafbff; }
+        .type-card-list { padding: 4px 18px; }
+        .elem-row { padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+        .elem-row:last-child { border-bottom: none; }
+        .elem-row-main { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .elem-label { font-size: 13px; font-weight: 600; color: #222; }
+        .req-tag { font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 10px; text-transform: capitalize; }
+        .req-yes { background: #fee2e2; color: #991b1b; }
+        .req-no { background: #f3f4f6; color: #666; }
+        .field-tag { background: #eef2ff; color: #0f2557; }
+        .elem-desc { font-size: 11.5px; color: #888; margin-top: 4px; line-height: 1.5; }
+        .empty-guide { text-align: center; padding: 60px 20px; color: #bbb; font-size: 12.5px; background: #fff; border: 1px solid #e4e4e4; border-radius: 8px; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -233,7 +121,7 @@
         <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}">
             <a href="{{ url('/faculty/my-template') }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                My Template
+                Templates
             </a>
         </li>
         @endif
@@ -282,6 +170,9 @@
             <a href="{{ url('/faculty/announcements') }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
                 Announcements
+                @if(($unreadAnnouncementsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+                @endif
             </a>
         </li>
         @endif
@@ -331,138 +222,39 @@
 
         <div class="content">
 
-            <div class="page-title">Content Management System</div>
-            <div class="page-sub">Manage system settings, templates, and configurations</div>
+            <div class="page-title">Template Content Guide</div>
+            <div class="page-sub">What each template type should contain, as defined by the Admin. Reference this before submitting a template.</div>
 
-            {{-- Top: Left nav + Right panel --}}
-            <div class="top-grid">
-
-                {{-- Left CMS navigation --}}
-                <div class="cms-nav">
-                    <div class="cms-nav-item active" onclick="selectNav(this,'template-elements')">Template Elements <span class="nav-arrow">▶</span></div>
-                    <div class="cms-nav-item" onclick="selectNav(this,'dropdown-options')">Dropdown Options <span class="nav-arrow">▶</span></div>
-                    <div class="cms-nav-item" onclick="selectNav(this,'departments')">Departments <span class="nav-arrow">▶</span></div>
-                    <div class="cms-nav-item" onclick="selectNav(this,'semester-settings')">Semester settings <span class="nav-arrow">▶</span></div>
-                    <div class="cms-nav-item" onclick="selectNav(this,'notification-triggers')">Notification Triggers <span class="nav-arrow">▶</span></div>
-                    <div class="cms-nav-item" onclick="selectNav(this,'announcements-cms')">Announcements <span class="nav-arrow">▶</span></div>
-                </div>
-
-                {{-- Right content panel --}}
-                <div class="cms-panel">
-                    <div class="cms-panel-header">
-                        <div class="cms-panel-title" id="panel-title">Template Elements</div>
-                        <button class="btn-add-new" onclick="handleAddNew()">+ Add new</button>
+            @forelse($elementsByType as $type => $elements)
+                <div class="type-card">
+                    <div class="type-card-title">{{ str_replace('_', ' ', $type) }}</div>
+                    <div class="type-card-list">
+                        @foreach($elements as $element)
+                            <div class="elem-row">
+                                <div class="elem-row-main">
+                                    <span class="elem-label">{{ $element->label }}</span>
+                                    @if($element->is_required)
+                                        <span class="req-tag req-yes">Required</span>
+                                    @else
+                                        <span class="req-tag req-no">Optional</span>
+                                    @endif
+                                    <span class="req-tag field-tag">{{ str_replace('_', ' ', $element->field_type) }}</span>
+                                </div>
+                                @if($element->instructions)
+                                    <div class="elem-desc">{{ $element->instructions }}</div>
+                                @endif
+                            </div>
+                        @endforeach
                     </div>
-                    <div class="cms-panel-desc" id="panel-desc">Manage template sections, fields, and layout components used across all instructional material templates.</div>
-                    <div class="panel-empty" id="panel-body">No items found. Click <strong>+ Add new</strong> to get started.</div>
                 </div>
-
-            </div>
-
-            {{-- Bottom 4-column sub-sections --}}
-            <div class="sub-sections">
-
-                {{-- Dropdown Options --}}
-                <div class="sub-panel">
-                    <div class="sub-panel-header">
-                        <div class="sub-panel-title">Dropdown Options</div>
-                        <button class="btn-add-sm" onclick="handleAddNew()">+ Add</button>
-                    </div>
-                    <table class="sub-table">
-                        <thead>
-                            <tr>
-                                <th>Field Name</th>
-                                <th>Custom Options</th>
-                                <th>Object Type</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="dropdown-tbody">
-                            <tr><td colspan="4" class="sub-empty">No options yet.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                {{-- Semester Settings --}}
-                <div class="sub-panel">
-                    <div class="sub-panel-header">
-                        <div class="sub-panel-title">Semester Settings</div>
-                        <button class="btn-add-sm" onclick="handleAddNew()">+ Add</button>
-                    </div>
-                    <table class="sub-table">
-                        <thead>
-                            <tr>
-                                <th>Academic Year</th>
-                                <th>Semester</th>
-                                <th>Status</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr><td colspan="4" class="sub-empty">No semesters configured.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                {{-- Notification Triggers --}}
-                <div class="sub-panel">
-                    <div class="sub-panel-header">
-                        <div class="sub-panel-title">Notification Triggers</div>
-                        <button class="btn-add-sm" onclick="handleAddNew()">+ Add</button>
-                    </div>
-                    <table class="sub-table">
-                        <thead>
-                            <tr>
-                                <th>Trigger Name</th>
-                                <th>Recipient</th>
-                                <th>Message</th>
-                                <th>Active</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody id="trigger-tbody">
-                            <tr><td colspan="5" class="sub-empty">No triggers configured.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                {{-- Announcements --}}
-                <div class="sub-panel">
-                    <div class="sub-panel-header">
-                        <div class="sub-panel-title">Announcements</div>
-                        <button class="btn-add-sm" onclick="handleAddNew()">+ Add</button>
-                    </div>
-                    <div class="sub-empty">No CMS announcements yet.</div>
-                </div>
-
-            </div>
+            @empty
+                <div class="empty-guide">No template structure has been defined by the Admin yet.</div>
+            @endforelse
 
         </div>
     </div>
 
     <script>
-        var navData = {
-            'template-elements':   { title: 'Template Elements',   desc: 'Manage template sections, fields, and layout components used across all instructional material templates.' },
-            'dropdown-options':    { title: 'Dropdown Options',     desc: 'Configure dropdown fields and their selectable values used in forms and templates.' },
-            'departments':         { title: 'Departments',          desc: 'Manage academic departments, program heads, and department-level configurations.' },
-            'semester-settings':   { title: 'Semester Settings',    desc: 'Configure academic year and semester periods used across the system.' },
-            'notification-triggers': { title: 'Notification Triggers', desc: 'Set up automated notification rules triggered by system events.' },
-            'announcements-cms':   { title: 'Announcements',        desc: 'Manage system-wide announcements and their visibility settings.' }
-        };
-
-        function selectNav(el, key) {
-            document.querySelectorAll('.cms-nav-item').forEach(function(i) { i.classList.remove('active'); });
-            el.classList.add('active');
-            var data = navData[key];
-            document.getElementById('panel-title').textContent = data.title;
-            document.getElementById('panel-desc').textContent  = data.desc;
-            document.getElementById('panel-body').innerHTML    = 'No items found. Click <strong>+ Add new</strong> to get started.';
-        }
-
-        function handleAddNew() {
-            alert('This feature is not yet available in this prototype.');
-        }
-
         function handleLogout() {
             window.location.href = '{{ url("/login") }}';
         }

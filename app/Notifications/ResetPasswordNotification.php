@@ -27,9 +27,9 @@ class ResetPasswordNotification extends Notification
         return (new MailMessage)
             ->subject('Password Reset Request - CBMA System')
             ->greeting('Hello ' . $notifiable->name . ',')
-            ->line('Nakatanggap ka ng request para i-reset ang password ng iyong CBMA account.')
+            ->line('We received a request to reset the password for your CBMA account.')
             ->action('Reset Password', $this->url)
-            ->line('Kung hindi ikaw ang humiling nito, huwag na lang pansinin ang email na ito.')
-            ->line('Ang link na ito ay valid lang sa loob ng 60 minuto.');
+            ->line('If you did not request this, you can safely ignore this email.')
+            ->line('This link is valid for 60 minutes only.');
     }
 }

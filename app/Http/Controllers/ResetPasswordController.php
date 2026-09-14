@@ -43,11 +43,11 @@ class ResetPasswordController extends Controller
         );
 
         if ($status === Password::PASSWORD_RESET) {
-            return redirect('/login')->with('success', 'Matagumpay na napalitan ang iyong password. Mag-login na.');
+            return redirect('/login')->with('success', 'Your password has been successfully changed. Please log in.');
         }
 
         return back()->withErrors([
-            'email' => 'Mali o expired na ang reset link. Subukan ulit.'
+            'email' => 'The reset link is invalid or has expired. Please try again.'
         ]);
     }
 }

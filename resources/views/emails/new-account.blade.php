@@ -3,7 +3,7 @@
 
 Hi {{ $name }},
 
-Gumawa ng account para sa iyo bilang **{{ $role }}** sa CBMA System.
+An account has been created for you as a **{{ $role }}** in the CBMA System.
 
 - **Email:** {{ $email }}
 - **Temporary Password:** {{ $password }}
@@ -12,7 +12,7 @@ Gumawa ng account para sa iyo bilang **{{ $role }}** sa CBMA System.
 Sign In Now
 @endcomponent
 
-Kailangan mong palitan ang password mo pagka-login.
+You will need to change your password after logging in.
 
 Thanks,<br>
 CBMA System

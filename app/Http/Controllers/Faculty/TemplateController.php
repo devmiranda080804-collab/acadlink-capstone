@@ -3,93 +3,54 @@
 namespace App\Http\Controllers\Faculty;
 
 use App\Http\Controllers\Controller;
-use App\Models\Template;
+use App\Models\TemplateDocument;
+use App\Services\GoogleDocsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class TemplateController extends Controller
 {
-    public function index(Request $request)
+    // Faculty just views what their Program Head has distributed — no more uploading
+    public function index()
     {
-        $type = $request->get('type', 'syllabus');
+        $myProgram = auth()->user()->program;
 
-        $templates = Template::where('faculty_id', auth()->id())
-            ->where('type', $type)
+        $templates = TemplateDocument::with(['creator', 'copies' => function ($q) {
+                $q->where('faculty_id', auth()->id());
+            }])
+            ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
             ->latest()
             ->get();
 
-        return view('faculty.my-template', compact('templates', 'type'));
+        return view('faculty.my-template', compact('templates'));
     }
 
-    public function store(Request $request)
+    // Duplicates the protected master template into a fully editable copy
+    // owned by this faculty member
+    public function makeCopy(Request $request, TemplateDocument $template)
     {
-        $request->validate([
-            'title'           => 'required|string|max:255',
-            'type'            => 'required|in:syllabus,lesson_plan,course_guide,module',
-            'file'            => 'required|file|mimes:pdf,doc,docx|max:20480',
-            'submission_date' => 'nullable|date',
+        $myProgram = auth()->user()->program;
+        abort_unless(
+            $template->programs()->where('program', $myProgram)->whereNotNull('distributed_at')->exists(),
+            403
+        );
+        abort_unless($template->google_doc_id, 422, 'This template has no editable Google Doc version.');
+
+        $me = auth()->user();
+        abort_unless($me->google_email, 422, 'Add your Google email to your account first — ask your Program Head, Secretary, or Admin to set it.');
+
+        $request->validate(['title' => 'nullable|string|max:255']);
+        $title = $request->title ?: ($template->title . ' — ' . $me->name);
+
+        $google = new GoogleDocsService();
+        $copyId = $google->copyDocument($template->google_doc_id, $title);
+        $google->shareWithEmail($copyId, $me->google_email, 'writer');
+
+        $copy = $template->copies()->create([
+            'faculty_id'    => $me->id,
+            'title'         => $title,
+            'google_doc_id' => $copyId,
         ]);
 
-        $file = $request->file('file');
-        $path = $file->store('templates', 'public');
-
-        Template::create([
-            'faculty_id'       => auth()->id(),
-            'program'          => auth()->user()->program,
-            'title'            => $request->title,
-            'type'             => $request->type,
-            'file_path'        => $path,
-            'file_name'        => $file->getClientOriginalName(),
-            'file_type'        => $file->getClientOriginalExtension(),
-            'file_size'        => $file->getSize(),
-            'status'           => 'pending_review',
-            'submission_date'  => $request->submission_date,
-        ]);
-
-        return back()->with('success', 'Template uploaded and submitted for review.');
-    }
-
-    public function update(Request $request, Template $template)
-    {
-        abort_unless($template->faculty_id === auth()->id(), 403);
-
-        $request->validate([
-            'title'           => 'required|string|max:255',
-            'file'            => 'nullable|file|mimes:pdf,doc,docx|max:20480',
-            'submission_date' => 'nullable|date',
-        ]);
-
-        $data = [
-            'title'           => $request->title,
-            'submission_date' => $request->submission_date,
-        ];
-
-        if ($request->hasFile('file')) {
-            Storage::disk('public')->delete($template->file_path);
-            $file = $request->file('file');
-            $data['file_path'] = $file->store('templates', 'public');
-            $data['file_name'] = $file->getClientOriginalName();
-            $data['file_type'] = $file->getClientOriginalExtension();
-            $data['file_size'] = $file->getSize();
-        }
-
-        if (in_array($template->status, ['needs_revision', 'rejected'])) {
-            $data['status'] = 'pending_review';
-            $data['review_note'] = null;
-        }
-
-        $template->update($data);
-
-        return back()->with('success', 'Template updated and resubmitted for review.');
-    }
-
-    public function destroy(Template $template)
-    {
-        abort_unless($template->faculty_id === auth()->id(), 403);
-
-        Storage::disk('public')->delete($template->file_path);
-        $template->delete();
-
-        return back()->with('success', 'Template deleted.');
+        return response()->json($copy);
     }
 }

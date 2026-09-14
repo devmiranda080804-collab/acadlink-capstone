@@ -41,7 +41,7 @@
 
         <div class="form-panel">
             <h1>CBMA System</h1>
-            <p class="sub">I-reset ang iyong password</p>
+            <p class="sub">Reset your password</p>
 
             @if($errors->any())
                 <div class="error-msg">{{ $errors->first() }}</div>

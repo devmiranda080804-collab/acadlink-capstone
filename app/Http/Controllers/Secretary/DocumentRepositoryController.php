@@ -12,19 +12,19 @@ use Illuminate\Support\Facades\Storage;
 
 class DocumentRepositoryController extends Controller
 {
-    // Auto-detect ang school year base sa petsa
+    // Auto-detect the school year based on the date
     protected function schoolYear(Carbon $date): string
     {
         $month = $date->month;
         $year  = $date->year;
-        // Aug (8) pataas = simula ng bagong SY
+        // Aug (8) onwards = start of a new SY
         if ($month >= 8) {
             return $year . '-' . ($year + 1);
         }
         return ($year - 1) . '-' . $year;
     }
 
-    // Auto-detect ang semester base sa buwan
+    // Auto-detect the semester based on the month
     protected function semester(Carbon $date): string
     {
         $month = $date->month;
@@ -88,7 +88,7 @@ class DocumentRepositoryController extends Controller
             ]);
         });
 
-        // I-group by school year → semester
+        // Group by school year → semester
         $tree = [];
         foreach ($documents as $doc) {
             $sy  = $this->schoolYear($doc['date']);
@@ -96,10 +96,10 @@ class DocumentRepositoryController extends Controller
             $tree[$sy][$sem][] = $doc;
         }
 
-        // I-sort ang years, pinakabago muna
+        // Sort the years, newest first
         krsort($tree);
 
-        // Ayusin ang semester order sa loob ng bawat year
+        // Arrange the semester order within each year
         $semOrder = ['First Semester', 'Second Semester', 'Summer'];
         foreach ($tree as $sy => $sems) {
             $ordered = [];

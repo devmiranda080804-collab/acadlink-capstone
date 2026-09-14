@@ -13,13 +13,13 @@ class SubmissionController extends Controller
     {
         $myProgram = auth()->user()->program;
 
-        // Requirements ng program, naka-sort by nearest deadline
+        // Program requirements, sorted by nearest deadline
         $requirements = SubmissionRequirement::with('submissions.faculty')
             ->where('program', $myProgram)
             ->orderBy('deadline')
             ->get();
 
-        // Bilang ng faculty sa program (para sa "X of Y submitted")
+        // Count of faculty in the program (for "X of Y submitted")
         $facultyCount = User::where('role', 'faculty')
             ->where('program', $myProgram)
             ->whereNull('archived_at')

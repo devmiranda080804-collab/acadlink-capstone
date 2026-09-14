@@ -10,10 +10,13 @@ class AnnouncementController extends Controller
 {
     public function index()
     {
-        // Secretary nakakakita ng lahat (institutional oversight)
+        // Secretary sees all announcements (institutional oversight)
         $announcements = Announcement::with(['user', 'programs'])
+            ->active()
             ->latest()
             ->get();
+
+        Announcement::markReadBy($announcements, auth()->user());
 
         return view('secretary.sec-announcements', compact('announcements'));
     }
@@ -25,12 +28,14 @@ class AnnouncementController extends Controller
             'body'       => 'required|string',
             'programs'   => 'required|array|min:1',
             'programs.*' => 'in:BSA,BSMA,BSOA',
+            'expires_at' => 'nullable|date|after:now',
         ]);
 
         $announcement = Announcement::create([
-            'user_id' => auth()->id(),
-            'title'   => $request->title,
-            'body'    => $request->body,
+            'user_id'    => auth()->id(),
+            'title'      => $request->title,
+            'body'       => $request->body,
+            'expires_at' => $request->expires_at,
         ]);
 
         foreach ($request->programs as $program) {

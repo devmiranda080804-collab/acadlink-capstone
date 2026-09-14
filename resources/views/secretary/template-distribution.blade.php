@@ -18,6 +18,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -97,14 +98,18 @@
             @if($navPermissions['course-filing'] ?? true)
             <li class="{{ request()->is('secretary/course-filing*') ? 'active' : '' }}"><a href="{{ url('/secretary/course-filing') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Filing</a></li>
             @endif
-            @if($navPermissions['course-assignment'] ?? true)
-            <li class="{{ request()->is('secretary/course-assignment*') ? 'active' : '' }}"><a href="{{ url('/secretary/course-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Course Assignment</a></li>
+            @if($navPermissions['program-assignment'] ?? true)
+            <li class="{{ request()->is('secretary/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/secretary/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
             @endif
             @if($navPermissions['account-management'] ?? true)
             <li class="{{ request()->is('secretary/account-management*') ? 'active' : '' }}"><a href="{{ url('/secretary/account-management') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Account Management</a></li>
             @endif
             @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('secretary/announcements*') ? 'active' : '' }}"><a href="{{ url('/secretary/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a></li>
+            <li class="{{ request()->is('secretary/announcements*') ? 'active' : '' }}"><a href="{{ url('/secretary/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
+                @if(($unreadAnnouncementsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+                @endif
+            </a></li>
             @endif
             @if($navPermissions['calendar'] ?? true)
             <li class="{{ request()->is('secretary/calendar*') ? 'active' : '' }}"><a href="{{ url('/secretary/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
@@ -141,15 +146,7 @@
             @endif
 
             <div class="page-title">Template Distribution</div>
-            <div class="page-sub">Distribute official approved templates to faculty and staff</div>
-
-            {{-- Program filter tabs --}}
-            <div class="program-tabs">
-                <a class="program-tab {{ !request('program') ? 'active' : '' }}" href="{{ url('/secretary/template-distribution') }}">All Programs</a>
-                <a class="program-tab {{ request('program') == 'BSA' ? 'active' : '' }}" href="{{ url('/secretary/template-distribution?program=BSA') }}">BSA</a>
-                <a class="program-tab {{ request('program') == 'BSMA' ? 'active' : '' }}" href="{{ url('/secretary/template-distribution?program=BSMA') }}">BSMA</a>
-                <a class="program-tab {{ request('program') == 'BSOA' ? 'active' : '' }}" href="{{ url('/secretary/template-distribution?program=BSOA') }}">BSOA</a>
-            </div>
+            <div class="page-sub">Templates the Admin has uploaded. Forward each one so every Program Head can distribute it to their own faculty.</div>
 
             <div class="dist-panel">
                 <table class="dist-table">
@@ -157,10 +154,10 @@
                         <tr>
                             <th>Template Name</th>
                             <th>Type</th>
-                            <th>Program</th>
-                            <th>Submitted By</th>
-                            <th>Approved</th>
-                            <th>Distribution</th>
+                            <th>Programs</th>
+                            <th>Uploaded By</th>
+                            <th>Date</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -173,15 +170,19 @@
                                         {{ $template->title }}
                                     </div>
                                 </td>
-                                <td><span class="type-label">{{ ucwords(str_replace('_', ' ', $template->type)) }}</span></td>
-                                <td><span class="program-tag">{{ $template->program }}</span></td>
-                                <td>{{ $template->faculty->name }}</td>
-                                <td>{{ $template->updated_at->format('Y-m-d') }}</td>
+                                <td><span class="type-label">{{ str_replace('_', ' ', $template->type) }}</span></td>
                                 <td>
-                                    @if($template->distributed_at)
-                                        <span class="dist-status yes"><span class="dist-dot"></span>Distributed</span>
+                                    @foreach($template->programs as $row)
+                                        <span class="program-tag">{{ $row->program }}</span>
+                                    @endforeach
+                                </td>
+                                <td>{{ $template->creator->name }}</td>
+                                <td>{{ $template->created_at->format('Y-m-d') }}</td>
+                                <td>
+                                    @if($template->isForwarded())
+                                        <span class="dist-status yes"><span class="dist-dot"></span>Forwarded to Program Heads</span>
                                     @else
-                                        <span class="dist-status no"><span class="dist-dot"></span>Not yet</span>
+                                        <span class="dist-status no"><span class="dist-dot"></span>Not yet forwarded</span>
                                     @endif
                                 </td>
                                 <td>
@@ -190,28 +191,20 @@
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                             View
                                         </a>
-                                        @if($template->distributed_at)
-                                            <form method="POST" action="{{ url('/secretary/template-distribution/' . $template->id . '/undistribute') }}" style="display:inline;">
-                                                @csrf
-                                                <button type="submit" class="btn-recall">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-                                                    Recall
-                                                </button>
-                                            </form>
-                                        @else
-                                            <form method="POST" action="{{ url('/secretary/template-distribution/' . $template->id . '/distribute') }}" style="display:inline;">
+                                        @unless($template->isForwarded())
+                                            <form method="POST" action="{{ url('/secretary/template-distribution/' . $template->id . '/forward') }}" style="display:inline;">
                                                 @csrf
                                                 <button type="submit" class="btn-distribute">
                                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                                                    Distribute
+                                                    Forward to Program Heads
                                                 </button>
                                             </form>
-                                        @endif
+                                        @endunless
                                     </div>
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="empty-row">Wala pang approved templates para i-distribute.</td></tr>
+                            <tr><td colspan="7" class="empty-row">No templates uploaded yet.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

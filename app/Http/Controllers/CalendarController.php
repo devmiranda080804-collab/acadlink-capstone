@@ -7,15 +7,15 @@ use Illuminate\Http\Request;
 
 class CalendarController extends Controller
 {
-    // Sino ang pwedeng mag-manage (add/edit/delete)
+    // Who is allowed to manage (add/edit/delete)
     protected array $canManage = ['admin', 'secretary'];
 
-    // View — lahat ng roles, dini-detect ang tamang blade
+    // View — all roles, detects the correct blade
     public function index()
     {
         $role = auth()->user()->role;
 
-        // Lahat ng activities — JSON para sa JS calendar
+        // All activities — JSON for the JS calendar
         $activities = CalendarActivity::with('creator')
             ->orderBy('activity_date')
             ->get()
@@ -34,7 +34,7 @@ class CalendarController extends Controller
 
         $canManage = in_array($role, $this->canManage);
 
-        // Piliin ang tamang blade base sa role
+        // Choose the correct blade based on role
         $viewMap = [
             'admin'        => 'admin.calendar',
             'program_head' => 'program-head.calendar',

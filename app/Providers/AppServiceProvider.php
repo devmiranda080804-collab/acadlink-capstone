@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Announcement;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // I-share ang permissions sa lahat ng views
+        // Share permissions with all views
         View::composer('*', function ($view) {
             if (Auth::check()) {
                 $role = Auth::user()->role;
@@ -33,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
                     ->toArray();
 
                 $view->with('navPermissions', $permissions);
+                $view->with('unreadAnnouncementsCount', Announcement::unreadCountFor(Auth::user()));
             }
         });
     }

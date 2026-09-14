@@ -33,7 +33,7 @@
             <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
         </div>
         <h1>Change Your Password</h1>
-        <p class="sub">Para sa iyong seguridad, palitan muna ang temporary password mo bago ka magpatuloy sa system.</p>
+        <p class="sub">For your security, please change your temporary password before continuing to the system.</p>
 
         @if($errors->any())
             <div class="error-msg">{{ $errors->first() }}</div>

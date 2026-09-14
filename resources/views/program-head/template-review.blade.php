@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Template Review – CBMA System</title>
+    <title>Template Distribution – CBMA System</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background-color: #f0f0f0; display: flex; height: 100vh; overflow: hidden; }
@@ -18,6 +18,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -110,13 +111,13 @@
             <li class="{{ request()->is('program-head/dashboard') ? 'active' : '' }}"><a href="{{ url('/program-head/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
             @endif
             @if($navPermissions['template-review'] ?? true)
-            <li class="{{ request()->is('program-head/template-review*') ? 'active' : '' }}"><a href="{{ url('/program-head/template-review') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Template Review</a></li>
+            <li class="{{ request()->is('program-head/template-review*') ? 'active' : '' }}"><a href="{{ url('/program-head/template-review') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Template Distribution</a></li>
             @endif
             @if($navPermissions['course-oversight'] ?? true)
             <li class="{{ request()->is('program-head/course-oversight*') ? 'active' : '' }}"><a href="{{ url('/program-head/course-oversight') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Oversight</a></li>
             @endif
-            @if($navPermissions['course-assignment'] ?? true)
-            <li class="{{ request()->is('program-head/course-assignment*') ? 'active' : '' }}"><a href="{{ url('/program-head/course-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Course Assignment</a></li>
+            @if($navPermissions['program-assignment'] ?? true)
+            <li class="{{ request()->is('program-head/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/program-head/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
             @endif
             @if($navPermissions['submissions'] ?? true)
             <li class="{{ request()->is('program-head/submissions*') ? 'active' : '' }}"><a href="{{ url('/program-head/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
@@ -125,7 +126,11 @@
             <li class="{{ request()->is('program-head/account-management*') ? 'active' : '' }}"><a href="{{ url('/program-head/account-management') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Account Management</a></li>
             @endif
             @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('program-head/announcements*') ? 'active' : '' }}"><a href="{{ url('/program-head/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a></li>
+            <li class="{{ request()->is('program-head/announcements*') ? 'active' : '' }}"><a href="{{ url('/program-head/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
+                @if(($unreadAnnouncementsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+                @endif
+            </a></li>
             @endif
             @if($navPermissions['calendar'] ?? true)
             <li class="{{ request()->is('program-head/calendar*') ? 'active' : '' }}"><a href="{{ url('/program-head/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
@@ -161,157 +166,46 @@
                 <div class="alert-success">{{ session('success') }}</div>
             @endif
 
-            <div class="page-title">Template Review</div>
-            <div class="page-sub">Review and approve submitted templates para sa program: <strong>{{ $myProgram }}</strong></div>
+            <div class="page-title">Template Distribution</div>
+            <div class="page-sub">Templates the Secretary has forwarded to you. Distribute each one so every faculty member in <strong>{{ $myProgram }}</strong> can access it.</div>
 
-            <div class="review-layout">
-
-                {{-- Template list --}}
-                <div>
-                    @forelse($templates as $template)
-                        <div class="review-card"
-                            onclick="selectTemplate(this, {
-                                title: '{{ addslashes($template->title) }}',
-                                type: '{{ ucwords(str_replace('_', ' ', $template->type)) }}',
-                                faculty: '{{ addslashes($template->faculty->name) }}',
-                                date: '{{ $template->created_at->format('M d, Y') }}',
-                                status: '{{ $template->status }}',
-                                statusLabel: '{{ $template->status_label }}',
-                                fileUrl: '{{ Storage::url($template->file_path) }}',
-                                approveUrl: '{{ url('/program-head/template-review/' . $template->id . '/approve') }}',
-                                revisionUrl: '{{ url('/program-head/template-review/' . $template->id . '/needs-revision') }}'
-                            })">
-                            <div class="review-card-top">
-                                <div class="review-card-title">
-                                    <svg style="width:15px;height:15px;color:#0f2557;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                    {{ $template->title }}
-                                </div>
-                                <span class="status-badge status-{{ $template->status }}">{{ $template->status_label }}</span>
+            <div>
+                @forelse($templates as $template)
+                    @php $row = $template->programRow($myProgram); @endphp
+                    <div class="review-card">
+                        <div class="review-card-top">
+                            <div class="review-card-title">
+                                <svg style="width:15px;height:15px;color:#0f2557;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                {{ $template->title }}
                             </div>
-                            <div class="review-card-type">{{ ucwords(str_replace('_', ' ', $template->type)) }}</div>
-                            <div class="review-card-meta">Submitted by {{ $template->faculty->name }} • {{ $template->created_at->format('Y-m-d') }}</div>
+                            @if($row && $row->distributed_at)
+                                <span class="status-badge status-approved">Distributed</span>
+                            @else
+                                <span class="status-badge status-pending_approval">Not yet distributed</span>
+                            @endif
                         </div>
-                    @empty
-                        <div class="empty-state">Wala pang templates na na-submit para sa iyong program.</div>
-                    @endforelse
-                </div>
+                        <div class="review-card-type">{{ str_replace('_', ' ', $template->type) }}</div>
+                        <div class="review-card-meta">Uploaded by {{ $template->creator->name }} • {{ $template->created_at->format('Y-m-d') }}</div>
 
-                {{-- Preview / action panel --}}
-                <div class="preview-panel">
-                    <div class="preview-title">Preview</div>
-                    <div id="preview-empty" class="preview-empty">Pumili ng template sa kaliwa para makita ang detalye at mag-review.</div>
-
-                    <div id="preview-content" style="display:none;">
-                        <div class="preview-field">
-                            <div class="plabel">Title</div>
-                            <div class="pvalue" id="p-title"></div>
-                        </div>
-                        <div class="preview-field">
-                            <div class="plabel">Type</div>
-                            <div class="pvalue" id="p-type"></div>
-                        </div>
-                        <div class="preview-field">
-                            <div class="plabel">Submitted by</div>
-                            <div class="pvalue" id="p-faculty"></div>
-                        </div>
-                        <div class="preview-field">
-                            <div class="plabel">Submission Date</div>
-                            <div class="pvalue" id="p-date"></div>
-                        </div>
-                        <div class="preview-field">
-                            <div class="plabel">Status</div>
-                            <div class="pvalue"><span class="status-badge" id="p-status-badge"></span></div>
-                        </div>
-
-                        <a class="btn-view-file" id="p-view" href="#" target="_blank">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            View Document
-                        </a>
-
-                        {{-- Actions — lalabas lang kung pending_review --}}
-                        <div class="review-actions" id="review-actions" style="display:none;">
-                            <form id="approve-form" method="POST">
-                                @csrf
-                                <button type="submit" class="btn-approve">✓ Approve & Forward to Admin</button>
-                            </form>
-                            <button type="button" class="btn-revision" onclick="openRevisionModal()">↩ Needs Revision</button>
-                        </div>
-
-                        {{-- Kung na-review na --}}
-                        <div class="already-reviewed" id="already-reviewed" style="display:none;">
-                            Ang template na ito ay <strong id="ar-status"></strong>. Hindi na ito available para sa muling review.
+                        <div style="margin-top:12px; display:flex; gap:8px;">
+                            <a class="btn-view-file" style="margin-bottom:0;" href="{{ Storage::url($template->file_path) }}" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                View Document
+                            </a>
+                            @if(!$row || !$row->distributed_at)
+                                <form method="POST" action="{{ url('/program-head/template-review/' . $template->id . '/distribute') }}">
+                                    @csrf
+                                    <button type="submit" class="btn-approve" style="width:auto; padding:9px 16px;">Distribute to My Faculty</button>
+                                </form>
+                            @endif
                         </div>
                     </div>
-                </div>
-
+                @empty
+                    <div class="empty-state">No templates have been forwarded to your program yet.</div>
+                @endforelse
             </div>
         </div>
     </div>
-
-    {{-- Needs Revision Modal --}}
-    <div class="modal-overlay" id="revision-overlay">
-        <div class="modal">
-            <form id="revision-form" method="POST">
-                @csrf
-                <div class="modal-title">Return for Revision</div>
-                <div class="modal-sub">Bibigyan mo ng feedback ang faculty kung ano ang kailangang ayusin.</div>
-                <div class="modal-field">
-                    <label>Feedback / Revision Notes <span style="color:#ef4444">*</span></label>
-                    <textarea name="review_note" placeholder="Halimbawa: Pakidagdag ang learning outcomes sa Section 2..." required></textarea>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeRevisionModal()">Cancel</button>
-                    <button type="submit" class="btn-submit-revision">Return to Faculty</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        let currentData = null;
-
-        function selectTemplate(el, data) {
-            document.querySelectorAll('.review-card').forEach(c => c.classList.remove('selected'));
-            el.classList.add('selected');
-            currentData = data;
-
-            document.getElementById('preview-empty').style.display = 'none';
-            document.getElementById('preview-content').style.display = 'block';
-
-            document.getElementById('p-title').textContent = data.title;
-            document.getElementById('p-type').textContent = data.type;
-            document.getElementById('p-faculty').textContent = data.faculty;
-            document.getElementById('p-date').textContent = data.date;
-            document.getElementById('p-view').href = data.fileUrl;
-
-            const badge = document.getElementById('p-status-badge');
-            badge.textContent = data.statusLabel;
-            badge.className = 'status-badge status-' + data.status;
-
-            // Actions lalabas lang kung pending_review
-            if (data.status === 'pending_review') {
-                document.getElementById('review-actions').style.display = 'flex';
-                document.getElementById('already-reviewed').style.display = 'none';
-                document.getElementById('approve-form').action = data.approveUrl;
-            } else {
-                document.getElementById('review-actions').style.display = 'none';
-                document.getElementById('already-reviewed').style.display = 'block';
-                document.getElementById('ar-status').textContent = data.statusLabel;
-            }
-        }
-
-        function openRevisionModal() {
-            if (!currentData) return;
-            document.getElementById('revision-form').action = currentData.revisionUrl;
-            document.getElementById('revision-overlay').classList.add('open');
-        }
-        function closeRevisionModal() {
-            document.getElementById('revision-overlay').classList.remove('open');
-        }
-        document.getElementById('revision-overlay').addEventListener('click', function(e) {
-            if (e.target === this) closeRevisionModal();
-        });
-    </script>
 
 </body>
 </html>

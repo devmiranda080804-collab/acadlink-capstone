@@ -17,6 +17,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -35,6 +36,13 @@
         .content { flex: 1; overflow-y: auto; padding: 24px 28px 28px; }
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .page-sub { font-size: 12px; color: #888; margin-bottom: 22px; }
+
+        .announcement-banner { display: flex; align-items: center; gap: 10px; background: #eff6ff; border: 1px solid #bfdbfe; color: #1e3a8a; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; }
+        .announcement-banner svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .announcement-banner-text { flex: 1; }
+        .announcement-banner-text strong { font-weight: 700; }
+        .announcement-banner-link { color: #1d4ed8; font-weight: 600; text-decoration: none; font-size: 12px; white-space: nowrap; }
+        .announcement-banner-link:hover { text-decoration: underline; }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
         .stat-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
@@ -80,13 +88,13 @@
             <li class="{{ request()->is('program-head/dashboard') ? 'active' : '' }}"><a href="{{ url('/program-head/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
             @endif
             @if($navPermissions['template-review'] ?? true)
-            <li class="{{ request()->is('program-head/template-review*') ? 'active' : '' }}"><a href="{{ url('/program-head/template-review') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Template Review</a></li>
+            <li class="{{ request()->is('program-head/template-review*') ? 'active' : '' }}"><a href="{{ url('/program-head/template-review') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Template Distribution</a></li>
             @endif
             @if($navPermissions['course-oversight'] ?? true)
             <li class="{{ request()->is('program-head/course-oversight*') ? 'active' : '' }}"><a href="{{ url('/program-head/course-oversight') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Oversight</a></li>
             @endif
-            @if($navPermissions['course-assignment'] ?? true)
-            <li class="{{ request()->is('program-head/course-assignment*') ? 'active' : '' }}"><a href="{{ url('/program-head/course-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Course Assignment</a></li>
+            @if($navPermissions['program-assignment'] ?? true)
+            <li class="{{ request()->is('program-head/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/program-head/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
             @endif
             @if($navPermissions['submissions'] ?? true)
             <li class="{{ request()->is('program-head/submissions*') ? 'active' : '' }}"><a href="{{ url('/program-head/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
@@ -95,7 +103,11 @@
             <li class="{{ request()->is('program-head/account-management*') ? 'active' : '' }}"><a href="{{ url('/program-head/account-management') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Account Management</a></li>
             @endif
             @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('program-head/announcements*') ? 'active' : '' }}"><a href="{{ url('/program-head/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a></li>
+            <li class="{{ request()->is('program-head/announcements*') ? 'active' : '' }}"><a href="{{ url('/program-head/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
+                @if(($unreadAnnouncementsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+                @endif
+            </a></li>
             @endif
             @if($navPermissions['calendar'] ?? true)
             <li class="{{ request()->is('program-head/calendar*') ? 'active' : '' }}"><a href="{{ url('/program-head/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
@@ -127,7 +139,18 @@
 
         <div class="content">
             <div class="page-title">Welcome back, {{ auth()->user()->name }}!</div>
-            <div class="page-sub">Buod ng iyong program: <strong>{{ $myProgram }}</strong></div>
+            <div class="page-sub">Summary of your program: <strong>{{ $myProgram }}</strong></div>
+
+            @if($unreadAnnouncements->isNotEmpty())
+                <div class="announcement-banner">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                    <div class="announcement-banner-text">
+                        <strong>{{ $unreadAnnouncementsCount }} new announcement{{ $unreadAnnouncementsCount > 1 ? 's' : '' }}:</strong>
+                        {{ $unreadAnnouncements->pluck('title')->implode(' · ') }}
+                    </div>
+                    <a href="{{ url('/program-head/announcements') }}" class="announcement-banner-link">View →</a>
+                </div>
+            @endif
 
             <div class="stats-grid">
                 <div class="stat-card">
@@ -140,8 +163,8 @@
                 <div class="stat-card">
                     <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $pendingReview }}</div>
-                        <div class="stat-label">Pending Review</div>
+                        <div class="stat-value">{{ $awaitingDistribution }}</div>
+                        <div class="stat-label">Awaiting Distribution</div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -154,8 +177,8 @@
                 <div class="stat-card">
                     <div class="stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $forwardedCount }}</div>
-                        <div class="stat-label">Forwarded to Admin</div>
+                        <div class="stat-value">{{ $distributedCount }}</div>
+                        <div class="stat-label">Distributed to My Faculty</div>
                     </div>
                 </div>
             </div>
@@ -163,7 +186,7 @@
             <div class="dash-row">
                 <div class="panel">
                     <div class="panel-title">
-                        Templates Awaiting Your Review
+                        Templates Awaiting Distribution
                         <a href="{{ url('/program-head/template-review') }}">View all →</a>
                     </div>
                     @forelse($reviewTemplates as $template)
@@ -172,13 +195,13 @@
                                 <span class="li-icon">@if($template->file_type == 'pdf') 📄 @else 📝 @endif</span>
                                 <div>
                                     <div class="li-title">{{ $template->title }}</div>
-                                    <div class="li-meta">{{ ucwords(str_replace('_',' ',$template->type)) }} · {{ $template->faculty->name }}</div>
+                                    <div class="li-meta">{{ str_replace('_',' ',$template->type) }} · Uploaded by {{ $template->creator->name }}</div>
                                 </div>
                             </div>
-                            <span class="li-badge">To Review</span>
+                            <span class="li-badge">To Distribute</span>
                         </div>
                     @empty
-                        <div class="empty-mini">Walang templates na naghihintay ng review. 🎉</div>
+                        <div class="empty-mini">No templates awaiting distribution. 🎉</div>
                     @endforelse
                 </div>
 
@@ -201,7 +224,7 @@
                             </div>
                         </div>
                     @empty
-                        <div class="empty-mini">Walang paparating na activities.</div>
+                        <div class="empty-mini">No upcoming activities.</div>
                     @endforelse
                 </div>
             </div>

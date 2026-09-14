@@ -7,9 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 class SharedResource extends Model
 {
     protected $fillable = [
-        'shared_by', 'program', 'title', 'description',
+        'shared_by', 'program', 'title', 'type', 'description',
         'file_path', 'file_name', 'file_type', 'file_size',
     ];
+
+    const TYPES = [
+        'lecture_slides'    => 'Lecture Slides',
+        'case_study'        => 'Case Study',
+        'activity_guide'    => 'Activity Guide',
+        'assessment_sample' => 'Assessment Sample',
+    ];
+
+    public function getTypeLabelAttribute(): string
+    {
+        return self::TYPES[$this->type] ?? 'Lecture Slides';
+    }
 
     public function sharer()
     {

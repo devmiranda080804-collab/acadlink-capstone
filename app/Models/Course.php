@@ -19,6 +19,11 @@ class Course extends Model
 }
 public function assignments()
 {
-    return $this->hasMany(CourseAssignment::class);
+    return $this->hasMany(ProgramAssignment::class);
+}
+
+public function outcomes()
+{
+    return $this->hasMany(CourseOutcome::class)->orderBy('order');
 }
 }

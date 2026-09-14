@@ -17,6 +17,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -134,14 +135,18 @@
             @if($navPermissions['course-filing'] ?? true)
             <li class="{{ request()->is('secretary/course-filing*') ? 'active' : '' }}"><a href="{{ url('/secretary/course-filing') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Filing</a></li>
             @endif
-            @if($navPermissions['course-assignment'] ?? true)
-            <li class="{{ request()->is('secretary/course-assignment*') ? 'active' : '' }}"><a href="{{ url('/secretary/course-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Course Assignment</a></li>
+            @if($navPermissions['program-assignment'] ?? true)
+            <li class="{{ request()->is('secretary/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/secretary/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
             @endif
             @if($navPermissions['account-management'] ?? true)
             <li class="{{ request()->is('secretary/account-management*') ? 'active' : '' }}"><a href="{{ url('/secretary/account-management') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Account Management</a></li>
             @endif
             @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('secretary/announcements*') ? 'active' : '' }}"><a href="{{ url('/secretary/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a></li>
+            <li class="{{ request()->is('secretary/announcements*') ? 'active' : '' }}"><a href="{{ url('/secretary/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
+                @if(($unreadAnnouncementsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+                @endif
+            </a></li>
             @endif
             @if($navPermissions['calendar'] ?? true)
             <li class="{{ request()->is('secretary/calendar*') ? 'active' : '' }}"><a href="{{ url('/secretary/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
@@ -191,7 +196,7 @@
             </div>
 
             @if(count($tree) === 0)
-                <div class="files-panel"><div class="files-empty">📁 Walang documents pa sa repository. Mag-upload o mag-approve ng templates para lumabas dito.</div></div>
+                <div class="files-panel"><div class="files-empty">📁 No documents in the repository yet. Upload a file or approve templates for them to appear here.</div></div>
             @else
                 <div class="repo-layout">
                     {{-- Folder tree --}}
@@ -288,7 +293,7 @@
                         @endforeach
 
                         <div class="folder-content" id="content-none">
-                            <div class="files-empty">📂 Pumili ng folder (semester) sa kaliwa para makita ang mga file.</div>
+                            <div class="files-empty">📂 Select a folder (semester) on the left to view its files.</div>
                         </div>
                     </div>
                 </div>
@@ -330,7 +335,7 @@
                 <div class="modal-field">
                     <label>File <span style="color:#ef4444">*</span></label>
                     <input type="file" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx" required>
-                    <div class="modal-hint">Allowed: PDF, Word, Excel · Max 20MB · Automatic na maiuuri by school year at semester base sa petsa ngayon.</div>
+                    <div class="modal-hint">Allowed: PDF, Word, Excel · Max 20MB · Automatically sorted by school year and semester based on today's date.</div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeUploadModal()">Cancel</button>
@@ -346,15 +351,15 @@
         }
 
         function selectFolder(el, year, sem) {
-            // I-highlight ang napiling folder
+            // Highlight the selected folder
             document.querySelectorAll('.folder-sem').forEach(f => f.classList.remove('active'));
             el.classList.add('active');
 
-            // I-update ang breadcrumb
+            // Update the breadcrumb
             document.getElementById('crumb-year').textContent = year;
             document.getElementById('crumb-sem').textContent = sem;
 
-            // Ipakita ang tamang content
+            // Show the correct content
             document.querySelectorAll('.folder-content').forEach(c => c.style.display = 'none');
             const target = document.getElementById('content-' + el.dataset.target);
             if (target) target.style.display = 'block';
@@ -364,7 +369,7 @@
         function closeUploadModal() { document.getElementById('upload-overlay').classList.remove('open'); }
         document.getElementById('upload-overlay').addEventListener('click', function(e) { if (e.target === this) closeUploadModal(); });
 
-        // Auto-select ang unang folder pag-load
+        // Auto-select the first folder on load
         document.addEventListener('DOMContentLoaded', function() {
             const firstSem = document.querySelector('.folder-sem');
             if (firstSem) firstSem.click();

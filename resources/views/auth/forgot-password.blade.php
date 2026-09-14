@@ -43,7 +43,7 @@
         <div class="form-panel">
             <h1>CBMA System</h1>
             <p class="sub">Academic Coordination and Instructional Management</p>
-            <p class="desc">I-enter ang iyong email address at magpapadala kami ng link para ma-reset ang iyong password.</p>
+            <p class="desc">Enter your email address and we will send you a link to reset your password.</p>
 
             @if(session('success'))
                 <div class="success-msg">{{ session('success') }}</div>

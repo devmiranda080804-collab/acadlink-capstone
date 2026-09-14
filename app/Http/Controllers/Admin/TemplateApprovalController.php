@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Template;
+use App\Models\TemplateDocument;
+use App\Services\GoogleDocsService;
 use Illuminate\Http\Request;
 use App\Models\AuditLog;
 
@@ -11,44 +12,68 @@ class TemplateApprovalController extends Controller
 {
     public function index()
     {
-        // Admin nakakakita ng lahat ng program — kasama history
-        $templates = Template::with(['faculty', 'reviewer'])
+        $templates = TemplateDocument::with(['creator', 'forwarder', 'programs'])
             ->latest()
             ->get();
 
         return view('admin.system-approvals', compact('templates'));
     }
 
-    public function approve(Request $request, Template $template)
+    public function store(Request $request)
     {
-        // Admin pwedeng mag-approve lang ng na-forward na ni PH
-        abort_unless($template->status === 'pending_approval', 403);
-
-        $template->update([
-            'status'      => 'approved',
-            'approved_by' => auth()->id(),
-            'review_note' => null,
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'type'  => 'required|string|max:100',
+            'mode'  => 'required|in:google_doc,upload_file',
+            'file'  => 'required_if:mode,upload_file|nullable|file|mimes:pdf,doc,docx|max:20480',
         ]);
-        AuditLog::record('Template Approved (Final)', "{$template->title} approved by " . auth()->user()->name);
 
-        return back()->with('success', 'Template approved. Available na ito para sa distribution.');
+        $data = [
+            'created_by' => auth()->id(),
+            'title'      => $request->title,
+            'type'       => $request->type,
+        ];
+
+        if ($request->mode === 'google_doc') {
+            // Create it directly as an editable Google Doc — this becomes the
+            // protected "master" faculty can view and copy from
+            $data['google_doc_id'] = (new GoogleDocsService())->createDocument($request->title);
+        } else {
+            $file = $request->file('file');
+            $path = $file->store('template-documents', 'public');
+
+            $data['file_path'] = $path;
+            $data['file_name'] = $file->getClientOriginalName();
+            $data['file_type'] = $file->getClientOriginalExtension();
+            $data['file_size'] = $file->getSize();
+        }
+
+        $document = TemplateDocument::create($data);
+
+        // Every program gets its own row so each Program Head can distribute independently
+        foreach (['BSA', 'BSMA', 'BSOA'] as $program) {
+            $document->programs()->create(['program' => $program]);
+        }
+
+        AuditLog::record('Template Provided', "{$document->title} uploaded by " . auth()->user()->name . ' for Secretary to relay.');
+
+        return back()->with('success', 'Template uploaded. It now awaits the Secretary to forward it to the Program Heads.');
     }
 
-    public function reject(Request $request, Template $template)
+    public function destroy(TemplateDocument $template)
     {
-        abort_unless($template->status === 'pending_approval', 403);
+        abort_if($template->isForwarded(), 403, 'This template has already been forwarded and can no longer be removed here.');
 
-        $request->validate([
-            'review_note' => 'required|string|max:1000',
-        ]);
+        if ($template->file_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($template->file_path);
+        }
 
-        $template->update([
-            'status'      => 'rejected',
-            'approved_by' => auth()->id(),
-            'review_note' => $request->review_note,
-        ]);
-        AuditLog::record('Template Rejected', "{$template->title} rejected by " . auth()->user()->name);
+        if ($template->google_doc_id) {
+            (new GoogleDocsService())->deleteDocument($template->google_doc_id);
+        }
 
-        return back()->with('success', 'Template rejected and returned to faculty.');
+        $template->delete();
+
+        return back()->with('success', 'Template removed.');
     }
 }

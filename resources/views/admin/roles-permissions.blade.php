@@ -18,6 +18,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -107,12 +108,20 @@
     <li class="{{ request()->is('admin/template-approvals*') ? 'active' : '' }}">
         <a href="{{ url('/admin/template-approvals') }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-            Template Approvals
+            Templates
         </a>
     </li>
     @endif
-    @if($navPermissions['course-assignment'] ?? true)
-    <li class="{{ request()->is('admin/course-assignment*') ? 'active' : '' }}"><a href="{{ url('/admin/course-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Course Assignment</a></li>
+    @if($navPermissions['cms'] ?? true)
+    <li class="{{ request()->is('admin/cms*') ? 'active' : '' }}">
+        <a href="{{ url('/admin/cms') }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+            CMS
+        </a>
+    </li>
+    @endif
+    @if($navPermissions['program-assignment'] ?? true)
+    <li class="{{ request()->is('admin/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/admin/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
     @endif
     @if($navPermissions['audit-logs'] ?? true)
     <li class="{{ request()->is('admin/audit-logs*') ? 'active' : '' }}">
@@ -127,6 +136,9 @@
         <a href="{{ url('/admin/announcements') }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
             Announcements
+            @if(($unreadAnnouncementsCount ?? 0) > 0)
+                <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+            @endif
         </a>
     </li>
     @endif
@@ -210,7 +222,7 @@
                                         <td>{{ $label }}</td>
                                         <td>
                                             @if($slug === 'dashboard')
-                                                {{-- Dashboard ay laging naka-check at hindi ma-uncheck --}}
+                                                {{-- Dashboard is always checked and cannot be unchecked --}}
                                                 <input type="checkbox" class="perm-check" checked disabled title="Dashboard is always enabled">
                                                 <input type="hidden" name="permissions[dashboard]" value="1">
                                             @else

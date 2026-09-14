@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Templates – CBMA System</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Templates – CBMA System</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background-color: #f0f0f0; display: flex; height: 100vh; overflow: hidden; }
@@ -18,6 +19,7 @@
         .nav-list li a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
         .nav-list li.active a { background-color: rgba(255,255,255,0.08); color: #fff; border-left: 3px solid #fff; }
         .nav-list li a svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.85; }
+        .nav-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 16px; height: 16px; padding: 0 4px; margin-left: auto; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; }
         .sidebar-logout { padding: 12px 0; border-top: 1px solid rgba(255,255,255,0.1); }
         .sidebar-logout a { display: flex; align-items: center; gap: 11px; padding: 11px 20px; color: #c8d6ec; text-decoration: none; font-size: 13px; transition: background 0.15s; }
         .sidebar-logout a:hover { background-color: rgba(255,255,255,0.08); color: #fff; }
@@ -64,6 +66,13 @@
         .btn-del-sm { background: #fff; color: #999; border: 1px solid #e0e0e0; }
         .btn-del-sm:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
         .btn-sm svg { width: 12px; height: 12px; }
+        .btn-copy { background: #16a34a; color: #fff; border: none; }
+        .btn-copy:hover { background: #15803d; }
+        .btn-copy:disabled { background: #d1d5db; cursor: default; }
+        .copies-list { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e4e4e4; }
+        .copies-list-label { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; margin-bottom: 6px; }
+        .copy-link { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: #0f2557; font-weight: 600; text-decoration: none; margin-bottom: 4px; }
+        .copy-link:hover { text-decoration: underline; }
 
         .status-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; }
         .status-pending_review   { background: #dbeafe; color: #1e40af; }
@@ -108,7 +117,7 @@
             <li class="{{ request()->is('faculty/dashboard') ? 'active' : '' }}"><a href="{{ url('/faculty/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
             @endif
             @if($navPermissions['my-template'] ?? true)
-            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>My Template</a></li>
+            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates</a></li>
             @endif
             @if($navPermissions['exam-generator'] ?? true)
             <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}"><a href="{{ url('/faculty/exam-generator') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Exam Generator</a></li>
@@ -126,7 +135,11 @@
             <li class="{{ request()->is('faculty/calendar*') ? 'active' : '' }}"><a href="{{ url('/faculty/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
             @endif
             @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}"><a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements</a></li>
+            <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}"><a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
+                @if(($unreadAnnouncementsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
+                @endif
+            </a></li>
             @endif
             @if($navPermissions['submissions'] ?? true)
             <li class="{{ request()->is('faculty/submissions*') ? 'active' : '' }}"><a href="{{ url('/faculty/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
@@ -170,18 +183,9 @@
 
             <div class="page-header">
                 <div>
-                    <div class="page-title">My Templates</div>
-                    <div class="page-sub">Manage your course documents</div>
+                    <div class="page-title">Templates</div>
+                    <div class="page-sub">Official templates your Program Head has distributed to your program</div>
                 </div>
-                <button class="btn-create" onclick="openCreateModal()">+ Create New</button>
-            </div>
-
-            {{-- Type tabs --}}
-            <div class="type-tabs">
-                <a class="type-tab {{ $type == 'syllabus' ? 'active' : '' }}" href="{{ url('/faculty/my-template?type=syllabus') }}">Syllabus</a>
-                <a class="type-tab {{ $type == 'lesson_plan' ? 'active' : '' }}" href="{{ url('/faculty/my-template?type=lesson_plan') }}">Lesson Plan</a>
-                <a class="type-tab {{ $type == 'course_guide' ? 'active' : '' }}" href="{{ url('/faculty/my-template?type=course_guide') }}">Course Guide</a>
-                <a class="type-tab {{ $type == 'module' ? 'active' : '' }}" href="{{ url('/faculty/my-template?type=module') }}">Module</a>
             </div>
 
             {{-- Templates grid --}}
@@ -190,138 +194,101 @@
                     <div class="template-card">
                         <div class="card-top">
                             <span class="card-icon">
-                                @if($template->file_type == 'pdf') 📄 @else 📝 @endif
+                                @if($template->isGoogleDoc()) 📑 @elseif($template->file_type == 'pdf') 📄 @else 📝 @endif
                             </span>
-                            <span class="status-badge status-{{ $template->status }}">{{ $template->status_label }}</span>
+                            <span class="status-badge status-approved">{{ str_replace('_', ' ', $template->type) }}</span>
                         </div>
 
                         <div class="card-title">{{ $template->title }}</div>
                         <div class="card-meta">
-                            {{ strtoupper($template->file_type) }} • {{ $template->readable_size }} • Updated {{ $template->updated_at->format('Y-m-d') }}
-                            @if($template->submission_date)
-                                • Due {{ $template->submission_date->format('Y-m-d') }}
+                            @if($template->isGoogleDoc())
+                                Google Doc (view-only master) • Provided by {{ $template->creator->name }}
+                            @else
+                                {{ strtoupper($template->file_type) }} • {{ $template->readable_size }} • Provided by {{ $template->creator->name }}
                             @endif
                         </div>
 
-                        @if($template->review_note && in_array($template->status, ['needs_revision', 'rejected']))
-                            <div class="review-note"><strong>Feedback:</strong> {{ $template->review_note }}</div>
-                        @endif
-
-                        <div class="card-actions">
-                            <button class="btn-sm btn-edit"
-                                onclick="openEditModal('{{ $template->id }}', '{{ addslashes($template->title) }}', '{{ $template->submission_date ? $template->submission_date->format('Y-m-d') : '' }}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                Edit
-                            </button>
-                            <a class="btn-sm btn-view-file" href="{{ Storage::url($template->file_path) }}" target="_blank">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                View
-                            </a>
-                            <form method="POST" action="{{ url('/faculty/my-template/' . $template->id) }}" onsubmit="return confirm('Delete this template?')" style="display:inline;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn-sm btn-del-sm">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                        @if($template->isGoogleDoc())
+                            <div class="card-actions">
+                                <a class="btn-sm btn-view-file" href="{{ $template->google_view_url }}" target="_blank">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    View Master
+                                </a>
+                                <button type="button" class="btn-sm btn-copy" onclick="makeCopy({{ $template->id }}, this)">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                    <span class="btn-label">Make My Copy</span>
                                 </button>
-                            </form>
-                        </div>
+                            </div>
+
+                            <div class="copies-list" id="copies-{{ $template->id }}">
+                                @if($template->copies->isNotEmpty())
+                                    <div class="copies-list-label">My Copies</div>
+                                @endif
+                                @foreach($template->copies as $copy)
+                                    <a class="copy-link" href="{{ $copy->google_edit_url }}" target="_blank">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                                        {{ $copy->title }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="card-actions">
+                                <a class="btn-sm btn-view-file" href="{{ Storage::url($template->file_path) }}" target="_blank">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    View / Download
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 @empty
-                    <div class="empty-state">Wala ka pang {{ ucwords(str_replace('_', ' ', $type)) }} templates. Click "Create New" para mag-upload.</div>
+                    <div class="empty-state">No templates have been distributed to your program yet.</div>
                 @endforelse
             </div>
 
         </div>
     </div>
 
-    {{-- Create Modal --}}
-    <div class="modal-overlay" id="create-overlay">
-        <div class="modal">
-            <form method="POST" action="{{ url('/faculty/my-template') }}" enctype="multipart/form-data">
-                @csrf
-                <div class="modal-title">Create New Template</div>
-
-                <div class="modal-field">
-                    <label>Title <span style="color:#ef4444">*</span></label>
-                    <input type="text" name="title" placeholder="e.g. CAE1 Syllabus" required>
-                </div>
-
-                <div class="modal-field">
-                    <label>Type <span style="color:#ef4444">*</span></label>
-                    <select name="type" required>
-                        <option value="syllabus" {{ $type == 'syllabus' ? 'selected' : '' }}>Syllabus</option>
-                        <option value="lesson_plan" {{ $type == 'lesson_plan' ? 'selected' : '' }}>Lesson Plan</option>
-                        <option value="course_guide" {{ $type == 'course_guide' ? 'selected' : '' }}>Course Guide</option>
-                        <option value="module" {{ $type == 'module' ? 'selected' : '' }}>Module</option>
-                    </select>
-                </div>
-
-                <div class="modal-field">
-                    <label>Submission Date</label>
-                    <input type="date" name="submission_date">
-                    <div class="modal-hint">Petsa kung kailan dapat i-submit ang dokumentong ito.</div>
-                </div>
-
-                <div class="modal-field">
-                    <label>File <span style="color:#ef4444">*</span></label>
-                    <input type="file" name="file" accept=".pdf,.doc,.docx" required>
-                    <div class="modal-hint">Allowed: PDF, Word · Max 20MB · Isu-submit ito para sa review.</div>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Upload & Submit</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {{-- Edit Modal --}}
-    <div class="modal-overlay" id="edit-overlay">
-        <div class="modal">
-            <form id="edit-form" method="POST" enctype="multipart/form-data">
-                @csrf
-                @method('PUT')
-                <div class="modal-title">Edit Template</div>
-
-                <div class="modal-field">
-                    <label>Title <span style="color:#ef4444">*</span></label>
-                    <input type="text" id="edit-title" name="title" required>
-                </div>
-
-                <div class="modal-field">
-                    <label>Submission Date</label>
-                    <input type="date" id="edit-submission-date" name="submission_date">
-                </div>
-
-                <div class="modal-field">
-                    <label>Replace File (optional)</label>
-                    <input type="file" name="file" accept=".pdf,.doc,.docx">
-                    <div class="modal-hint">Iwanan blangko kung ayaw palitan ang file. Kapag na-reject/needs revision, ang pag-edit ay magre-resubmit para sa review.</div>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
-        function openCreateModal() { document.getElementById('create-overlay').classList.add('open'); }
-        function closeCreateModal() { document.getElementById('create-overlay').classList.remove('open'); }
+        function makeCopy(templateId, btn) {
+            btn.disabled = true;
+            btn.querySelector('.btn-label').textContent = 'Copying...';
 
-        function openEditModal(id, title, submissionDate) {
-            document.getElementById('edit-title').value = title;
-            document.getElementById('edit-submission-date').value = submissionDate || '';
-            document.getElementById('edit-form').action = '{{ url('/faculty/my-template') }}/' + id;
-            document.getElementById('edit-overlay').classList.add('open');
+            fetch(`/faculty/my-template/${templateId}/copy`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+            })
+            .then(async (res) => {
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data.message || 'Could not create your copy.');
+                return data;
+            })
+            .then((copy) => {
+                const list = document.getElementById(`copies-${templateId}`);
+                if (!list.querySelector('.copies-list-label')) {
+                    const label = document.createElement('div');
+                    label.className = 'copies-list-label';
+                    label.textContent = 'My Copies';
+                    list.appendChild(label);
+                }
+                const a = document.createElement('a');
+                a.className = 'copy-link';
+                a.href = copy.google_edit_url;
+                a.target = '_blank';
+                a.textContent = copy.title;
+                list.appendChild(a);
+                window.open(copy.google_edit_url, '_blank');
+            })
+            .catch((err) => {
+                alert(err.message);
+            })
+            .finally(() => {
+                btn.disabled = false;
+                btn.querySelector('.btn-label').textContent = 'Make My Copy';
+            });
         }
-        function closeEditModal() { document.getElementById('edit-overlay').classList.remove('open'); }
-
-        document.getElementById('create-overlay').addEventListener('click', function(e) { if (e.target === this) closeCreateModal(); });
-        document.getElementById('edit-overlay').addEventListener('click', function(e) { if (e.target === this) closeEditModal(); });
     </script>
 
 </body>

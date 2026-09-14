@@ -23,11 +23,11 @@ class ForgotPasswordController extends Controller
         );
 
         if ($status === Password::RESET_LINK_SENT) {
-            return back()->with('success', 'Naipadala na ang password reset link sa iyong email. Pakitingnan ang iyong inbox.');
+            return back()->with('success', 'The password reset link has been sent to your email. Please check your inbox.');
         }
 
         return back()->withErrors([
-            'email' => 'Walang account na may ganitong email address.'
+            'email' => 'No account found with that email address.'
         ]);
     }
 }

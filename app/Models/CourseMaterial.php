@@ -10,12 +10,25 @@ class CourseMaterial extends Model
         'course_id',
         'uploaded_by',
         'title',
+        'type',
         'file_path',
         'file_name',
         'file_type',
         'version',
         'file_size',
     ];
+
+    const TYPES = [
+        'syllabus'         => 'Official Syllabus',
+        'tos'              => 'Official TOS',
+        'exam_bank'        => 'Standard Exam Bank',
+        'teaching_material' => 'Core Teaching Materials',
+    ];
+
+    public function getTypeLabelAttribute(): string
+    {
+        return self::TYPES[$this->type] ?? 'Core Teaching Materials';
+    }
 
     public function course()
     {

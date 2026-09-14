@@ -4,35 +4,31 @@ namespace App\Http\Controllers\Secretary;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Template;
+use App\Models\TemplateDocument;
 use App\Models\CalendarActivity;
+use App\Models\Announcement;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // Approved templates na pwedeng i-distribute (hindi pa na-distribute)
-        $readyToDistribute = Template::where('status', 'approved')
-            ->whereNull('distributed_at')
-            ->count();
+        // Templates Admin uploaded that still need to be forwarded to Program Heads
+        $awaitingForward = TemplateDocument::whereNull('forwarded_at')->count();
 
-        // Na-distribute na
-        $distributedCount = Template::where('status', 'approved')
-            ->whereNotNull('distributed_at')
-            ->count();
+        // Already forwarded
+        $forwardedCount = TemplateDocument::whereNotNull('forwarded_at')->count();
 
-        // Total faculty accounts (lahat ng program — institutional oversight)
+        // Total faculty accounts (all programs — institutional oversight)
         $facultyCount = User::where('role', 'faculty')
             ->whereNull('archived_at')
             ->count();
 
-        // Total approved templates
-        $totalApproved = Template::where('status', 'approved')->count();
+        // Total templates Admin has ever uploaded
+        $totalTemplates = TemplateDocument::count();
 
-        // Listahan ng approved na hindi pa na-distribute
-        $pendingDistribution = Template::with('faculty')
-            ->where('status', 'approved')
-            ->whereNull('distributed_at')
+        // List of templates awaiting forward
+        $pendingDistribution = TemplateDocument::with('creator')
+            ->whereNull('forwarded_at')
             ->latest()
             ->take(5)
             ->get();
@@ -43,9 +39,17 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // Unread announcements, for the dashboard notification banner
+        $unreadAnnouncements = Announcement::active()->visibleTo(auth()->user())
+            ->unreadBy(auth()->user())
+            ->latest()
+            ->take(3)
+            ->get();
+
         return view('secretary.secretary-dashboard', compact(
-            'readyToDistribute', 'distributedCount', 'facultyCount',
-            'totalApproved', 'pendingDistribution', 'upcomingActivities'
+            'awaitingForward', 'forwardedCount', 'facultyCount',
+            'totalTemplates', 'pendingDistribution', 'upcomingActivities',
+            'unreadAnnouncements'
         ));
     }
 }

@@ -15,8 +15,6 @@ class AdminSeeder extends Seeder
             'email' => 'admin@cbma.edu.ph',
             'password' => Hash::make('admin123'),
 
-            'employee_id' => 'EMP-000',
-
             'role' => 'admin',
 
             'program' => 'ADMIN',

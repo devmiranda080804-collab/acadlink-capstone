@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class CourseAssignment extends Model
+class ProgramAssignment extends Model
 {
     protected $fillable = [
         'course_id', 'faculty_id', 'school_year', 'semester', 'assigned_by',
@@ -23,5 +23,10 @@ class CourseAssignment extends Model
     public function assigner()
     {
         return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function exams()
+    {
+        return $this->hasMany(Exam::class);
     }
 }

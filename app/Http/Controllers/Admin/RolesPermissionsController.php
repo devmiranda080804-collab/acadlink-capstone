@@ -9,13 +9,13 @@ use App\Models\AuditLog;
 
 class RolesPermissionsController extends Controller
 {
-    // Lahat ng modules per role — order nito = order ng sidebar
+    // All modules per role — this order matches the sidebar order
     protected array $roleModules = [
         'program_head' => [
             'dashboard'          => 'Dashboard',
-            'template-review'    => 'Template Review',
+            'template-review'    => 'Template Distribution',
             'course-oversight'   => 'Course Oversight',
-            'course-assignment'  => 'Course Assignment',
+            'program-assignment'  => 'Program Assignment',
             'submissions'        => 'Submissions and Deadline',
             'account-management' => 'Account Management',
             'announcements'      => 'Announcements',
@@ -26,14 +26,14 @@ class RolesPermissionsController extends Controller
             'document-repository'    => 'Document Repository',
             'template-distribution'  => 'Template Distribution',
             'course-filing'          => 'Course Filing',
-            'course-assignment'  => 'Course Assignment',
+            'program-assignment'  => 'Program Assignment',
             'account-management'     => 'Account Management',
             'announcements'          => 'Announcements',
             'calendar'               => 'Calendar of Activities',
         ],
         'faculty' => [
             'dashboard'           => 'Dashboard',
-            'my-template'         => 'My Template',
+            'my-template'         => 'Templates',
             'exam-generator'      => 'Exam Generator',
             'shared-library'      => 'Shared Library',
             'course-coordination' => 'Course Coordination',
@@ -56,12 +56,12 @@ class RolesPermissionsController extends Controller
 
         $modules = $this->roleModules[$role];
 
-        // Kunin yung current enabled/disabled state mula sa DB
+        // Get the current enabled/disabled state from the DB
         $saved = DB::table('role_permissions')
             ->where('role', $role)
             ->pluck('is_enabled', 'module');
 
-        // Kung wala pa sa DB (bagong module), default = true
+        // If not yet in the DB (new module), default = true
         $permissions = [];
         foreach ($modules as $slug => $label) {
             $permissions[$slug] = $saved[$slug] ?? true;
@@ -82,7 +82,7 @@ class RolesPermissionsController extends Controller
         $modules = array_keys($this->roleModules[$role]);
 
         foreach ($modules as $module) {
-            // Dashboard ay laging enabled — hindi pwedeng i-disable
+            // Dashboard is always enabled — it cannot be disabled
             if ($module === 'dashboard') {
                 $isEnabled = true;
             } else {
