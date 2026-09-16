@@ -37,23 +37,42 @@
         .alert-success { background: #dcfce7; color: #166534; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 13px; }
 
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
-        .page-sub { font-size: 11.5px; color: #888; margin-bottom: 22px; }
+        .page-sub { font-size: 11.5px; color: #888; margin-bottom: 20px; }
 
-        .req-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
+        .stat-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stat-icon svg { width: 22px; height: 22px; }
+        .stat-icon.blue { background: #dbeafe; color: #1d4ed8; }
+        .stat-icon.red { background: #fee2e2; color: #dc2626; }
+        .stat-icon.amber { background: #fef3c7; color: #b45309; }
+        .stat-icon.green { background: #d1fae5; color: #059669; }
+        .stat-info .stat-value { font-size: 24px; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
+        .stat-info .stat-label { font-size: 11.5px; color: #888; margin-top: 2px; }
+
+        .filter-tabs { display: flex; gap: 4px; margin-bottom: 18px; }
+        .filter-tab { padding: 7px 16px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; user-select: none; }
+        .filter-tab:hover { border-color: #0f2557; color: #0f2557; }
+        .filter-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
+
+        .req-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; display: flex; gap: 16px; }
         .req-card.overdue { border-left: 4px solid #ef4444; }
         .req-card.soon { border-left: 4px solid #f59e0b; }
         .req-card.ok { border-left: 4px solid #10b981; }
-        .req-card.done { border-left: 4px solid #10b981; opacity: 0.85; }
-        .req-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+        .req-card.done { border-left: 4px solid #10b981; }
+        .req-type-icon { width: 40px; height: 40px; border-radius: 9px; background: #eef2ff; color: #0f2557; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; }
+        .req-body { flex: 1; min-width: 0; }
+        .req-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
         .req-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .req-type { font-size: 11px; color: #888; }
         .req-desc { font-size: 12px; color: #666; margin: 8px 0; line-height: 1.5; }
-        .req-deadline-badge { font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 14px; white-space: nowrap; }
+        .req-deadline-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 14px; white-space: nowrap; }
+        .req-deadline-badge svg { width: 11px; height: 11px; }
         .badge-overdue { background: #fee2e2; color: #991b1b; }
         .badge-soon { background: #fef3c7; color: #92400e; }
         .badge-ok { background: #d1fae5; color: #065f46; }
 
-        .my-status-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+        .my-status-row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #f0f0f0; flex-wrap: wrap; gap: 8px; }
         .my-status-info { font-size: 12px; color: #555; }
         .my-status-badge { font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: 12px; margin-left: 6px; }
         .status-submitted { background: #d1fae5; color: #065f46; }
@@ -62,7 +81,12 @@
         .file-link:hover { text-decoration: underline; }
 
         .upload-form { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
-        .upload-form input[type=file] { font-size: 11.5px; flex: 1; }
+        .file-picker { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+        .file-picker input[type=file] { display: none; }
+        .btn-choose { display: flex; align-items: center; gap: 5px; background: #fff; color: #333; border: 1px solid #d0d0d0; font-size: 11.5px; font-weight: 600; padding: 7px 12px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
+        .btn-choose:hover { background: #f5f5f5; }
+        .btn-choose svg { width: 12px; height: 12px; }
+        .file-picker-name { font-size: 11.5px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .btn-submit { background: #0f2557; color: #fff; border: none; font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
         .btn-submit:hover { background: #1a3a7a; }
 
@@ -153,6 +177,39 @@
             <div class="page-title">Submissions and Deadline</div>
             <div class="page-sub">Requirements sorted by nearest deadline</div>
 
+            @php
+                $overdueTotal = $requirements->filter(fn($r) => !$r['submission'] && $r['days_left'] < 0)->count();
+                $soonTotal = $requirements->filter(fn($r) => !$r['submission'] && $r['days_left'] >= 0 && $r['days_left'] <= 3)->count();
+                $submittedTotal = $requirements->filter(fn($r) => $r['submission'])->count();
+            @endphp
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $requirements->count() }}</div><div class="stat-label">Total Requirements</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $overdueTotal }}</div><div class="stat-label">Overdue</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $soonTotal }}</div><div class="stat-label">Due Soon</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $submittedTotal }}</div><div class="stat-label">Submitted</div></div>
+                </div>
+            </div>
+
+            <div class="filter-tabs">
+                <span class="filter-tab active" onclick="filterReqs('all', this)">All</span>
+                <span class="filter-tab" onclick="filterReqs('overdue', this)">Overdue</span>
+                <span class="filter-tab" onclick="filterReqs('soon', this)">Due Soon</span>
+                <span class="filter-tab" onclick="filterReqs('done', this)">Submitted</span>
+            </div>
+
+            <div id="req-list">
             @forelse($requirements as $req)
                 @php
                     $daysLeft = $req['days_left'];
@@ -169,45 +226,84 @@
                     } else {
                         $cardClass = 'ok'; $badgeClass = 'badge-ok'; $badgeText = $daysLeft . ' day(s) left';
                     }
+
+                    $typeIcon = match(true) {
+                        str_contains(strtolower($req['type']), 'syllabus') => '📘',
+                        str_contains(strtolower($req['type']), 'lesson') => '📗',
+                        str_contains(strtolower($req['type']), 'tos') => '📊',
+                        str_contains(strtolower($req['type']), 'exam') => '📝',
+                        default => '📄',
+                    };
                 @endphp
-                <div class="req-card {{ $cardClass }}">
-                    <div class="req-top">
-                        <div>
-                            <div class="req-title">{{ $req['title'] }}</div>
-                            <div class="req-type">{{ $req['type'] }} · Due {{ $req['deadline']->format('M d, Y') }}</div>
-                        </div>
-                        <span class="req-deadline-badge {{ $badgeClass }}">{{ $badgeText }}</span>
-                    </div>
-
-                    @if($req['description'])
-                        <div class="req-desc">{{ $req['description'] }}</div>
-                    @endif
-
-                    @if($sub)
-                        <div class="my-status-row">
-                            <div class="my-status-info">
-                                You submitted: <a class="file-link" href="{{ Storage::url($sub->file_path) }}" target="_blank">{{ $sub->file_name }}</a>
-                                <span class="my-status-badge status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
+                <div class="req-card {{ $cardClass }}" data-status="{{ $cardClass }}">
+                    <div class="req-type-icon">{{ $typeIcon }}</div>
+                    <div class="req-body">
+                        <div class="req-top">
+                            <div>
+                                <div class="req-title">{{ $req['title'] }}</div>
+                                <div class="req-type">{{ $req['type'] }} · Due {{ $req['deadline']->format('M d, Y') }}</div>
                             </div>
+                            <span class="req-deadline-badge {{ $badgeClass }}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                {{ $badgeText }}
+                            </span>
                         </div>
-                        <form class="upload-form" method="POST" action="{{ url('/faculty/submissions/' . $req['id']) }}" enctype="multipart/form-data">
-                            @csrf
-                            <input type="file" name="file" accept=".pdf,.doc,.docx" required>
-                            <button type="submit" class="btn-submit">Re-submit</button>
-                        </form>
-                    @else
-                        <form class="upload-form" method="POST" action="{{ url('/faculty/submissions/' . $req['id']) }}" enctype="multipart/form-data">
-                            @csrf
-                            <input type="file" name="file" accept=".pdf,.doc,.docx" required>
-                            <button type="submit" class="btn-submit">Submit</button>
-                        </form>
-                    @endif
+
+                        @if($req['description'])
+                            <div class="req-desc">{{ $req['description'] }}</div>
+                        @endif
+
+                        @if($sub)
+                            <div class="my-status-row">
+                                <div class="my-status-info">
+                                    You submitted: <a class="file-link" href="{{ Storage::url($sub->file_path) }}" target="_blank">{{ $sub->file_name }}</a>
+                                    <span class="my-status-badge status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
+                                </div>
+                            </div>
+                            <form class="upload-form" method="POST" action="{{ url('/faculty/submissions/' . $req['id']) }}" enctype="multipart/form-data">
+                                @csrf
+                                <div class="file-picker">
+                                    <button type="button" class="btn-choose" onclick="this.nextElementSibling.nextElementSibling.click()">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                        Choose File
+                                    </button>
+                                    <span class="file-picker-name">No file chosen</span>
+                                    <input type="file" name="file" accept=".pdf,.doc,.docx" required onchange="this.previousElementSibling.textContent = this.files[0] ? this.files[0].name : 'No file chosen'">
+                                </div>
+                                <button type="submit" class="btn-submit">Re-submit</button>
+                            </form>
+                        @else
+                            <form class="upload-form" method="POST" action="{{ url('/faculty/submissions/' . $req['id']) }}" enctype="multipart/form-data">
+                                @csrf
+                                <div class="file-picker">
+                                    <button type="button" class="btn-choose" onclick="this.nextElementSibling.nextElementSibling.click()">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                        Choose File
+                                    </button>
+                                    <span class="file-picker-name">No file chosen</span>
+                                    <input type="file" name="file" accept=".pdf,.doc,.docx" required onchange="this.previousElementSibling.textContent = this.files[0] ? this.files[0].name : 'No file chosen'">
+                                </div>
+                                <button type="submit" class="btn-submit">Submit</button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
             @empty
                 <div class="empty-state">No submission requirements at this time.</div>
             @endforelse
+            </div>
         </div>
     </div>
+
+    <script>
+        function filterReqs(status, el) {
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.querySelectorAll('#req-list .req-card').forEach(card => {
+                card.style.display = (status === 'all' || card.dataset.status === status) ? '' : 'none';
+            });
+        }
+    </script>
 
 </body>
 </html>

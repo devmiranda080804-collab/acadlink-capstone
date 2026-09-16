@@ -36,21 +36,40 @@
         .content { flex: 1; overflow-y: auto; padding: 24px 28px 28px; }
         .alert-success { background: #dcfce7; color: #166534; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 13px; }
 
-        .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; }
+        .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .page-sub { font-size: 11.5px; color: #888; }
         .btn-add { display: flex; align-items: center; gap: 6px; background: #0f2557; color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; white-space: nowrap; }
         .btn-add:hover { background: #1a3a7a; }
 
-        .req-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
+        .stat-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stat-icon svg { width: 22px; height: 22px; }
+        .stat-icon.blue { background: #dbeafe; color: #1d4ed8; }
+        .stat-icon.red { background: #fee2e2; color: #dc2626; }
+        .stat-icon.amber { background: #fef3c7; color: #b45309; }
+        .stat-icon.green { background: #d1fae5; color: #059669; }
+        .stat-info .stat-value { font-size: 24px; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
+        .stat-info .stat-label { font-size: 11.5px; color: #888; margin-top: 2px; }
+
+        .filter-tabs { display: flex; gap: 4px; margin-bottom: 18px; }
+        .filter-tab { padding: 7px 16px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; user-select: none; }
+        .filter-tab:hover { border-color: #0f2557; color: #0f2557; }
+        .filter-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
+
+        .req-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; display: flex; gap: 16px; }
         .req-card.overdue { border-left: 4px solid #ef4444; }
         .req-card.soon { border-left: 4px solid #f59e0b; }
         .req-card.ok { border-left: 4px solid #10b981; }
-        .req-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+        .req-type-icon { width: 40px; height: 40px; border-radius: 9px; background: #eef2ff; color: #0f2557; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; }
+        .req-body { flex: 1; min-width: 0; }
+        .req-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
         .req-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .req-type { font-size: 11px; color: #888; }
         .req-desc { font-size: 12px; color: #666; margin: 8px 0; line-height: 1.5; }
-        .req-deadline-badge { font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 14px; white-space: nowrap; }
+        .req-deadline-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 14px; white-space: nowrap; }
+        .req-deadline-badge svg { width: 11px; height: 11px; }
         .badge-overdue { background: #fee2e2; color: #991b1b; }
         .badge-soon { background: #fef3c7; color: #92400e; }
         .badge-ok { background: #d1fae5; color: #065f46; }
@@ -177,6 +196,38 @@
                 <button class="btn-add" onclick="openAddModal()">+ Add Requirement</button>
             </div>
 
+            @php
+                $overdueTotal = $requirements->filter(fn($r) => $r->days_left < 0)->count();
+                $soonTotal = $requirements->filter(fn($r) => $r->days_left >= 0 && $r->days_left <= 3)->count();
+                $fullySubmittedTotal = $requirements->filter(fn($r) => $facultyCount > 0 && $r->submissions->count() >= $facultyCount)->count();
+            @endphp
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $requirements->count() }}</div><div class="stat-label">Total Requirements</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $overdueTotal }}</div><div class="stat-label">Overdue</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $soonTotal }}</div><div class="stat-label">Due Soon</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $fullySubmittedTotal }}</div><div class="stat-label">Fully Submitted</div></div>
+                </div>
+            </div>
+
+            <div class="filter-tabs">
+                <span class="filter-tab active" onclick="filterReqs('all', this)">All</span>
+                <span class="filter-tab" onclick="filterReqs('overdue', this)">Overdue</span>
+                <span class="filter-tab" onclick="filterReqs('soon', this)">Due Soon</span>
+            </div>
+
+            <div id="req-list">
             @forelse($requirements as $req)
                 @php
                     $daysLeft = $req->days_left;
@@ -187,52 +238,67 @@
                     if ($daysLeft < 0) { $cardClass = 'overdue'; $badgeClass = 'badge-overdue'; $badgeText = abs($daysLeft) . ' day(s) overdue'; }
                     elseif ($daysLeft <= 3) { $cardClass = 'soon'; $badgeClass = 'badge-soon'; $badgeText = $daysLeft == 0 ? 'Due today' : $daysLeft . ' day(s) left'; }
                     else { $cardClass = 'ok'; $badgeClass = 'badge-ok'; $badgeText = $daysLeft . ' day(s) left'; }
+
+                    $typeIcon = match(true) {
+                        str_contains(strtolower($req->type), 'syllabus') => '📘',
+                        str_contains(strtolower($req->type), 'lesson') => '📗',
+                        str_contains(strtolower($req->type), 'tos') => '📊',
+                        str_contains(strtolower($req->type), 'exam') => '📝',
+                        default => '📄',
+                    };
                 @endphp
-                <div class="req-card {{ $cardClass }}">
-                    <div class="req-top">
-                        <div>
-                            <div class="req-title">{{ $req->title }}</div>
-                            <div class="req-type">{{ ucwords(str_replace('_',' ',$req->type)) }} · Due {{ $req->deadline->format('M d, Y') }}</div>
-                        </div>
-                        <span class="req-deadline-badge {{ $badgeClass }}">{{ $badgeText }}</span>
-                    </div>
-
-                    @if($req->description)
-                        <div class="req-desc">{{ $req->description }}</div>
-                    @endif
-
-                    <div class="req-progress">
-                        <div class="progress-track"><div class="progress-fill" style="width: {{ $pct }}%;"></div></div>
-                        <span class="progress-text">{{ $submittedCount }} / {{ $facultyCount }} submitted{{ $lateCount > 0 ? " ({$lateCount} late)" : '' }}</span>
-                    </div>
-
-                    <div class="req-actions">
-                        <button class="btn-mini btn-mini-toggle" onclick="toggleSubmitters({{ $req->id }})">View Submitters</button>
-                        <button class="btn-mini btn-mini-edit" onclick='editRequirement(@json($req))'>Edit</button>
-                        <form method="POST" action="{{ url('/program-head/submissions/' . $req->id) }}" onsubmit="return confirm('Delete this requirement?')" style="display:inline;">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn-mini btn-mini-del">Delete</button>
-                        </form>
-                    </div>
-
-                    <div class="submitters-list" id="submitters-{{ $req->id }}">
-                        @forelse($req->submissions as $sub)
-                            <div class="submitter-row">
-                                <span class="submitter-name">{{ $sub->faculty->name }}</span>
-                                <div style="display:flex; align-items:center; gap:8px;">
-                                    <a class="submitter-link" href="{{ Storage::url($sub->file_path) }}" target="_blank">View File</a>
-                                    <span class="submitter-status status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
-                                </div>
+                <div class="req-card {{ $cardClass }}" data-status="{{ $cardClass }}">
+                    <div class="req-type-icon">{{ $typeIcon }}</div>
+                    <div class="req-body">
+                        <div class="req-top">
+                            <div>
+                                <div class="req-title">{{ $req->title }}</div>
+                                <div class="req-type">{{ ucwords(str_replace('_',' ',$req->type)) }} · Due {{ $req->deadline->format('M d, Y') }}</div>
                             </div>
-                        @empty
-                            <div style="font-size:12px; color:#bbb;">No one has submitted yet.</div>
-                        @endforelse
+                            <span class="req-deadline-badge {{ $badgeClass }}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                {{ $badgeText }}
+                            </span>
+                        </div>
+
+                        @if($req->description)
+                            <div class="req-desc">{{ $req->description }}</div>
+                        @endif
+
+                        <div class="req-progress">
+                            <div class="progress-track"><div class="progress-fill" style="width: {{ $pct }}%;"></div></div>
+                            <span class="progress-text">{{ $submittedCount }} / {{ $facultyCount }} submitted{{ $lateCount > 0 ? " ({$lateCount} late)" : '' }}</span>
+                        </div>
+
+                        <div class="req-actions">
+                            <button class="btn-mini btn-mini-toggle" onclick="toggleSubmitters({{ $req->id }})">View Submitters</button>
+                            <button class="btn-mini btn-mini-edit" onclick='editRequirement(@json($req))'>Edit</button>
+                            <form method="POST" action="{{ url('/program-head/submissions/' . $req->id) }}" onsubmit="return confirm('Delete this requirement?')" style="display:inline;">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn-mini btn-mini-del">Delete</button>
+                            </form>
+                        </div>
+
+                        <div class="submitters-list" id="submitters-{{ $req->id }}">
+                            @forelse($req->submissions as $sub)
+                                <div class="submitter-row">
+                                    <span class="submitter-name">{{ $sub->faculty->name }}</span>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <a class="submitter-link" href="{{ Storage::url($sub->file_path) }}" target="_blank">View File</a>
+                                        <span class="submitter-status status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
+                                    </div>
+                                </div>
+                            @empty
+                                <div style="font-size:12px; color:#bbb;">No one has submitted yet.</div>
+                            @endforelse
+                        </div>
                     </div>
                 </div>
             @empty
                 <div class="empty-state">No submission requirements yet. Click "Add Requirement" to get started.</div>
             @endforelse
+            </div>
         </div>
     </div>
 
@@ -279,6 +345,14 @@
 
     <script>
         const BASE = '{{ url('/program-head/submissions') }}';
+
+        function filterReqs(status, el) {
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.querySelectorAll('#req-list .req-card').forEach(card => {
+                card.style.display = (status === 'all' || card.dataset.status === status) ? '' : 'none';
+            });
+        }
 
         function toggleSubmitters(id) {
             document.getElementById('submitters-' + id).classList.toggle('open');

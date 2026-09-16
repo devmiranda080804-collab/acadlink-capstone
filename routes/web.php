@@ -19,7 +19,6 @@ use App\Http\Controllers\Faculty\CollaborationController;
 use App\Http\Controllers\Faculty\TemplateController;
 use App\Http\Controllers\ProgramHead\TemplateReviewController;
 use App\Http\Controllers\Admin\TemplateApprovalController;
-use App\Http\Controllers\Admin\TemplateElementsController;
 use App\Http\Controllers\Secretary\TemplateDistributionController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -32,7 +31,7 @@ use App\Http\Controllers\Faculty\SharedLibraryController;
 use App\Http\Controllers\ProgramHead\SubmissionController as PHSubmissionController;
 use App\Http\Controllers\Faculty\SubmissionController as FacultySubmissionController;
 use App\Http\Controllers\Faculty\ExamGeneratorController;
-use App\Http\Controllers\Faculty\TemplateGuideController;
+use App\Http\Controllers\Faculty\ContentModuleController;
 use App\Http\Controllers\ProgramAssignmentController;
 use App\Http\Controllers\Admin\AuditLogController;
 
@@ -85,7 +84,10 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::get('/announcements', [FacultyAnnouncementController::class, 'index']);
     Route::get('/submissions', [FacultySubmissionController::class, 'index']);
     Route::post('/submissions/{requirement}', [FacultySubmissionController::class, 'store']);
-    Route::get('/cms', [TemplateGuideController::class, 'index']);
+    Route::get('/cms', [ContentModuleController::class, 'index']);
+    Route::post('/cms', [ContentModuleController::class, 'store']);
+    Route::put('/cms/{module}', [ContentModuleController::class, 'update']);
+    Route::delete('/cms/{module}', [ContentModuleController::class, 'destroy']);
 
     // Collaboration API (Google Docs-backed)
     Route::get('/collab/courses/{course}/documents', [CollaborationController::class, 'index']);
@@ -120,14 +122,6 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
     Route::get('/template-approvals', [TemplateApprovalController::class, 'index']);
     Route::post('/template-approvals', [TemplateApprovalController::class, 'store']);
     Route::delete('/template-approvals/{template}', [TemplateApprovalController::class, 'destroy']);
-
-    // CMS — Template Elements
-    Route::get('/cms', [TemplateElementsController::class, 'index']);
-    Route::post('/cms', [TemplateElementsController::class, 'store']);
-    Route::put('/cms/{templateElement}', [TemplateElementsController::class, 'update']);
-    Route::post('/cms/{templateElement}/reorder', [TemplateElementsController::class, 'reorder']);
-    Route::post('/cms/{templateElement}/toggle-active', [TemplateElementsController::class, 'toggleActive']);
-    Route::delete('/cms/{templateElement}', [TemplateElementsController::class, 'destroy']);
 
     Route::get('/audit-logs', [AuditLogController::class, 'index']);
 

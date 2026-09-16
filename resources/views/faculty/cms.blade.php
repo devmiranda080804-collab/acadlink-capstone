@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>CMS – CBMA System</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -77,23 +78,51 @@
         /* ═══════════════════ CONTENT ═══════════════════ */
         .content { flex: 1; overflow-y: auto; padding: 24px 28px 28px; }
 
+        .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
-        .page-sub { font-size: 11.5px; color: #888; margin-bottom: 20px; }
+        .page-sub { font-size: 11.5px; color: #888; max-width: 480px; }
+        .alert-success { background: #dcfce7; color: #166534; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 13px; }
+        .alert-error { background: #fee2e2; color: #b91c1c; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #fca5a5; border-radius: 8px; font-size: 13px; }
 
-        /* Template type cards */
-        .type-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
-        .type-card-title { font-size: 13.5px; font-weight: 700; color: #1a1a2e; text-transform: capitalize; padding: 14px 18px; border-bottom: 1px solid #f0f0f0; background: #fafbff; }
-        .type-card-list { padding: 4px 18px; }
-        .elem-row { padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
-        .elem-row:last-child { border-bottom: none; }
-        .elem-row-main { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-        .elem-label { font-size: 13px; font-weight: 600; color: #222; }
-        .req-tag { font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 10px; text-transform: capitalize; }
-        .req-yes { background: #fee2e2; color: #991b1b; }
-        .req-no { background: #f3f4f6; color: #666; }
-        .field-tag { background: #eef2ff; color: #0f2557; }
-        .elem-desc { font-size: 11.5px; color: #888; margin-top: 4px; line-height: 1.5; }
-        .empty-guide { text-align: center; padding: 60px 20px; color: #bbb; font-size: 12.5px; background: #fff; border: 1px solid #e4e4e4; border-radius: 8px; }
+        .btn-create { display: flex; align-items: center; gap: 6px; background: #0f2557; color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+        .btn-create:hover { background: #1a3a7a; }
+
+        .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+        .module-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px; transition: box-shadow 0.15s; }
+        .module-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
+        .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+        .card-icon { font-size: 22px; }
+        .card-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+        .card-desc { font-size: 11.5px; color: #666; margin-bottom: 8px; line-height: 1.5; }
+        .card-meta { font-size: 10.5px; color: #aaa; margin-bottom: 14px; }
+        .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .btn-sm { display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 6px 12px; border-radius: 5px; cursor: pointer; border: 1px solid transparent; text-decoration: none; }
+        .btn-view-file { background: #fff; color: #333; border: 1px solid #d0d0d0; }
+        .btn-view-file:hover { background: #f5f5f5; }
+        .btn-edit-sm { background: #fff; color: #333; border: 1px solid #d0d0d0; }
+        .btn-edit-sm:hover { background: #f5f5f5; }
+        .btn-del-sm { background: #fff; color: #999; border: 1px solid #e0e0e0; }
+        .btn-del-sm:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+        .btn-sm svg { width: 12px; height: 12px; }
+
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #bbb; font-size: 12.5px; background: #fff; border: 1px solid #e4e4e4; border-radius: 8px; }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: #fff; border-radius: 10px; padding: 24px 26px; width: 440px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
+        .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 16px; }
+        .modal-field { margin-bottom: 13px; }
+        .modal-field label { display: block; font-size: 11.5px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .modal-field input, .modal-field select, .modal-field textarea { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; outline: none; font-family: Arial, sans-serif; }
+        .modal-field textarea { resize: vertical; min-height: 60px; }
+        .modal-field select { appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E") no-repeat right 10px center; cursor: pointer; }
+        .modal-error { display: none; background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; font-size: 11px; padding: 8px 10px; border-radius: 4px; margin-bottom: 12px; }
+        .modal-hint { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 6px; padding: 10px 12px; font-size: 11.5px; color: #3730a3; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+        .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 5px; cursor: pointer; }
+        .btn-cancel:hover { background: #f5f5f5; }
+        .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-save:hover { background: #1a3a7a; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -212,52 +241,194 @@
                 <span class="role-badge">Faculty</span>
                 <div class="user-info">
                     <div class="user-text">
-                        <div class="user-name">—</div>
-                        <div class="user-email">—</div>
+                        <div class="user-name">{{ auth()->user()->name }}</div>
+                        <div class="user-email">{{ auth()->user()->email }}</div>
                     </div>
-                    <div class="user-avatar">—</div>
+                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
                 </div>
             </div>
         </div>
 
         <div class="content">
 
-            <div class="page-title">Template Content Guide</div>
-            <div class="page-sub">What each template type should contain, as defined by the Admin. Reference this before submitting a template.</div>
+            @if(session('success'))
+                <div class="alert-success">{{ session('success') }}</div>
+            @endif
+            @if($errors->any())
+                <div class="alert-error">{{ $errors->first() }}</div>
+            @endif
 
-            @forelse($elementsByType as $type => $elements)
-                <div class="type-card">
-                    <div class="type-card-title">{{ str_replace('_', ' ', $type) }}</div>
-                    <div class="type-card-list">
-                        @foreach($elements as $element)
-                            <div class="elem-row">
-                                <div class="elem-row-main">
-                                    <span class="elem-label">{{ $element->label }}</span>
-                                    @if($element->is_required)
-                                        <span class="req-tag req-yes">Required</span>
-                                    @else
-                                        <span class="req-tag req-no">Optional</span>
-                                    @endif
-                                    <span class="req-tag field-tag">{{ str_replace('_', ' ', $element->field_type) }}</span>
-                                </div>
-                                @if($element->instructions)
-                                    <div class="elem-desc">{{ $element->instructions }}</div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
+            <div class="page-header">
+                <div>
+                    <div class="page-title">CMS — My Content</div>
+                    <div class="page-sub">Create, edit, and manage your own instructional content and modules — as a live Google Doc or an uploaded file.</div>
                 </div>
-            @empty
-                <div class="empty-guide">No template structure has been defined by the Admin yet.</div>
-            @endforelse
+                <button class="btn-create" type="button" onclick="openCreateModal()">+ New Module</button>
+            </div>
+
+            <div class="module-grid">
+                @forelse($modules as $module)
+                    <div class="module-card">
+                        <div class="card-top">
+                            <span class="card-icon">
+                                @if($module->isGoogleDoc()) 📑 @elseif($module->file_type == 'pdf') 📄 @else 📝 @endif
+                            </span>
+                        </div>
+
+                        <div class="card-title">{{ $module->title }}</div>
+                        @if($module->description)
+                            <div class="card-desc">{{ $module->description }}</div>
+                        @endif
+                        <div class="card-meta">
+                            @if($module->isGoogleDoc())
+                                Google Doc
+                            @else
+                                {{ strtoupper($module->file_type) }} • {{ $module->readable_size }}
+                            @endif
+                            • {{ $module->created_at->format('Y-m-d') }}
+                        </div>
+
+                        <div class="card-actions">
+                            @if($module->isGoogleDoc())
+                                <a class="btn-sm btn-view-file" href="{{ $module->google_edit_url }}" target="_blank">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    Open
+                                </a>
+                            @else
+                                <a class="btn-sm btn-view-file" href="{{ Storage::url($module->file_path) }}" target="_blank">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    View
+                                </a>
+                            @endif
+                            <button type="button" class="btn-sm btn-edit-sm" onclick="openEditModal({{ $module->id }}, {{ json_encode($module->title) }}, {{ json_encode($module->description) }})">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                                Edit
+                            </button>
+                            <form method="POST" action="{{ url('/faculty/cms/' . $module->id) }}" style="display:inline;" onsubmit="return confirm('Delete this module? This cannot be undone.')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn-sm btn-del-sm">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @empty
+                    <div class="empty-state">Wala ka pang content/module. Pindutin ang "+ New Module" para gumawa ng una mo.</div>
+                @endforelse
+            </div>
 
         </div>
     </div>
 
+    {{-- Create Modal --}}
+    <div class="modal-overlay" id="create-modal-overlay">
+        <div class="modal">
+            <form action="{{ url('/faculty/cms') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-title">New Module</div>
+                <div class="modal-error" id="create-modal-error">{{ $errors->first() }}</div>
+
+                <div class="modal-field">
+                    <label>Title <span style="color:#ef4444">*</span></label>
+                    <input type="text" name="title" placeholder="e.g. Week 1 Learning Module" value="{{ old('title') }}">
+                </div>
+
+                <div class="modal-field">
+                    <label>Description</label>
+                    <textarea name="description" placeholder="Short description (optional)">{{ old('description') }}</textarea>
+                </div>
+
+                <div class="modal-field">
+                    <label>How do you want to create this? <span style="color:#ef4444">*</span></label>
+                    <select name="mode" id="mode-select" onchange="toggleMode()">
+                        <option value="google_doc">Create as Google Doc (editable, live)</option>
+                        <option value="upload_file">Upload a File (PDF/Word)</option>
+                    </select>
+                </div>
+
+                <div class="modal-field" id="file-field">
+                    <label>File <span style="color:#ef4444">*</span></label>
+                    <input type="file" name="file" accept=".pdf,.doc,.docx">
+                </div>
+
+                <div class="modal-field" id="google-doc-note">
+                    <div class="modal-hint">A blank Google Doc will be created and shared to your Google email (set this in your account if you haven't).</div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Edit Modal --}}
+    <div class="modal-overlay" id="edit-modal-overlay">
+        <div class="modal">
+            <form id="edit-form" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-title">Edit Module</div>
+
+                <div class="modal-field">
+                    <label>Title <span style="color:#ef4444">*</span></label>
+                    <input type="text" name="title" id="edit-title">
+                </div>
+
+                <div class="modal-field">
+                    <label>Description</label>
+                    <textarea name="description" id="edit-description"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        function handleLogout() {
-            window.location.href = '{{ url("/login") }}';
+        function toggleMode() {
+            const isUpload = document.getElementById('mode-select').value === 'upload_file';
+            document.getElementById('file-field').style.display = isUpload ? '' : 'none';
+            document.getElementById('google-doc-note').style.display = isUpload ? 'none' : '';
         }
+
+        function openCreateModal() {
+            document.getElementById('create-modal-overlay').classList.add('open');
+            toggleMode();
+        }
+        function closeCreateModal() {
+            document.getElementById('create-modal-overlay').classList.remove('open');
+        }
+        document.getElementById('create-modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeCreateModal();
+        });
+
+        function openEditModal(id, title, description) {
+            document.getElementById('edit-form').action = '{{ url("/faculty/cms") }}/' + id;
+            document.getElementById('edit-title').value = title;
+            document.getElementById('edit-description').value = description || '';
+            document.getElementById('edit-modal-overlay').classList.add('open');
+        }
+        function closeEditModal() {
+            document.getElementById('edit-modal-overlay').classList.remove('open');
+        }
+        document.getElementById('edit-modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeEditModal();
+        });
+
+        @if($errors->any())
+            document.addEventListener('DOMContentLoaded', function () {
+                document.getElementById('create-modal-overlay').classList.add('open');
+                document.getElementById('create-modal-error').style.display = 'block';
+                toggleMode();
+            });
+        @endif
     </script>
 
 </body>
