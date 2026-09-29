@@ -8,7 +8,7 @@ class Exam extends Model
 {
     protected $fillable = [
         'program_assignment_id', 'faculty_id', 'title', 'grading_period',
-        'duration_minutes', 'status', 'finalized_at',
+        'duration_minutes', 'target_items', 'status', 'finalized_at',
         'export_file_path', 'export_file_type',
     ];
 
@@ -56,6 +56,7 @@ class Exam extends Model
                 $topicPoints = $topicQuestions->sum('points');
 
                 return [
+                    'items'         => $topicQuestions->count(),
                     'points'        => $topicPoints,
                     'weight_percent' => $totalPoints > 0 ? round($topicPoints / $totalPoints * 100, 1) : 0,
                     'bloom_breakdown' => $topicQuestions->groupBy(fn($q) => $q->bloom_level ?? 'unclassified')

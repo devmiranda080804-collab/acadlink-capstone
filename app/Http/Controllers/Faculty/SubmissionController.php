@@ -30,12 +30,13 @@ class SubmissionController extends Controller
                     'type'        => ucwords(str_replace('_', ' ', $req->type)),
                     'deadline'    => $req->deadline,
                     'days_left'   => $req->days_left,
+                    'is_due_soon' => $req->is_due_soon,
                     'submission'  => $mySubmission,
                 ];
             });
 
         $urgentCount = $requirements->filter(function ($req) {
-            return !$req['submission'] && $req['days_left'] <= 3;
+            return !$req['submission'] && $req['is_due_soon'];
         })->count();
 
         return view('faculty.submissions', compact('requirements', 'urgentCount'));

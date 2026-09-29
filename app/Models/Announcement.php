@@ -40,6 +40,19 @@ class Announcement extends Model
         return $this->programs->pluck('program')->toArray();
     }
 
+    // Single definition of "about to expire" — used across all 4 Announcements
+    // pages instead of each one recomputing its own diffInDays threshold
+    public function getIsExpiringSoonAttribute(): bool
+    {
+        if (! $this->expires_at) {
+            return false;
+        }
+
+        $daysLeft = now()->diffInDays($this->expires_at, false);
+
+        return $daysLeft >= 0 && $daysLeft <= 3;
+    }
+
     // Excludes announcements that have already expired
     public function scopeActive(Builder $query): Builder
     {

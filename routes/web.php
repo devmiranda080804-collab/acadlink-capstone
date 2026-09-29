@@ -32,7 +32,7 @@ use App\Http\Controllers\ProgramHead\SubmissionController as PHSubmissionControl
 use App\Http\Controllers\Faculty\SubmissionController as FacultySubmissionController;
 use App\Http\Controllers\Faculty\ExamGeneratorController;
 use App\Http\Controllers\Faculty\ContentModuleController;
-use App\Http\Controllers\ProgramAssignmentController;
+use App\Http\Controllers\Admin\ProgramAssignmentController;
 use App\Http\Controllers\Admin\AuditLogController;
 
 /*
@@ -70,6 +70,11 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::post('/my-template/{template}/copy', [TemplateController::class, 'makeCopy']);
     Route::get('/exam-generator', [ExamGeneratorController::class, 'index']);
     Route::post('/exam-generator', [ExamGeneratorController::class, 'store']);
+    // Literal routes must come before the {exam} wildcard below so they aren't swallowed by it
+    Route::post('/exam-generator/tos-target', [ExamGeneratorController::class, 'tosTarget']);
+    Route::post('/exam-generator/generate-questions', [ExamGeneratorController::class, 'generateQuestions']);
+    Route::get('/exam-generator/item-bank', [ExamGeneratorController::class, 'bankItems']);
+    Route::post('/exam-generator/item-bank/{question}/reuse', [ExamGeneratorController::class, 'reuseItem']);
     Route::get('/exam-generator/{exam}', [ExamGeneratorController::class, 'show']);
     Route::put('/exam-generator/{exam}', [ExamGeneratorController::class, 'update']);
     Route::get('/exam-generator/{exam}/tos', [ExamGeneratorController::class, 'tos']);
@@ -79,6 +84,11 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::post('/shared-library', [SharedLibraryController::class, 'store']);
     Route::delete('/shared-library/{resource}', [SharedLibraryController::class, 'destroy']);
     Route::get('/course-coordination', [CourseCoordinationController::class, 'index']);
+    Route::post('/course-coordination/course-topics', [CourseCoordinationController::class, 'storeCourseTopic']);
+    Route::post('/course-coordination/course-topics/{courseTopic}', [CourseCoordinationController::class, 'updateCourseTopic']);
+    Route::delete('/course-coordination/course-topics/{courseTopic}', [CourseCoordinationController::class, 'destroyCourseTopic']);
+    Route::post('/course-coordination/materials', [CourseCoordinationController::class, 'storeMaterial']);
+    Route::delete('/course-coordination/materials/{material}', [CourseCoordinationController::class, 'destroyMaterial']);
     Route::get('/analytics', fn () => view('faculty.analytics'));
     Route::get('/calendar', [CalendarController::class, 'index']);
     Route::get('/announcements', [FacultyAnnouncementController::class, 'index']);
@@ -177,10 +187,6 @@ Route::middleware('role:program_head')->prefix('program-head')->group(function (
     Route::post('/submissions', [PHSubmissionController::class, 'store']);
     Route::put('/submissions/{requirement}', [PHSubmissionController::class, 'update']);
     Route::delete('/submissions/{requirement}', [PHSubmissionController::class, 'destroy']);
-
-    Route::get('/program-assignment', [ProgramAssignmentController::class, 'index']);
-    Route::post('/program-assignment', [ProgramAssignmentController::class, 'store']);
-    Route::delete('/program-assignment/{assignment}', [ProgramAssignmentController::class, 'destroy']);
 });
 
 /*
@@ -214,8 +220,4 @@ Route::middleware('role:secretary')->prefix('secretary')->group(function () {
     Route::post('/calendar', [CalendarController::class, 'store']);
     Route::put('/calendar/{activity}', [CalendarController::class, 'update']);
     Route::delete('/calendar/{activity}', [CalendarController::class, 'destroy']);
-
-    Route::get('/program-assignment', [ProgramAssignmentController::class, 'index']);
-    Route::post('/program-assignment', [ProgramAssignmentController::class, 'store']);
-    Route::delete('/program-assignment/{assignment}', [ProgramAssignmentController::class, 'destroy']);
 });

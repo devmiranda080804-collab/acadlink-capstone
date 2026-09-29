@@ -34,4 +34,11 @@ class SubmissionRequirement extends Model
     {
         return $this->deadline->isPast() && !$this->deadline->isToday();
     }
+
+    // Single definition of "due soon" — used across the Submissions pages
+    // instead of each one repeating its own "<= 3 days" threshold
+    public function getIsDueSoonAttribute(): bool
+    {
+        return $this->days_left >= 0 && $this->days_left <= 3;
+    }
 }

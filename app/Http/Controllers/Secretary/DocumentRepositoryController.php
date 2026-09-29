@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Template;
 use App\Models\CourseMaterial;
 use App\Models\RepositoryDocument;
+use App\Support\Programs;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -116,7 +117,7 @@ class DocumentRepositoryController extends Controller
     {
         $request->validate([
             'title'    => 'required|string|max:255',
-            'program'  => 'nullable|in:BSA,BSMA,BSOA',
+            'program'  => 'nullable|in:' . implode(',', Programs::codes()),
             'doc_type' => 'required|string|max:50',
             'file'     => 'required|file|mimes:pdf,doc,docx,xls,xlsx|max:20480',
         ]);

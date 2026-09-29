@@ -7,24 +7,10 @@ use App\Models\TemplateDocument;
 use App\Models\Announcement;
 use App\Models\CalendarActivity;
 use App\Models\ProgramAssignment;
+use App\Support\AcademicTerm;
 
 class DashboardController extends Controller
 {
-    protected function currentSchoolYear(): string
-    {
-        $now = now();
-        $year = $now->year;
-        return $now->month >= 8 ? $year . '-' . ($year + 1) : ($year - 1) . '-' . $year;
-    }
-
-    protected function currentSemester(): string
-    {
-        $month = now()->month;
-        if ($month >= 8 && $month <= 12) return 'First Semester';
-        if ($month >= 1 && $month <= 5)  return 'Second Semester';
-        return 'Summer';
-    }
-
     protected function distributedForMyProgram(string $myProgram)
     {
         return TemplateDocument::whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'));
@@ -72,8 +58,8 @@ class DashboardController extends Controller
         // Assigned courses for the current school year/semester
         $myCourses = ProgramAssignment::with('course')
             ->where('faculty_id', $facultyId)
-            ->where('school_year', $this->currentSchoolYear())
-            ->where('semester', $this->currentSemester())
+            ->where('school_year', AcademicTerm::currentSchoolYear())
+            ->where('semester', AcademicTerm::currentSemester())
             ->get();
 
         return view('faculty.dashboard', compact(

@@ -16,7 +16,7 @@ class CourseFilingController extends Controller
 
         $courses = Course::when($program, fn($q) => $q->where('program', $program))
             ->orderBy('program')
-            ->orderBy('code')
+            ->curriculumOrder()
             ->get();
 
         // For each course, check the filing status

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Secretary;
 
 use App\Http\Controllers\Controller;
 use App\Models\Announcement;
+use App\Support\Programs;
 use Illuminate\Http\Request;
 
 class AnnouncementController extends Controller
@@ -27,7 +28,7 @@ class AnnouncementController extends Controller
             'title'      => 'required|string|max:255',
             'body'       => 'required|string',
             'programs'   => 'required|array|min:1',
-            'programs.*' => 'in:BSA,BSMA,BSOA',
+            'programs.*' => 'in:' . implode(',', Programs::codes()),
             'expires_at' => 'nullable|date|after:now',
         ]);
 

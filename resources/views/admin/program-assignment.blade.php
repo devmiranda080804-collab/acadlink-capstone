@@ -156,9 +156,16 @@
                 <form method="GET" style="display:flex; gap:10px;">
                     <select name="program" class="filter-select" onchange="this.form.submit()">
                         <option value="">All Programs</option>
-                        <option value="BSA" {{ $program == 'BSA' ? 'selected' : '' }}>BSA</option>
-                        <option value="BSMA" {{ $program == 'BSMA' ? 'selected' : '' }}>BSMA</option>
-                        <option value="BSOA" {{ $program == 'BSOA' ? 'selected' : '' }}>BSOA</option>
+                        @foreach(\App\Support\Programs::options() as $code => $label)
+                            <option value="{{ $code }}" {{ $program == $code ? 'selected' : '' }}>{{ $code }} — {{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <select name="year_level" class="filter-select" onchange="this.form.submit()">
+                        <option value="">All Year Levels</option>
+                        <option value="1" {{ $yearLevel == '1' ? 'selected' : '' }}>First Year</option>
+                        <option value="2" {{ $yearLevel == '2' ? 'selected' : '' }}>Second Year</option>
+                        <option value="3" {{ $yearLevel == '3' ? 'selected' : '' }}>Third Year</option>
+                        <option value="4" {{ $yearLevel == '4' ? 'selected' : '' }}>Fourth Year</option>
                     </select>
                     <select name="school_year" class="filter-select" onchange="this.form.submit()">
                         @foreach([$schoolYear, ($schoolYear != '2025-2026' ? '2025-2026' : '2026-2027')] as $sy)
@@ -190,7 +197,7 @@
                             <tr>
                                 <td><span class="course-code">{{ $course->code }}</span></td>
                                 <td>{{ $course->title }}</td>
-                                <td><span class="program-tag">{{ $course->program }}</span></td>
+                                <td><span class="program-tag" title="{{ \App\Support\Programs::label($course->program) }}">{{ $course->program }}</span></td>
                                 <td>
                                     <div class="faculty-chips">
                                         @forelse($courseAssignments as $a)

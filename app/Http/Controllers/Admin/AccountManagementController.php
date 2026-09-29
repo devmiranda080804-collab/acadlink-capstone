@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\NewAccountCredentials;
 use App\Models\User;
+use App\Support\Programs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -55,7 +56,7 @@ class AccountManagementController extends Controller
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
             'role'          => 'required|in:program_head,secretary,faculty',
-            'program'       => 'required_if:role,program_head,faculty|nullable|in:BSA,BSMA,BSOA',
+            'program'       => 'required_if:role,program_head,faculty|nullable|in:' . implode(',', Programs::codes()),
             'academic_year' => 'required',
             'google_email'  => 'nullable|email|max:255',
         ]);
@@ -63,7 +64,9 @@ class AccountManagementController extends Controller
         $temporaryPassword = Str::password(12);
 
         $user = User::create([
-            'name'                 => $request->first_name . ' ' . $request->last_name,
+            'name'                 => trim($request->first_name . ' ' . $request->last_name),
+            'first_name'           => $request->first_name,
+            'last_name'            => $request->last_name,
             'email'                => $request->email,
             'google_email'         => $request->google_email,
             'password'             => Hash::make($temporaryPassword),
@@ -88,7 +91,7 @@ class AccountManagementController extends Controller
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'role'          => 'required|in:program_head,secretary,faculty',
-            'program'       => 'required_if:role,program_head,faculty|nullable|in:BSA,BSMA,BSOA',
+            'program'       => 'required_if:role,program_head,faculty|nullable|in:' . implode(',', Programs::codes()),
             'academic_year' => 'required',
             'google_email'  => 'nullable|email|max:255',
         ]);
@@ -97,6 +100,8 @@ class AccountManagementController extends Controller
 
         $user->update([
             'name'          => trim($request->first_name . ' ' . $request->last_name),
+            'first_name'    => $request->first_name,
+            'last_name'     => $request->last_name,
             'google_email'  => $request->google_email,
             'role'          => $request->role,
             'program'       => in_array($request->role, ['program_head', 'faculty']) ? $request->program : null,

@@ -224,11 +224,11 @@
             <div class="page-sub">Access master course folder and instructor collaboration</div>
 
             <div class="course-select-box">
-                <label>Select Program</label>
+                <label>Select Course</label>
                 <div class="course-select-wrap">
                     <form method="GET" id="course-form">
                         <select name="course_id" onchange="document.getElementById('course-form').submit()">
-                            <option value="" disabled {{ !$selectedCourse ? 'selected' : '' }}>— Select a program —</option>
+                            <option value="" disabled {{ !$selectedCourse ? 'selected' : '' }}>— Select a course —</option>
                             @foreach($courses as $course)
                                 <option value="{{ $course->id }}" {{ $selectedCourse && $selectedCourse->id == $course->id ? 'selected' : '' }}>
                                     {{ $course->code }} – {{ $course->title }}
@@ -242,6 +242,7 @@
             <div class="sub-tabs">
                 <span class="sub-tab active" onclick="switchSubTab('master-folder', this)">Master Folder</span>
                 <span class="sub-tab" onclick="switchSubTab('outcomes', this)">Outcomes (OBE)</span>
+                <span class="sub-tab" onclick="switchSubTab('topics', this)">Topics & Hours (OBTL)</span>
                 <span class="sub-tab" onclick="switchSubTab('collaboration', this)">Collaboration</span>
             </div>
 
@@ -324,6 +325,100 @@
                 @endif
             </div>
 
+            {{-- ═══ TOPICS & HOURS (OBTL) ═══ --}}
+            <div class="tab-content" id="tab-topics">
+                @if(!$selectedCourse)
+                    <div class="folder-panel"><div class="folder-empty">🕒 Please select a course above to manage its Topics & Hours.</div></div>
+                @else
+                    <div class="folder-panel" style="margin-bottom: 14px;">
+                        <div class="folder-panel-header">
+                            <span class="folder-icon">📄</span>
+                            <div>
+                                <div class="folder-title">Official OBTL Document</div>
+                                <div class="folder-sub">{{ $selectedCourse->code }} — the actual prepared & signed OBTL file, shared with every instructor of this course</div>
+                            </div>
+                            <button class="btn-new-doc" style="margin-left:auto;" onclick="openObtlUploadModal()">+ Upload OBTL</button>
+                        </div>
+
+                        @forelse($materials->get('obtl', collect()) as $material)
+                            <div class="file-row">
+                                <div class="file-left">
+                                    <span class="file-icon">
+                                        @switch($material->file_type)
+                                            @case('pdf') 📄 @break
+                                            @case('doc') @case('docx') 📝 @break
+                                            @default 📎
+                                        @endswitch
+                                    </span>
+                                    <div>
+                                        <div class="file-name">{{ $material->title }}</div>
+                                        <div class="file-meta">{{ strtoupper($material->file_type) }} • {{ $material->version }} • {{ $material->readable_size }} • Uploaded {{ $material->created_at->format('M d, Y') }} by {{ $material->uploader->name }}</div>
+                                    </div>
+                                </div>
+                                <div class="file-actions">
+                                    <a class="btn-view" href="{{ Storage::url($material->file_path) }}" target="_blank">View</a>
+                                    <form method="POST" action="{{ url('/faculty/course-coordination/materials/' . $material->id) }}" onsubmit="return confirm('Delete this OBTL document?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-del" title="Delete">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="folder-empty">No OBTL document uploaded yet.</div>
+                        @endforelse
+                    </div>
+
+                    @foreach(['Prelim', 'Midterm', 'Final'] as $period)
+                        @php $periodTopics = $courseTopics->get($period, collect()); @endphp
+                        <div class="folder-panel" style="margin-bottom: 14px;">
+                            <div class="folder-panel-header">
+                                <span class="folder-icon">🕒</span>
+                                <div>
+                                    <div class="folder-title">{{ $period }} — {{ $selectedCourse->code }}</div>
+                                    <div class="folder-sub">{{ $periodTopics->sum('hours') }} hrs allocated · shared with every instructor of this course · feeds the Assessment Generator automatically</div>
+                                </div>
+                                <button class="btn-new-doc" style="margin-left:auto;" onclick="openTopicModal('{{ $period }}')">+ Add Topic</button>
+                            </div>
+
+                            @forelse($periodTopics as $topic)
+                                <div class="file-row">
+                                    <div class="file-left">
+                                        <div>
+                                            <div class="file-name">{{ $topic->weeks ? $topic->weeks . ' — ' : '' }}{{ $topic->topic }}</div>
+                                            <div class="file-meta">
+                                                {{ $topic->hours }} hrs
+                                                @if($topic->module_path) · <span style="color:#16a34a;">✓ module uploaded (AI-ready)</span>
+                                                @elseif($topic->notes) · <span style="color:#16a34a;">✓ notes added (AI-ready)</span>
+                                                @else · <span style="color:#bbb;">no notes/module yet</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="file-actions">
+                                        @if($topic->module_path)
+                                            <a class="btn-view" href="{{ Storage::url($topic->module_path) }}" target="_blank">View</a>
+                                        @endif
+                                        <button type="button" class="btn-view" onclick='openEditTopicModal(@json($topic))'>Edit</button>
+                                        <form method="POST" action="{{ url('/faculty/course-coordination/course-topics/' . $topic->id) }}" onsubmit="return confirm('Remove this topic?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-del" title="Delete">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="folder-empty">No topics defined yet for {{ $period }}.</div>
+                            @endforelse
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+
             {{-- ═══ COLLABORATION ═══ --}}
             <div class="tab-content" id="tab-collaboration">
                 @if(!$selectedCourse)
@@ -345,6 +440,70 @@
                 @endif
             </div>
 
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="topic-overlay">
+        <div class="modal">
+            <form method="POST" action="{{ url('/faculty/course-coordination/course-topics') }}" enctype="multipart/form-data" id="topic-form">
+                @csrf
+                <input type="hidden" name="course_id" value="{{ $selectedCourse->id ?? '' }}">
+                <input type="hidden" name="grading_period" id="topic-grading-period" value="">
+                <div class="modal-title" id="topic-modal-title">Add Topic</div>
+                <div class="modal-hint" id="topic-modal-sub">—</div>
+                <div class="modal-field">
+                    <label>Topic</label>
+                    <input type="text" name="topic" id="topic-field-topic" placeholder="e.g. Journalizing and Posting" required>
+                </div>
+                <div class="modal-field">
+                    <label>Weeks <span style="font-size:10px;color:#999;">(optional, e.g. "Week 1-2")</span></label>
+                    <input type="text" name="weeks" id="topic-field-weeks" placeholder="e.g. Week 1-2">
+                </div>
+                <div class="modal-field">
+                    <label>Hours</label>
+                    <input type="number" name="hours" id="topic-field-hours" min="1" placeholder="e.g. 6" required>
+                </div>
+                <div class="modal-field">
+                    <label>Teaching Notes <span style="font-size:10px;color:#999;">(optional — short summary; used by AI if no module is uploaded)</span></label>
+                    <textarea name="notes" id="topic-field-notes" rows="3" placeholder="e.g. Definition of an asset, examples (cash, receivables, inventory, equipment), the accounting equation..." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
+                </div>
+                <div class="modal-field">
+                    <label>Module <span style="font-size:10px;color:#999;">(optional, PDF only — AI reads this directly, most accurate source for question generation)</span></label>
+                    <div id="topic-current-module" style="font-size:11.5px;color:#666;margin-bottom:4px;display:none;"></div>
+                    <input type="file" name="module" accept=".pdf">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeTopicModal()">Cancel</button>
+                    <button type="submit" class="btn-save" id="topic-form-submit">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="obtl-upload-overlay">
+        <div class="modal">
+            <form method="POST" action="{{ url('/faculty/course-coordination/materials') }}" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="course_id" value="{{ $selectedCourse->id ?? '' }}">
+                <div class="modal-title">Upload OBTL Document</div>
+                <div class="modal-field">
+                    <label>Title</label>
+                    <input type="text" name="title" placeholder="e.g. OBTL - IT08 Integrative Programming" required>
+                </div>
+                <div class="modal-field">
+                    <label>Version</label>
+                    <input type="text" name="version" placeholder="v1.0">
+                </div>
+                <div class="modal-field">
+                    <label>File</label>
+                    <input type="file" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.zip" required>
+                    <div style="font-size:10.5px;color:#999;margin-top:4px;">Allowed: PDF, Word, Excel, ZIP · Max 20MB</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeObtlUploadModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Upload</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -438,6 +597,50 @@
             document.getElementById('new-doc-overlay').classList.add('open');
         }
         function closeNewDocModal() { document.getElementById('new-doc-overlay').classList.remove('open'); }
+
+        function resetTopicForm() {
+            document.getElementById('topic-field-topic').value = '';
+            document.getElementById('topic-field-weeks').value = '';
+            document.getElementById('topic-field-hours').value = '';
+            document.getElementById('topic-field-notes').value = '';
+            document.getElementById('topic-current-module').style.display = 'none';
+        }
+
+        function openTopicModal(period) {
+            resetTopicForm();
+            document.getElementById('topic-form').action = '{{ url("/faculty/course-coordination/course-topics") }}';
+            document.getElementById('topic-grading-period').value = period;
+            document.getElementById('topic-modal-title').textContent = 'Add Topic';
+            document.getElementById('topic-modal-sub').textContent = 'Grading period: ' + period;
+            document.getElementById('topic-form-submit').textContent = 'Add';
+            document.getElementById('topic-overlay').classList.add('open');
+        }
+
+        function openEditTopicModal(topic) {
+            resetTopicForm();
+            document.getElementById('topic-form').action = '{{ url("/faculty/course-coordination/course-topics") }}/' + topic.id;
+            document.getElementById('topic-grading-period').value = topic.grading_period;
+            document.getElementById('topic-modal-title').textContent = 'Edit Topic';
+            document.getElementById('topic-modal-sub').textContent = 'Grading period: ' + topic.grading_period;
+            document.getElementById('topic-field-topic').value = topic.topic || '';
+            document.getElementById('topic-field-weeks').value = topic.weeks || '';
+            document.getElementById('topic-field-hours').value = topic.hours || '';
+            document.getElementById('topic-field-notes').value = topic.notes || '';
+            var currentModule = document.getElementById('topic-current-module');
+            if (topic.module_file_name) {
+                currentModule.textContent = 'Current module: ' + topic.module_file_name + ' (upload a new file to replace it)';
+                currentModule.style.display = 'block';
+            }
+            document.getElementById('topic-form-submit').textContent = 'Save Changes';
+            document.getElementById('topic-overlay').classList.add('open');
+        }
+
+        function closeTopicModal() { document.getElementById('topic-overlay').classList.remove('open'); }
+        document.getElementById('topic-overlay').addEventListener('click', function(e) { if (e.target === this) closeTopicModal(); });
+
+        function openObtlUploadModal() { document.getElementById('obtl-upload-overlay').classList.add('open'); }
+        function closeObtlUploadModal() { document.getElementById('obtl-upload-overlay').classList.remove('open'); }
+        document.getElementById('obtl-upload-overlay').addEventListener('click', function(e) { if (e.target === this) closeObtlUploadModal(); });
 
         async function createDocument() {
             const title = document.getElementById('new-doc-title').value.trim();

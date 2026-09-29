@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Secretary;
 use App\Http\Controllers\Controller;
 use App\Mail\NewAccountCredentials;
 use App\Models\User;
+use App\Support\Programs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -50,7 +51,7 @@ class AccountManagementController extends Controller
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
-            'program'       => 'required|in:BSA,BSMA,BSOA',
+            'program'       => 'required|in:' . implode(',', Programs::codes()),
             'academic_year' => 'required',
             'google_email'  => 'nullable|email|max:255',
         ]);
@@ -58,7 +59,9 @@ class AccountManagementController extends Controller
         $temporaryPassword = Str::password(12);
 
         $user = User::create([
-            'name'                 => $request->first_name . ' ' . $request->last_name,
+            'name'                 => trim($request->first_name . ' ' . $request->last_name),
+            'first_name'           => $request->first_name,
+            'last_name'            => $request->last_name,
             'email'                => $request->email,
             'google_email'         => $request->google_email,
             'password'             => Hash::make($temporaryPassword),
@@ -81,13 +84,15 @@ class AccountManagementController extends Controller
         $request->validate([
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
-            'program'       => 'required|in:BSA,BSMA,BSOA',
+            'program'       => 'required|in:' . implode(',', Programs::codes()),
             'academic_year' => 'required',
             'google_email'  => 'nullable|email|max:255',
         ]);
 
         $user->update([
             'name'          => trim($request->first_name . ' ' . $request->last_name),
+            'first_name'    => $request->first_name,
+            'last_name'     => $request->last_name,
             'google_email'  => $request->google_email,
             'program'       => $request->program,
             'academic_year' => $request->academic_year,

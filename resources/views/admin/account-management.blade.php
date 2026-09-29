@@ -259,9 +259,9 @@
                         <input type="hidden" name="academic_year" value="{{ request('academic_year') }}">
                         <select name="program" class="filter-select" onchange="this.form.submit()">
                             <option value="">All Program</option>
-                            <option value="BSA" {{ request('program') == 'BSA' ? 'selected' : '' }}>BSA</option>
-                            <option value="BSMA" {{ request('program') == 'BSMA' ? 'selected' : '' }}>BSMA</option>
-                            <option value="BSOA" {{ request('program') == 'BSOA' ? 'selected' : '' }}>BSOA</option>
+                            @foreach(\App\Support\Programs::options() as $code => $label)
+                                <option value="{{ $code }}" {{ request('program') == $code ? 'selected' : '' }}>{{ $code }} — {{ $label }}</option>
+                            @endforeach
                         </select>
                     </form>
 
@@ -294,7 +294,13 @@
                             <tr>
                                 <td>{{ $account->name }}</td>
                                 <td><span class="role-{{ $account->role }}">{{ ucwords(str_replace('_',' ', $account->role)) }}</span></td>
-                                <td>{{ $account->role === 'secretary' ? 'All Programs' : $account->program }}</td>
+                                <td>
+                                    @if($account->role === 'secretary')
+                                        All Programs
+                                    @else
+                                        <span title="{{ \App\Support\Programs::label($account->program) }}">{{ $account->program }}</span>
+                                    @endif
+                                </td>
                                 <td>{{ $account->email }}</td>
                                 <td>{{ $account->academic_year }}</td>
                                 <td>
@@ -303,7 +309,8 @@
                                             <button type="button" class="btn-icon" title="Edit"
                                                 onclick="openEditModal(
                                                     '{{ $account->id }}',
-                                                    '{{ addslashes($account->name) }}',
+                                                    '{{ addslashes($account->first_name ?? '') }}',
+                                                    '{{ addslashes($account->last_name ?? '') }}',
                                                     '{{ $account->role }}',
                                                     '{{ $account->program }}',
                                                     '{{ $account->academic_year }}',
@@ -390,9 +397,9 @@
                         <label>Program <span style="color:#ef4444">*</span></label>
                         <select id="f-program" name="program">
                             <option value="" disabled selected>Select program</option>
-                            <option value="BSA">BSA</option>
-                            <option value="BSMA">BSMA</option>
-                            <option value="BSOA">BSOA</option>
+                            @foreach(\App\Support\Programs::options() as $code => $label)
+                                <option value="{{ $code }}">{{ $code }} — {{ $label }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="modal-field" id="year-field-wrap">
@@ -489,21 +496,13 @@
             if (e.target === this) closeModal();
         });
 
-        function openEditModal(id, name, role, program, year, googleEmail) {
+        function openEditModal(id, firstName, lastName, role, program, year, googleEmail) {
             document.getElementById('modal-overlay').classList.add('open');
             document.getElementById('modal-title').innerText = 'Edit Account';
             document.getElementById('modal-error').style.display = 'none';
 
-            // FIX: use indexOf to find only the FIRST space
-            // so even "Jun Rosse Miranda" becomes firstname="Jun", lastname="Rosse Miranda"
-            var spaceIndex = name.indexOf(' ');
-            if (spaceIndex !== -1) {
-                document.getElementById('f-firstname').value = name.substring(0, spaceIndex);
-                document.getElementById('f-lastname').value = name.substring(spaceIndex + 1);
-            } else {
-                document.getElementById('f-firstname').value = name;
-                document.getElementById('f-lastname').value = '';
-            }
+            document.getElementById('f-firstname').value = firstName;
+            document.getElementById('f-lastname').value = lastName;
 
             document.getElementById('f-role').value = role;
             document.getElementById('f-program').value = program;

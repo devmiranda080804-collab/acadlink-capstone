@@ -17,11 +17,12 @@ class CourseOversightController extends Controller
         $myProgram = auth()->user()->program;
 
         // Courses within the PH's own program only
-        $courses = Course::where('program', $myProgram)->orderBy('code')->get();
+        $courses = Course::where('program', $myProgram)->curriculumOrder()->get();
 
         $selectedCourse = null;
         $materials = collect();
         $courseOutcomes = collect();
+        $courseTopics = collect();
 
         if ($request->filled('course_id')) {
             $selectedCourse = Course::where('id', $request->course_id)
@@ -31,6 +32,7 @@ class CourseOversightController extends Controller
             if ($selectedCourse) {
                 $materials = $selectedCourse->materials()->latest()->get()->groupBy('type');
                 $courseOutcomes = $selectedCourse->outcomes()->with('programOutcomes')->get();
+                $courseTopics = $selectedCourse->topics()->get()->groupBy('grading_period');
             }
         }
 
@@ -39,7 +41,7 @@ class CourseOversightController extends Controller
 
         return view('program-head.course-oversight', compact(
             'courses', 'selectedCourse', 'materials', 'myProgram',
-            'programOutcomes', 'courseOutcomes'
+            'programOutcomes', 'courseOutcomes', 'courseTopics'
         ));
     }
 
@@ -163,6 +165,10 @@ class CourseOversightController extends Controller
 
         return back()->with('success', 'Course Outcome removed.');
     }
+
+    // Topics & Hours (OBTL) are authored by Faculty for the courses they're
+    // actually assigned to teach (see Faculty\CourseCoordinationController) —
+    // Program Head gets a read-only view here for oversight, not edit rights.
 
     // ─── CO–PO Mapping ──────────────────────────────────────────────
 

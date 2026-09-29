@@ -144,9 +144,6 @@
             </a>
         </li>
         @endif
-        @if($navPermissions['program-assignment'] ?? true)
-        <li class="{{ request()->is('secretary/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/secretary/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
-        @endif
         @if($navPermissions['account-management'] ?? true)
         <li class="{{ request()->is('secretary/account-management*') ? 'active' : '' }}">
             <a href="{{ url('/secretary/account-management') }}">
@@ -220,12 +217,10 @@
                 <div class="role-tabs">
                     <a class="role-tab {{ request('program') == null ? 'active' : '' }}"
                        href="{{ url('/secretary/account-management') }}">ALL</a>
-                    <a class="role-tab {{ request('program') == 'BSA' ? 'active' : '' }}"
-                       href="{{ url('/secretary/account-management?program=BSA') }}">BSA</a>
-                    <a class="role-tab {{ request('program') == 'BSMA' ? 'active' : '' }}"
-                       href="{{ url('/secretary/account-management?program=BSMA') }}">BSMA</a>
-                    <a class="role-tab {{ request('program') == 'BSOA' ? 'active' : '' }}"
-                       href="{{ url('/secretary/account-management?program=BSOA') }}">BSOA</a>
+                    @foreach(\App\Support\Programs::options() as $code => $label)
+                        <a class="role-tab {{ request('program') == $code ? 'active' : '' }}" title="{{ $label }}"
+                           href="{{ url('/secretary/account-management?program=' . $code) }}">{{ $code }}</a>
+                    @endforeach
                 </div>
 
                 {{-- Status tabs --}}
@@ -274,7 +269,7 @@
                         @forelse($accounts as $account)
                             <tr>
                                 <td>{{ $account->name }}</td>
-                                <td>{{ $account->program }}</td>
+                                <td><span title="{{ \App\Support\Programs::label($account->program) }}">{{ $account->program }}</span></td>
                                 <td>{{ $account->email }}</td>
                                 <td>{{ $account->academic_year }}</td>
                                 <td>
@@ -283,7 +278,8 @@
                                             <button type="button" class="btn-icon" title="Edit"
                                                 onclick="openEditModal(
                                                     '{{ $account->id }}',
-                                                    '{{ $account->name }}',
+                                                    '{{ addslashes($account->first_name ?? '') }}',
+                                                    '{{ addslashes($account->last_name ?? '') }}',
                                                     '{{ $account->program }}',
                                                     '{{ $account->academic_year }}',
                                                     '{{ addslashes($account->google_email ?? '') }}'
@@ -360,9 +356,9 @@
                         <label>Program <span style="color:#ef4444">*</span></label>
                         <select id="f-program" name="program">
                             <option value="" disabled selected>Select program</option>
-                            <option value="BSA">BSA</option>
-                            <option value="BSMA">BSMA</option>
-                            <option value="BSOA">BSOA</option>
+                            @foreach(\App\Support\Programs::options() as $code => $label)
+                                <option value="{{ $code }}">{{ $code }} — {{ $label }}</option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -444,7 +440,7 @@
         });
 
         // No email param here since this field is not editable
-        function openEditModal(id, name, program, year, googleEmail) {
+        function openEditModal(id, firstName, lastName, program, year, googleEmail) {
             document.getElementById('modal-overlay').classList.add('open');
             document.getElementById('modal-title').innerText = 'Edit Account';
             document.getElementById('modal-error').style.display = 'none';
@@ -453,9 +449,8 @@
             document.getElementById('f-year').value = year;
             document.getElementById('f-google-email').value = googleEmail || '';
 
-            var parts = name.split(' ');
-            document.getElementById('f-firstname').value = parts[0];
-            document.getElementById('f-lastname').value = parts.slice(1).join(' ');
+            document.getElementById('f-firstname').value = firstName;
+            document.getElementById('f-lastname').value = lastName;
 
             document.getElementById('email-field-wrap').style.display = 'none';
             document.getElementById('f-email').required = false;

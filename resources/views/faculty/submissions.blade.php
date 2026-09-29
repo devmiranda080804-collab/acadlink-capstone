@@ -179,7 +179,7 @@
 
             @php
                 $overdueTotal = $requirements->filter(fn($r) => !$r['submission'] && $r['days_left'] < 0)->count();
-                $soonTotal = $requirements->filter(fn($r) => !$r['submission'] && $r['days_left'] >= 0 && $r['days_left'] <= 3)->count();
+                $soonTotal = $requirements->filter(fn($r) => !$r['submission'] && $r['is_due_soon'])->count();
                 $submittedTotal = $requirements->filter(fn($r) => $r['submission'])->count();
             @endphp
 
@@ -221,7 +221,7 @@
                         $badgeText = $sub->status === 'late' ? 'Submitted Late' : 'Submitted';
                     } elseif ($daysLeft < 0) {
                         $cardClass = 'overdue'; $badgeClass = 'badge-overdue'; $badgeText = abs($daysLeft) . ' day(s) overdue';
-                    } elseif ($daysLeft <= 3) {
+                    } elseif ($req['is_due_soon']) {
                         $cardClass = 'soon'; $badgeClass = 'badge-soon'; $badgeText = $daysLeft == 0 ? 'Due today' : $daysLeft . ' day(s) left';
                     } else {
                         $cardClass = 'ok'; $badgeClass = 'badge-ok'; $badgeText = $daysLeft . ' day(s) left';

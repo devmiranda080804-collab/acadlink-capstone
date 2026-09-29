@@ -61,7 +61,9 @@ class AccountManagementController extends Controller
         $temporaryPassword = Str::password(12);
 
        $user = User::create([
-            'name'          => $request->first_name . ' ' . $request->last_name,
+            'name'          => trim($request->first_name . ' ' . $request->last_name),
+            'first_name'    => $request->first_name,
+            'last_name'     => $request->last_name,
             'email'         => $request->email,
             'google_email'  => $request->google_email,
             'password'      => Hash::make($temporaryPassword),
@@ -90,6 +92,8 @@ class AccountManagementController extends Controller
 
         $user->update([
             'name'          => trim($request->first_name . ' ' . $request->last_name),
+            'first_name'    => $request->first_name,
+            'last_name'     => $request->last_name,
             'google_email'  => $request->google_email,
             'academic_year' => $request->academic_year,
         ]);

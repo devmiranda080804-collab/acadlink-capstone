@@ -12,16 +12,19 @@ use Illuminate\Http\Request;
 
 class CollaborationController extends Controller
 {
-    // Verify that the course belongs to the faculty member's program
+    // Verify that this faculty member is actually assigned to teach this course
     protected function authorizeCourse(Course $course): void
     {
-        abort_unless($course->program === auth()->user()->program, 403);
+        abort_unless(
+            ProgramAssignment::where('course_id', $course->id)->where('faculty_id', auth()->id())->exists(),
+            403
+        );
     }
 
-    // Verify that the document belongs to the faculty member's program
+    // Verify that this faculty member is actually assigned to teach the document's course
     protected function authorizeDocument(CollaborativeDocument $document): void
     {
-        abort_unless($document->course->program === auth()->user()->program, 403);
+        $this->authorizeCourse($document->course);
     }
 
     // Every faculty member ever assigned to teach this course — the people

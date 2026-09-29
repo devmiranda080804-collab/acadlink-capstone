@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Exam Generator – CBMA System</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -367,6 +368,19 @@
             cursor: pointer; min-width: 160px;
         }
 
+        .eb-form-group input[type="text"] {
+            height: 32px; padding: 0 8px; border: 1px solid #ccc;
+            border-radius: 5px; font-size: 12px; color: #333; background: #fff;
+            outline: none; min-width: 160px;
+        }
+        .eb-form-group input[type="text"]:disabled { background: #f5f5f5; color: #999; }
+        .eb-readonly {
+            height: 32px; padding: 0 8px; border: 1px solid #eee; border-radius: 5px;
+            font-size: 12px; color: #666; background: #f9f9f9; min-width: 160px;
+            display: flex; align-items: center;
+        }
+        .eb-btn-group button:disabled, .btn-add-section:disabled { opacity: 0.5; cursor: not-allowed; }
+
         .eb-btn-group { display: flex; gap: 8px; align-items: flex-end; margin-left: auto; }
 
         .btn-eb-save {
@@ -490,6 +504,25 @@
             cursor: pointer; transition: border-color 0.15s, color 0.15s;
         }
         .btn-add-question:hover { border-color: #0f2557; color: #0f2557; }
+
+        /* ═══════════════════ GENERIC MODAL (New Exam) ═══════════════════ */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: #fff; border-radius: 10px; padding: 24px 26px; width: 420px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
+        .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 16px; }
+        .modal-row { display: flex; gap: 10px; }
+        .modal-row .modal-field { flex: 1; }
+        .modal-field { margin-bottom: 13px; }
+        .modal-field label { display: block; font-size: 11.5px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .modal-field select, .modal-field input {
+            width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px;
+            font-size: 12.5px; color: #333; outline: none;
+        }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+        .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 5px; cursor: pointer; }
+        .btn-cancel:hover { background: #f5f5f5; }
+        .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-save:hover { background: #1a3a7a; }
 
         /* ═══════════════════ QUESTION TYPE MODAL ═══════════════════ */
         .qtype-overlay {
@@ -656,10 +689,10 @@
                 <span class="role-badge">Faculty</span>
                 <div class="user-info">
                     <div class="user-text">
-                        <div class="user-name">—</div>
-                        <div class="user-email">—</div>
+                        <div class="user-name">{{ auth()->user()->name }}</div>
+                        <div class="user-email">{{ auth()->user()->email }}</div>
                     </div>
-                    <div class="user-avatar">—</div>
+                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
                 </div>
             </div>
         </div>
@@ -673,7 +706,7 @@
                 </div>
                 <div class="page-header-right">
                     <button class="btn-item-bank" type="button" onclick="switchTab('item-bank')">Item Bank</button>
-                    <button class="btn-new-exam" type="button">+ New Exam</button>
+                    <button class="btn-new-exam" type="button" onclick="openNewExamModal()">+ New Exam</button>
                 </div>
             </div>
 
@@ -695,30 +728,32 @@
 
                             <div class="form-group">
                                 <label>Subject</label>
-                                <select>
+                                <select id="tos-subject" onchange="onTosSubjectChange()">
                                     <option value="" disabled selected>Select subject</option>
+                                    @foreach($assignments as $a)
+                                        <option value="{{ $a->id }}">{{ $a->course->code }} — {{ $a->course->title }}</option>
+                                    @endforeach
                                 </select>
                             </div>
 
                             <div class="form-group">
                                 <label>Examination Type</label>
-                                <select>
+                                <select id="tos-period">
                                     <option value="" disabled selected>Select type</option>
-                                    <option>Prelim Examination</option>
-                                    <option>Midterm Examination</option>
-                                    <option>Semi-Final Examination</option>
-                                    <option>Final Examination</option>
+                                    <option value="Prelim">Prelim Examination</option>
+                                    <option value="Midterm">Midterm Examination</option>
+                                    <option value="Final">Final Examination</option>
                                 </select>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Total Items</label>
-                                    <input type="number" placeholder="e.g. 50">
+                                    <input type="number" id="tos-total-items" min="1" placeholder="e.g. 50">
                                 </div>
                                 <div class="form-group">
                                     <label>Exam Duration (mins)</label>
-                                    <input type="number" placeholder="e.g. 120">
+                                    <input type="number" id="tos-duration" min="1" placeholder="e.g. 120">
                                 </div>
                             </div>
 
@@ -728,14 +763,13 @@
                         <div class="obe-section">
                             <div class="obe-header">
                                 <span class="obe-title">OBE Data</span>
-                                <button class="btn-sync" type="button">↻ Sync</button>
                             </div>
                             <div class="obe-field-label">Total Hours (from OBE)</div>
                             <div class="obe-value-row">
-                                <div class="obe-value-box">—</div>
+                                <div class="obe-value-box" id="tos-total-hours">—</div>
                                 <span class="obe-auto-label">Auto-synced</span>
                             </div>
-                            <p class="obe-hint">This value is automatically fetched from your OBE data and cannot be manually edited.</p>
+                            <p class="obe-hint">This value is automatically fetched from your OBTL topics & hours and cannot be manually edited.</p>
                         </div>
                     </div>
 
@@ -757,52 +791,35 @@
                 {{-- Top form bar --}}
                 <div class="eb-form-bar">
                     <div class="eb-form-group">
-                        <label>Exam Title</label>
-                        <select id="eb-title">
-                            <option value="" disabled selected>Select exam</option>
-                            <option>Midterm Examination</option>
-                            <option>Prelim Examination</option>
-                            <option>Semi-Final Examination</option>
-                            <option>Final Examination</option>
+                        <label>Exam</label>
+                        <select id="eb-exam-select" onchange="onExamSelectChange()">
+                            <option value="" selected>Select exam...</option>
+                            @foreach($exams as $ex)
+                                <option value="{{ $ex->id }}">{{ $ex->programAssignment->course->code }} — {{ $ex->title }} ({{ $ex->grading_period }})</option>
+                            @endforeach
                         </select>
+                    </div>
+                    <div class="eb-form-group">
+                        <label>Title</label>
+                        <input type="text" id="eb-title-input" placeholder="e.g. Midterm Examination" disabled>
                     </div>
                     <div class="eb-form-group">
                         <label>Subject</label>
-                        <select id="eb-subject">
-                            <option value="" disabled selected>Select subject</option>
-                            <option>Financial Accounting and Reporting</option>
-                            <option>Managerial Economics</option>
-                            <option>Intermediate Accounting 1</option>
-                            <option>Cost Accounting and Control</option>
-                            <option>Business Laws and Regulations</option>
-                        </select>
+                        <div class="eb-readonly" id="eb-subject-label">—</div>
                     </div>
                     <div class="eb-form-group">
                         <label>Exam Type</label>
-                        <select id="eb-type">
-                            <option value="" disabled selected>Select type</option>
-                            <option>Midterm Examination</option>
-                            <option>Prelim Examination</option>
-                            <option>Final Examination</option>
-                        </select>
-                    </div>
-                    <div class="eb-form-group">
-                        <label>Blooms Level</label>
-                        <select id="eb-blooms">
-                            <option value="" disabled selected>Add content</option>
-                            <option>Remember</option>
-                            <option>Understand</option>
-                            <option>Apply</option>
-                            <option>Analyze</option>
-                            <option>Evaluate</option>
-                            <option>Create</option>
-                        </select>
+                        <div class="eb-readonly" id="eb-type-label">—</div>
                     </div>
                     <div class="eb-btn-group">
-                        <button class="btn-eb-save" onclick="saveExam()">💾 Save</button>
-                        <button class="btn-eb-preview" onclick="previewExam()">👁 Preview</button>
+                        <button class="btn-eb-save" onclick="saveExam()" id="btn-save-exam" disabled>💾 Save</button>
+                        <button class="btn-eb-preview" onclick="previewExam()" id="btn-preview-exam" disabled>👁 Preview</button>
+                        <button class="btn-eb-preview" onclick="finalizeExam()" id="btn-finalize-exam" disabled>🔒 Finalize</button>
                     </div>
                 </div>
+
+                {{-- Live TOS progress: actual items added vs. the TOS Generator target --}}
+                <div id="eb-tos-progress"></div>
 
                 {{-- Sections list + Add Section --}}
                 <div class="eb-sections-bar" id="eb-sections-bar">
@@ -812,99 +829,177 @@
 
                 {{-- Sections content --}}
                 <div id="eb-sections-content"></div>
+                <div class="tab-empty" id="eb-no-exam-notice">
+                    <div class="empty-icon">📝</div>
+                    Select an exam above, or use <strong>+ New Exam</strong> to start one.
+                </div>
 
                 {{-- Add Section button --}}
                 <div style="text-align:center;margin-top:10px;">
-                    <button class="btn-add-section" onclick="addSection()">+ Add Section</button>
+                    <button class="btn-add-section" onclick="addSection()" id="btn-add-section" disabled>+ Add Section</button>
                 </div>
 
             </div>
 
             {{-- Item Bank Tab --}}
             <div class="tab-content" id="tab-item-bank">
-                <div class="tab-empty">
-                    <div class="empty-icon">🗃️</div>
-                    Your item bank is empty.<br>Add questions to build your item bank.
+                <div class="form-group" style="max-width:360px;margin-bottom:16px;">
+                    <label>Filter by Subject</label>
+                    <select id="bank-course-select" onchange="loadItemBank()">
+                        <option value="" disabled selected>Select subject</option>
+                        @foreach($assignments->unique('course_id') as $a)
+                            <option value="{{ $a->course_id }}">{{ $a->course->code }} — {{ $a->course->title }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div id="bank-items-container">
+                    <div class="tab-empty">
+                        <div class="empty-icon">🗃️</div>
+                        Select a subject above to see its reusable items.
+                    </div>
                 </div>
             </div>
 
         </div>
     </div>
 
+    {{-- ════════════ NEW EXAM MODAL ════════════ --}}
+    <div class="modal-overlay" id="new-exam-overlay">
+        <div class="modal">
+            <div class="modal-title">New Exam</div>
+            <div class="modal-field">
+                <label>Subject <span style="color:#ef4444">*</span></label>
+                <select id="ne-subject">
+                    <option value="" disabled selected>Select subject</option>
+                    @foreach($assignments as $a)
+                        <option value="{{ $a->id }}">{{ $a->course->code }} — {{ $a->course->title }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="modal-row">
+                <div class="modal-field">
+                    <label>Grading Period <span style="color:#ef4444">*</span></label>
+                    <select id="ne-period">
+                        <option value="Prelim">Prelim</option>
+                        <option value="Midterm">Midterm</option>
+                        <option value="Final">Final</option>
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label>Duration (mins)</label>
+                    <input type="number" id="ne-duration" min="1" placeholder="e.g. 120">
+                </div>
+            </div>
+            <div class="modal-field">
+                <label>Title <span style="color:#ef4444">*</span></label>
+                <input type="text" id="ne-title" placeholder="e.g. Midterm Examination" required>
+            </div>
+            <div class="modal-field">
+                <label>Target Items <span style="font-size:10px;color:#999;">(optional — from TOS Generator)</span></label>
+                <input type="number" id="ne-target-items" min="1" placeholder="e.g. 50">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeNewExamModal()">Cancel</button>
+                <button type="button" class="btn-save" onclick="createExam()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ════════════ AI GENERATE QUESTIONS MODAL ════════════ --}}
+    <div class="modal-overlay" id="ai-gen-overlay">
+        <div class="modal">
+            <div class="modal-title">🤖 Generate Questions with AI</div>
+            <div class="modal-field">
+                <label>Topic <span style="color:#ef4444">*</span></label>
+                <select id="ai-gen-topic">
+                    <option value="" disabled selected>Select topic</option>
+                </select>
+            </div>
+            <div class="modal-row">
+                <div class="modal-field">
+                    <label>Question Type <span style="color:#ef4444">*</span></label>
+                    <select id="ai-gen-type">
+                        @foreach(\App\Services\QuestionGeneratorService::SUPPORTED_TYPES as $typeKey)
+                            <option value="{{ $typeKey }}">{{ \App\Support\BloomLevels::TYPES[$typeKey]['label'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label>How many?</label>
+                    <input type="number" id="ai-gen-count" min="1" max="10" value="3">
+                </div>
+            </div>
+            <div id="ai-gen-error" style="display:none;color:#ef4444;font-size:11.5px;margin-bottom:10px;"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeAiGenModal()">Cancel</button>
+                <button type="button" class="btn-save" id="ai-gen-submit" onclick="submitAiGen()">Generate</button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ════════════ EXAM PREVIEW MODAL ════════════ --}}
+    <div class="modal-overlay" id="preview-overlay">
+        <div class="modal" style="width:760px;max-height:85vh;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <div class="modal-title" style="margin:0;">Exam Preview</div>
+                <button type="button" class="btn-cancel" onclick="closePreview()">Close</button>
+            </div>
+            <div id="preview-body"></div>
+        </div>
+    </div>
+
     {{-- ════════════ QUESTION TYPE MODAL ════════════ --}}
     <div class="qtype-overlay" id="qtype-overlay">
         <div class="qtype-modal">
-            <div class="qtype-title">Choose Question Type</div>
+            <div class="qtype-title" id="qtype-title">Choose Question Type</div>
             <div class="qtype-grid">
-                <button class="qtype-btn" onclick="addQuestion('mc-single')">
-                    <div class="qt-icon">◎</div>
-                    <div class="qt-text">
-                        <div class="qt-name">Multiple Choice (Single)</div>
-                        <div class="qt-desc">Single correct answer from multiple options</div>
-                    </div>
-                </button>
-                <button class="qtype-btn" onclick="addQuestion('fill-blank')">
-                    <div class="qt-icon">T</div>
-                    <div class="qt-text">
-                        <div class="qt-name">Fill in the Blank</div>
-                        <div class="qt-desc">Each blank filled with frames</div>
-                    </div>
-                </button>
-                <button class="qtype-btn" onclick="addQuestion('true-false')">
-                    <div class="qt-icon">✓</div>
-                    <div class="qt-text">
-                        <div class="qt-name">True or False</div>
-                        <div class="qt-desc">Single true/false question</div>
-                    </div>
-                </button>
-                <button class="qtype-btn" onclick="addQuestion('short-answer')">
-                    <div class="qt-icon">T</div>
-                    <div class="qt-text">
-                        <div class="qt-name">Short Answer / Essay</div>
-                        <div class="qt-desc">Longform text answer</div>
-                    </div>
-                </button>
-                <button class="qtype-btn" onclick="addQuestion('matching')">
-                    <div class="qt-icon">⇄</div>
-                    <div class="qt-text">
-                        <div class="qt-name">Matching Type</div>
-                        <div class="qt-desc">Matching items from two columns</div>
-                    </div>
-                </button>
-                <button class="qtype-btn" onclick="addQuestion('ordering')">
-                    <div class="qt-icon">↕</div>
-                    <div class="qt-text">
-                        <div class="qt-name">Ordering / Sequencing</div>
-                        <div class="qt-desc">Arrange items in order</div>
-                    </div>
-                </button>
-                <button class="qtype-btn" onclick="addQuestion('enumeration')">
-                    <div class="qt-icon">≡</div>
-                    <div class="qt-text">
-                        <div class="qt-name">Enumeration</div>
-                        <div class="qt-desc">List of answers</div>
-                    </div>
-                </button>
-                <button class="qtype-btn" onclick="addQuestion('identification')">
-                    <div class="qt-icon">◎</div>
-                    <div class="qt-text">
-                        <div class="qt-name">Identification</div>
-                        <div class="qt-desc">Identify the correct term or concept</div>
-                    </div>
-                </button>
-                <button class="qtype-btn" onclick="addQuestion('diagram')">
-                    <div class="qt-icon">🖼</div>
-                    <div class="qt-text">
-                        <div class="qt-name">Label the Diagram</div>
-                        <div class="qt-desc">Single text, label with frames</div>
-                    </div>
-                </button>
+                @foreach(\App\Support\BloomLevels::TYPES as $typeKey => $t)
+                    <button class="qtype-btn" onclick="addQuestion('{{ $typeKey }}')">
+                        <div class="qt-icon">{{ $t['icon'] }}</div>
+                        <div class="qt-text">
+                            <div class="qt-name">{{ $t['label'] }}</div>
+                            <div class="qt-desc">{{ $t['desc'] }}{{ $t['bloom'] ? ' — ' . $t['bloom'] . ' (' . $t['category'] . ')' : '' }}</div>
+                        </div>
+                    </button>
+                @endforeach
             </div>
             <button class="btn-qtype-cancel" onclick="closeQTypeModal()">Cancel</button>
         </div>
     </div>
 
     <script>
+        const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+        const QUESTION_TYPES = @json(\App\Support\BloomLevels::TYPES);
+        const TOPICS_BY_ASSIGNMENT = @json($topicsByAssignment);
+        const ASSIGNMENTS = @json($assignments->map(fn($a) => ['id' => $a->id, 'label' => $a->course->code . ' — ' . $a->course->title]));
+
+        let currentExam = null;
+        let tosTargetCache = null;
+        let qtypeTarget = { secId: null, qi: null };
+
+        // ── fetch helper ──
+        async function api(url, opts) {
+            opts = opts || {};
+            opts.headers = Object.assign({ 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }, opts.headers || {});
+            if (opts.body) {
+                opts.headers['Content-Type'] = 'application/json';
+                opts.body = JSON.stringify(opts.body);
+            }
+            const res = await fetch(url, opts);
+            if (!res.ok) {
+                const err = await res.json().catch(function () { return {}; });
+                throw new Error(err.message || ('Request failed (' + res.status + ')'));
+            }
+            return res.status === 204 ? null : res.json();
+        }
+
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s == null ? '' : String(s);
+            return d.innerHTML;
+        }
+        function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
+
         // ── Tab switching ──
         function switchTab(tabName) {
             document.querySelectorAll('.tab-item').forEach(function(t) {
@@ -917,84 +1012,210 @@
             if (target) target.classList.add('active');
         }
 
-        // ── TOS Generator ──
-        function generateTOS() {
-            var subject  = document.querySelector('#tab-tos select:nth-of-type(1)').value;
-            var examType = document.querySelector('#tab-tos select:nth-of-type(2)').value;
-            var total    = document.querySelector('#tab-tos input[type="number"]:nth-of-type(1)').value;
-            var panel    = document.getElementById('tos-result-panel');
+        // ══════════════════════════════
+        // TOS GENERATOR
+        // ══════════════════════════════
+        function onTosSubjectChange() { /* topics are fetched fresh on Generate */ }
 
-            if (!subject || !examType || !total) {
+        async function generateTOS() {
+            var assignmentId = document.getElementById('tos-subject').value;
+            var period       = document.getElementById('tos-period').value;
+            var totalItems   = parseInt(document.getElementById('tos-total-items').value);
+            var panel        = document.getElementById('tos-result-panel');
+
+            if (!assignmentId || !period || !totalItems) {
                 panel.innerHTML =
                     '<div class="tos-panel-title">Generated Table of Specifications</div>' +
                     '<div class="tos-empty" style="color:#ef4444;"><div class="empty-icon">⚠️</div>Please fill in all fields before generating the TOS.</div>';
                 return;
             }
 
+            var result;
+            try {
+                result = await api('/faculty/exam-generator/tos-target', {
+                    method: 'POST',
+                    body: { program_assignment_id: assignmentId, grading_period: period, total_items: totalItems }
+                });
+            } catch (e) {
+                panel.innerHTML =
+                    '<div class="tos-panel-title">Generated Table of Specifications</div>' +
+                    '<div class="tos-empty" style="color:#ef4444;"><div class="empty-icon">⚠️</div>' + escapeHtml(e.message) + '</div>';
+                return;
+            }
+
+            tosTargetCache = { assignmentId: assignmentId, period: period, totalItems: totalItems, result: result };
+            document.getElementById('tos-total-hours').textContent = result.total_hours + ' hrs';
+
+            if (!result.topics || result.topics.length === 0) {
+                panel.innerHTML =
+                    '<div class="tos-panel-title">Generated Table of Specifications</div>' +
+                    '<div class="tos-empty"><div class="empty-icon">⚠️</div>No OBTL topics have been added yet for this subject\'s ' + period + ' period. Ask your Program Head to add them under Course Oversight → Topics & Hours.</div>';
+                return;
+            }
+
+            var rows = result.topics.map(function(t) {
+                return '<tr>' +
+                    '<td style="padding:8px;border:1px solid #e0e0e0;">' + escapeHtml(t.topic) + '</td>' +
+                    '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + t.hours + '</td>' +
+                    '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + t.weight_percent + '%</td>' +
+                    '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + t.lots_target + '</td>' +
+                    '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + t.hots_target + '</td>' +
+                    '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;font-weight:700;">' + t.target_items + '</td>' +
+                '</tr>';
+            }).join('');
+
             panel.innerHTML =
                 '<div class="tos-panel-title">Generated Table of Specifications</div>' +
                 '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11.5px;">' +
-                '<thead>' +
-                '<tr style="background:#f5f5f5;">' +
+                '<thead><tr style="background:#f5f5f5;">' +
                 '<th style="padding:8px;border:1px solid #e0e0e0;text-align:left;">Topic</th>' +
-                '<th style="padding:8px;border:1px solid #e0e0e0;">No. of Hours</th>' +
+                '<th style="padding:8px;border:1px solid #e0e0e0;">Hours</th>' +
                 '<th style="padding:8px;border:1px solid #e0e0e0;">% Weight</th>' +
-                '<th colspan="6" style="padding:8px;border:1px solid #e0e0e0;text-align:center;">Bloom\'s Taxonomy Level</th>' +
-                '<th style="padding:8px;border:1px solid #e0e0e0;">Total</th></tr>' +
-                '<tr style="background:#fafafa;">' +
-                '<th style="padding:6px 8px;border:1px solid #e0e0e0;"></th>' +
-                '<th style="padding:6px 8px;border:1px solid #e0e0e0;"></th>' +
-                '<th style="padding:6px 8px;border:1px solid #e0e0e0;"></th>' +
-                '<th style="padding:6px 8px;border:1px solid #e0e0e0;text-align:center;font-size:11px;">R</th>' +
-                '<th style="padding:6px 8px;border:1px solid #e0e0e0;text-align:center;font-size:11px;">U</th>' +
-                '<th style="padding:6px 8px;border:1px solid #e0e0e0;text-align:center;font-size:11px;">Ap</th>' +
-                '<th style="padding:6px 8px;border:1px solid #e0e0e0;text-align:center;font-size:11px;">An</th>' +
-                '<th style="padding:6px 8px;border:1px solid #e0e0e0;text-align:center;font-size:11px;">E</th>' +
-                '<th style="padding:6px 8px;border:1px solid #e0e0e0;text-align:center;font-size:11px;">C</th>' +
-                '<th style="padding:6px 8px;border:1px solid #e0e0e0;"></th></tr>' +
-                '</thead><tbody>' +
-                '<tr><td colspan="10" style="padding:20px;text-align:center;color:#bbb;border:1px solid #e0e0e0;">No topics added yet.</td></tr>' +
-                '</tbody><tfoot>' +
-                '<tr style="background:#f5f5f5;font-weight:700;">' +
+                '<th style="padding:8px;border:1px solid #e0e0e0;">LOTS</th>' +
+                '<th style="padding:8px;border:1px solid #e0e0e0;">HOTS</th>' +
+                '<th style="padding:8px;border:1px solid #e0e0e0;">Items</th>' +
+                '</tr></thead><tbody>' + rows + '</tbody>' +
+                '<tfoot><tr style="background:#f5f5f5;font-weight:700;">' +
                 '<td style="padding:8px;border:1px solid #e0e0e0;">TOTAL</td>' +
-                '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">—</td>' +
+                '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + result.total_hours + '</td>' +
                 '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">100%</td>' +
-                '<td colspan="6" style="padding:8px;border:1px solid #e0e0e0;"></td>' +
-                '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + total + '</td>' +
-                '</tr></tfoot></table></div>';
+                '<td colspan="2" style="padding:8px;border:1px solid #e0e0e0;"></td>' +
+                '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + result.total_items + '</td>' +
+                '</tr></tfoot></table></div>' +
+                '<div style="margin-top:14px;text-align:right;"><button class="btn-generate" type="button" onclick="startExamFromTOS()">Start Exam from this TOS →</button></div>';
+        }
+
+        function startExamFromTOS() {
+            if (!tosTargetCache) return;
+            var a = ASSIGNMENTS.find(function(x) { return String(x.id) === String(tosTargetCache.assignmentId); });
+            document.getElementById('ne-subject').value = tosTargetCache.assignmentId;
+            document.getElementById('ne-period').value = tosTargetCache.period;
+            document.getElementById('ne-target-items').value = tosTargetCache.totalItems;
+            document.getElementById('ne-title').value = tosTargetCache.period + ' Examination' + (a ? ' — ' + a.label : '');
+            openNewExamModal();
         }
 
         // ══════════════════════════════
-        // EXAM BUILDER
+        // NEW EXAM MODAL
         // ══════════════════════════════
-        var ebSections  = [];   // [{id, title, instruction, questions:[]}]
-        var currentSectionId = null;
+        function openNewExamModal() { document.getElementById('new-exam-overlay').classList.add('open'); }
+        function closeNewExamModal() { document.getElementById('new-exam-overlay').classList.remove('open'); }
+        document.getElementById('new-exam-overlay').addEventListener('click', function(e) { if (e.target === this) closeNewExamModal(); });
 
-        var QTYPE_LABELS = {
-            'mc-single':    'Multiple Choice (Single)',
-            'fill-blank':   'Fill in the Blank',
-            'true-false':   'True or False',
-            'short-answer': 'Short Answer / Essay',
-            'matching':     'Matching Type',
-            'ordering':     'Ordering / Sequencing',
-            'enumeration':  'Enumeration',
-            'identification':'Identification',
-            'diagram':      'Label the Diagram'
-        };
+        async function createExam() {
+            var body = {
+                program_assignment_id: document.getElementById('ne-subject').value,
+                grading_period: document.getElementById('ne-period').value,
+                title: document.getElementById('ne-title').value,
+                duration_minutes: document.getElementById('ne-duration').value || null,
+                target_items: document.getElementById('ne-target-items').value || null
+            };
+            if (!body.program_assignment_id || !body.title) { alert('Subject and Title are required.'); return; }
 
-        var QTYPE_DEFAULTS = {
-            'mc-single':    ['O(1)', 'O(n)', 'O(log n)', 'O(n²)'],
-            'true-false':   ['True', 'False'],
-            'fill-blank':   [],
-            'short-answer': [],
-            'matching':     ['A. Item 1', 'B. Item 2', 'C. Item 3'],
-            'ordering':     ['Step 1', 'Step 2', 'Step 3'],
-            'enumeration':  ['Item 1', 'Item 2', 'Item 3'],
-            'identification':[],
-            'diagram':      []
-        };
+            try {
+                var exam = await api('/faculty/exam-generator', { method: 'POST', body: body });
+                closeNewExamModal();
+                var opt = document.createElement('option');
+                opt.value = exam.id;
+                opt.textContent = exam.program_assignment.course.code + ' — ' + exam.title + ' (' + exam.grading_period + ')';
+                document.getElementById('eb-exam-select').appendChild(opt);
+                document.getElementById('eb-exam-select').value = exam.id;
+                switchTab('exam-builder');
+                await loadExam(exam.id);
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        // ══════════════════════════════
+        // EXAM BUILDER — load / state
+        // ══════════════════════════════
+        async function onExamSelectChange() {
+            var id = document.getElementById('eb-exam-select').value;
+            if (!id) { clearExamBuilder(); return; }
+            await loadExam(id);
+        }
+
+        async function loadExam(id) {
+            try {
+                currentExam = await api('/faculty/exam-generator/' + id);
+            } catch (e) {
+                alert(e.message);
+                return;
+            }
+            currentExam.sections.forEach(function(sec) {
+                (sec.questions || []).forEach(function(q) { if (!q.children) q.children = []; });
+            });
+
+            document.getElementById('eb-exam-select').value = currentExam.id;
+            document.getElementById('eb-title-input').value = currentExam.title;
+            document.getElementById('eb-title-input').disabled = false;
+            document.getElementById('eb-subject-label').textContent = currentExam.program_assignment.course.code + ' — ' + currentExam.program_assignment.course.title;
+            document.getElementById('eb-type-label').textContent = currentExam.grading_period;
+            var finalized = currentExam.status === 'finalized';
+            document.getElementById('btn-save-exam').disabled = finalized;
+            document.getElementById('btn-preview-exam').disabled = false;
+            document.getElementById('btn-finalize-exam').disabled = finalized;
+            document.getElementById('btn-add-section').disabled = finalized;
+            document.getElementById('eb-no-exam-notice').style.display = 'none';
+
+            renderEB();
+            await refreshTosProgress();
+        }
+
+        function clearExamBuilder() {
+            currentExam = null;
+            document.getElementById('eb-title-input').value = '';
+            document.getElementById('eb-title-input').disabled = true;
+            document.getElementById('eb-subject-label').textContent = '—';
+            document.getElementById('eb-type-label').textContent = '—';
+            document.getElementById('btn-save-exam').disabled = true;
+            document.getElementById('btn-preview-exam').disabled = true;
+            document.getElementById('btn-finalize-exam').disabled = true;
+            document.getElementById('btn-add-section').disabled = true;
+            document.getElementById('eb-no-exam-notice').style.display = '';
+            document.getElementById('eb-sections-content').innerHTML = '';
+            document.getElementById('eb-section-links').innerHTML = '';
+            document.getElementById('eb-tos-progress').innerHTML = '';
+        }
+
+        function findSection(secId) {
+            return currentExam.sections.find(function(s) { return String(s.id) === String(secId); });
+        }
+        function findQuestion(secId, qi, ci) {
+            var sec = findSection(secId);
+            if (!sec) return null;
+            var q = sec.questions[qi];
+            if (ci === null || ci === undefined) return q;
+            return q.children[ci];
+        }
+
+        // ══════════════════════════════
+        // SECTIONS
+        // ══════════════════════════════
+        function addSection() {
+            if (!currentExam) return;
+            var id = 'new-' + Date.now();
+            var num = currentExam.sections.length + 1;
+            currentExam.sections.push({ id: id, title: 'Test ' + num, instructions: '', questions: [] });
+            renderEB();
+        }
+        function deleteSection(secId) {
+            if (!confirm('Delete this section?')) return;
+            currentExam.sections = currentExam.sections.filter(function(s) { return String(s.id) !== String(secId); });
+            renderEB();
+        }
+        function updateSectionTitle(secId, val) {
+            var sec = findSection(secId);
+            if (sec) { sec.title = val; renderSectionsBar(); }
+        }
+        function updateSectionInstructions(secId, val) {
+            var sec = findSection(secId);
+            if (sec) sec.instructions = val;
+        }
 
         function renderEB() {
+            if (!currentExam) return;
             renderSectionsBar();
             renderSectionsContent();
         }
@@ -1002,7 +1223,7 @@
         function renderSectionsBar() {
             var bar = document.getElementById('eb-section-links');
             bar.innerHTML = '';
-            ebSections.forEach(function(sec) {
+            currentExam.sections.forEach(function(sec) {
                 var span = document.createElement('span');
                 span.className = 'eb-section-link';
                 span.textContent = sec.title;
@@ -1016,171 +1237,525 @@
         function renderSectionsContent() {
             var container = document.getElementById('eb-sections-content');
             container.innerHTML = '';
-            ebSections.forEach(function(sec) {
+            var disabled = currentExam.status === 'finalized' ? 'disabled' : '';
+
+            currentExam.sections.forEach(function(sec) {
                 var div = document.createElement('div');
                 div.className = 'section-panel';
                 div.id = 'sec-' + sec.id;
 
                 var qHTML = '';
-                sec.questions.forEach(function(q, qi) {
-                    qHTML += buildQuestionHTML(sec.id, qi, q);
-                });
+                (sec.questions || []).forEach(function(q, qi) { qHTML += buildQuestionHTML(sec.id, qi, q); });
 
                 div.innerHTML =
                     '<div class="section-header">' +
-                        '<input class="section-title-input" value="' + sec.title + '" ' +
-                            'onchange="updateSectionTitle(\'' + sec.id + '\', this.value)">' +
-                        '<button class="btn-del-section" onclick="deleteSection(\'' + sec.id + '\')" title="Delete section">🗑</button>' +
+                        '<input class="section-title-input" value="' + escapeAttr(sec.title) + '" ' + disabled +
+                            ' onchange="updateSectionTitle(\'' + sec.id + '\', this.value)">' +
+                        '<button class="btn-del-section" onclick="deleteSection(\'' + sec.id + '\')" title="Delete section" ' + disabled + '>🗑</button>' +
                     '</div>' +
-                    '<div class="section-inst">' + sec.instruction + '</div>' +
+                    '<textarea class="section-inst" oninput="updateSectionInstructions(\'' + sec.id + '\', this.value)" ' + disabled +
+                        ' placeholder="Instructions for this section..." style="width:100%;border:1px solid #eee;border-radius:4px;padding:6px 8px;font-size:12px;color:#666;min-height:30px;margin:6px 0;">' + escapeHtml(sec.instructions || '') + '</textarea>' +
                     '<div id="questions-' + sec.id + '">' + qHTML + '</div>' +
-                    '<button class="btn-add-question" onclick="openQTypeModal(\'' + sec.id + '\')">+ Add Question</button>';
+                    '<button class="btn-add-question" onclick="openQTypeModal(\'' + sec.id + '\')" ' + disabled + '>+ Add Question</button>' +
+                    ' <button class="btn-add-question" onclick="openAiGenModal(\'' + sec.id + '\')" ' + disabled + '>🤖 Generate with AI</button>';
 
                 container.appendChild(div);
             });
         }
 
-        function buildQuestionHTML(secId, qi, q) {
-            var num = qi + 1;
-            var optHTML = '';
-
-            if (q.type === 'mc-single' || q.type === 'matching' || q.type === 'ordering' || q.type === 'enumeration') {
-                q.options.forEach(function(opt) {
-                    optHTML += '<div class="q-option"><input type="radio" disabled><span>' + opt + '</span></div>';
-                });
-            } else if (q.type === 'true-false') {
-                optHTML = '<div class="q-option"><input type="radio" disabled><span>True</span></div>' +
-                          '<div class="q-option"><input type="radio" disabled><span>False</span></div>';
-            } else if (q.type === 'fill-blank' || q.type === 'identification') {
-                optHTML = '<div style="border-bottom:1px solid #ccc;height:24px;margin:8px 0;width:200px;"></div>';
-            } else if (q.type === 'short-answer') {
-                optHTML = '<div style="border:1px solid #e0e0e0;border-radius:4px;height:50px;margin:8px 0;background:#fafafa;"></div>';
-            } else if (q.type === 'diagram') {
-                optHTML = '<div style="border:1px dashed #ccc;border-radius:6px;height:80px;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:12px;margin:8px 0;">Diagram area</div>';
+        // ══════════════════════════════
+        // QUESTIONS
+        // ══════════════════════════════
+        function defaultOptionsFor(type) {
+            switch (type) {
+                case 'mc-single': return { choices: ['', '', '', ''], correct: 0 };
+                case 'true-false': return { answer: true };
+                case 'modified-true-false': return { answer: true, correction: '' };
+                case 'identification': return { answer: '' };
+                case 'enumeration': return { answers: [''] };
+                case 'fill-blank': return { answers: [''] };
+                case 'matching': return { left: [''], right: [''] };
+                case 'ordering': return { items: [''] };
+                case 'diagram': return { image_note: '', labels: [''] };
+                case 'problem-solving': return { answer: '', solution_steps: '' };
+                case 'short-answer': return { rubric: '' };
+                default: return null;
             }
+        }
 
-            return '<div class="question-card" id="q-' + secId + '-' + qi + '">' +
+        function topicOptionsHtml(selected) {
+            var byAssignment = (currentExam && TOPICS_BY_ASSIGNMENT[currentExam.program_assignment_id]) || {};
+            var topics = byAssignment[currentExam.grading_period] || [];
+            var html = '<option value="">— No topic —</option>';
+            topics.forEach(function(t) {
+                html += '<option value="' + escapeAttr(t.topic) + '" ' + (selected === t.topic ? 'selected' : '') + '>' + escapeHtml(t.topic) + ' (' + t.hours + ' hrs)</option>';
+            });
+            return html;
+        }
+
+        function listTextarea(secId, qi, ci, field, arr, placeholder) {
+            var value = (arr || []).join('\n');
+            return '<textarea placeholder="' + placeholder + '" ' +
+                'oninput="setOptionListField(\'' + secId + '\',' + qi + ',' + (ci === null ? 'null' : ci) + ',\'' + field + '\',this.value)" ' +
+                'style="width:100%;border:1px solid #ddd;border-radius:4px;padding:6px 8px;font-size:12px;min-height:60px;">' + escapeHtml(value) + '</textarea>';
+        }
+
+        function renderOptionsEditor(secId, qi, ci, q) {
+            var o = q.options || {};
+            var ciArg = ci === null ? 'null' : ci;
+            var idPrefix = secId + '-' + qi + (ci !== null ? '-' + ci : '');
+
+            if (q.type === 'mc-single') {
+                var choices = o.choices || [];
+                var html = choices.map(function(c, i) {
+                    return '<div class="q-option">' +
+                        '<input type="radio" name="mc-' + idPrefix + '" ' + (o.correct === i ? 'checked' : '') +
+                            ' onchange="setMcCorrect(\'' + secId + '\',' + qi + ',' + ciArg + ',' + i + ')">' +
+                        '<input type="text" value="' + escapeAttr(c) + '" placeholder="Choice ' + (i + 1) + '" ' +
+                            'oninput="setMcChoice(\'' + secId + '\',' + qi + ',' + ciArg + ',' + i + ',this.value)" ' +
+                            'style="flex:1;border:1px solid #ddd;border-radius:4px;padding:4px 8px;font-size:12px;">' +
+                        (choices.length > 2 ? '<button type="button" onclick="removeMcChoice(\'' + secId + '\',' + qi + ',' + ciArg + ',' + i + ')" style="border:none;background:none;color:#ef4444;cursor:pointer;">✕</button>' : '') +
+                    '</div>';
+                }).join('');
+                html += '<button type="button" class="btn-add-question" style="margin-top:6px;padding:4px 10px;font-size:11px;" onclick="addMcChoice(\'' + secId + '\',' + qi + ',' + ciArg + ')">+ Add choice</button>';
+                return html;
+            }
+            if (q.type === 'true-false' || q.type === 'modified-true-false') {
+                var extra = q.type === 'modified-true-false'
+                    ? '<input type="text" value="' + escapeAttr(o.correction || '') + '" placeholder="Correct term if False" ' +
+                        'oninput="setOptionField(\'' + secId + '\',' + qi + ',' + ciArg + ',\'correction\',this.value)" ' +
+                        'style="margin-top:6px;width:100%;border:1px solid #ddd;border-radius:4px;padding:5px 8px;font-size:12px;">'
+                    : '';
+                return '<div class="q-option"><input type="radio" name="tf-' + idPrefix + '" ' + (o.answer === true ? 'checked' : '') +
+                        ' onchange="setOptionField(\'' + secId + '\',' + qi + ',' + ciArg + ',\'answer\',true)"><span>True</span></div>' +
+                    '<div class="q-option"><input type="radio" name="tf-' + idPrefix + '" ' + (o.answer === false ? 'checked' : '') +
+                        ' onchange="setOptionField(\'' + secId + '\',' + qi + ',' + ciArg + ',\'answer\',false)"><span>False</span></div>' + extra;
+            }
+            if (q.type === 'identification') {
+                return '<input type="text" value="' + escapeAttr(o.answer || '') + '" placeholder="Correct answer" ' +
+                    'oninput="setOptionField(\'' + secId + '\',' + qi + ',' + ciArg + ',\'answer\',this.value)" ' +
+                    'style="width:100%;border:1px solid #ddd;border-radius:4px;padding:6px 8px;font-size:12px;">';
+            }
+            if (q.type === 'enumeration') return listTextarea(secId, qi, ci, 'answers', o.answers, 'One answer per line');
+            if (q.type === 'fill-blank') return listTextarea(secId, qi, ci, 'answers', o.answers, "One blank's answer per line, in order");
+            if (q.type === 'ordering') return listTextarea(secId, qi, ci, 'items', o.items, 'Items in the correct order, one per line');
+            if (q.type === 'matching') {
+                return '<div style="display:flex;gap:10px;">' +
+                    '<div style="flex:1;"><div style="font-size:10.5px;color:#888;margin-bottom:3px;">Column A</div>' + listTextarea(secId, qi, ci, 'left', o.left, 'One per line') + '</div>' +
+                    '<div style="flex:1;"><div style="font-size:10.5px;color:#888;margin-bottom:3px;">Column B (matched by line)</div>' + listTextarea(secId, qi, ci, 'right', o.right, 'One per line') + '</div>' +
+                '</div>';
+            }
+            if (q.type === 'diagram') {
+                return '<input type="text" value="' + escapeAttr(o.image_note || '') + '" placeholder="Diagram reference / description" ' +
+                        'oninput="setOptionField(\'' + secId + '\',' + qi + ',' + ciArg + ',\'image_note\',this.value)" ' +
+                        'style="width:100%;border:1px solid #ddd;border-radius:4px;padding:6px 8px;font-size:12px;margin-bottom:6px;">' +
+                    listTextarea(secId, qi, ci, 'labels', o.labels, 'Labels, one per line');
+            }
+            if (q.type === 'problem-solving') {
+                return '<input type="text" value="' + escapeAttr(o.answer || '') + '" placeholder="Final answer" ' +
+                        'oninput="setOptionField(\'' + secId + '\',' + qi + ',' + ciArg + ',\'answer\',this.value)" ' +
+                        'style="width:100%;border:1px solid #ddd;border-radius:4px;padding:6px 8px;font-size:12px;margin-bottom:6px;">' +
+                    '<textarea placeholder="Solution steps" oninput="setOptionField(\'' + secId + '\',' + qi + ',' + ciArg + ',\'solution_steps\',this.value)" ' +
+                        'style="width:100%;border:1px solid #ddd;border-radius:4px;padding:6px 8px;font-size:12px;min-height:50px;">' + escapeHtml(o.solution_steps || '') + '</textarea>';
+            }
+            if (q.type === 'short-answer') {
+                return '<textarea placeholder="Rubric / expected answer notes (optional)" ' +
+                    'oninput="setOptionField(\'' + secId + '\',' + qi + ',' + ciArg + ',\'rubric\',this.value)" ' +
+                    'style="width:100%;border:1px solid #ddd;border-radius:4px;padding:6px 8px;font-size:12px;min-height:50px;">' + escapeHtml(o.rubric || '') + '</textarea>';
+            }
+            return '';
+        }
+
+        function buildQuestionHTML(secId, qi, q, ci) {
+            ci = (ci === undefined) ? null : ci;
+            var ct = QUESTION_TYPES[q.type] || {};
+            var num = ci === null ? (qi + 1) : (qi + 1) + String.fromCharCode(97 + ci);
+            var idAttr = 'q-' + secId + '-' + qi + (ci !== null ? '-' + ci : '');
+            var indent = ci !== null ? 'margin-left:24px;border-left:3px solid #e0e7ff;' : '';
+            var ciArg = ci === null ? 'null' : ci;
+
+            var bloomBadge = ct.bloom
+                ? '<span class="q-blooms-badge">' + ct.bloom + ' (' + ct.category + ')</span>'
+                : '<span class="q-blooms-badge" style="background:#eee;color:#888;">Container</span>';
+
+            var body = '<div class="question-card" id="' + idAttr + '" style="' + indent + '">' +
                 '<div class="q-header">' +
-                    '<div class="q-num">' + num + '. ' + q.text + '</div>' +
+                    '<div class="q-num" style="flex:1;">' + num + '.</div>' +
                     '<div class="q-actions">' +
-                        '<button class="btn-q-action" onclick="copyQuestion(\'' + secId + '\',' + qi + ')" title="Copy">⧉</button>' +
-                        '<button class="btn-q-action del" onclick="deleteQuestion(\'' + secId + '\',' + qi + ')" title="Delete">🗑</button>' +
+                        (ci === null ? '<button class="btn-q-action" onclick="copyQuestion(\'' + secId + '\',' + qi + ')" title="Copy">⧉</button>' : '') +
+                        '<button class="btn-q-action del" onclick="deleteQuestion(\'' + secId + '\',' + qi + ',' + ciArg + ')" title="Delete">🗑</button>' +
                     '</div>' +
                 '</div>' +
-                optHTML +
-                '<div class="q-footer">' +
-                    '<span class="q-type-label">' + QTYPE_LABELS[q.type] + '</span>' +
-                    '<span class="q-blooms-badge">' + (q.blooms || 'Remember') + '</span>' +
-                    '<div class="q-pts"><input type="number" value="' + (q.pts || 1) + '" min="1" ' +
-                        'onchange="updatePts(\'' + secId + '\',' + qi + ',this.value)" style="width:40px;height:24px;text-align:center;border:1px solid #ccc;border-radius:4px;font-size:12px;"> pts</div>' +
-                '</div>' +
-            '</div>';
+                '<textarea class="q-text-input" oninput="setQuestionText(\'' + secId + '\',' + qi + ',' + ciArg + ',this.value)" ' +
+                    'placeholder="' + (q.type === 'case-analysis' ? 'Scenario text...' : 'Question text...') + '" ' +
+                    'style="width:100%;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:12.5px;min-height:44px;margin:6px 0;">' + escapeHtml(q.question_text || '') + '</textarea>';
+
+            if (q.type !== 'case-analysis') {
+                body += '<div style="margin:8px 0;">' + renderOptionsEditor(secId, qi, ci, q) + '</div>';
+            }
+
+            body += '<div class="q-footer">' +
+                    '<span class="q-type-label">' + (ct.label || q.type) + '</span>' +
+                    bloomBadge +
+                    (q.type !== 'case-analysis' ?
+                        '<select onchange="setQuestionTopic(\'' + secId + '\',' + qi + ',' + ciArg + ',this.value)" style="font-size:11px;padding:3px 6px;border:1px solid #ccc;border-radius:4px;">' + topicOptionsHtml(q.topic) + '</select>'
+                        : '') +
+                    (q.type !== 'case-analysis' ?
+                        '<div class="q-pts"><input type="number" value="' + (q.points || 1) + '" min="1" ' +
+                            'onchange="updatePts(\'' + secId + '\',' + qi + ',' + ciArg + ',this.value)" style="width:40px;height:24px;text-align:center;border:1px solid #ccc;border-radius:4px;font-size:12px;"> pts</div>'
+                        : '') +
+                '</div>';
+
+            if (q.type === 'case-analysis') {
+                body += '<div style="margin-top:8px;">';
+                (q.children || []).forEach(function(child, cidx) { body += buildQuestionHTML(secId, qi, child, cidx); });
+                body += '</div>';
+                body += '<button class="btn-add-question" style="margin-top:6px;" onclick="openQTypeModal(\'' + secId + '\',' + qi + ')">+ Add Sub-question</button>';
+            }
+
+            body += '</div>';
+            return body;
         }
 
-        // Section actions
-        function addSection() {
-            var id    = 'sec' + Date.now();
-            var num   = ebSections.length + 1;
-            var types = ['Multiple Choice', 'True or False', 'Identification', 'Enumeration', 'Essay'];
-            var type  = types[Math.min(num - 1, types.length - 1)];
-            var instr = num === 1
-                ? 'Choose the letter of the best answer. Write your answer on the space provided.'
-                : 'Write TRUE if the statement is correct, otherwise write FALSE.';
-
-            ebSections.push({ id: id, title: 'Test ' + num + ' - ' + type, instruction: instr, questions: [] });
+        // ── field mutators (all mutate currentExam in place) ──
+        function setQuestionText(secId, qi, ci, value) { var q = findQuestion(secId, qi, ci); if (q) q.question_text = value; }
+        function setQuestionTopic(secId, qi, ci, value) { var q = findQuestion(secId, qi, ci); if (q) q.topic = value || null; }
+        function updatePts(secId, qi, ci, val) { var q = findQuestion(secId, qi, ci); if (q) q.points = parseInt(val) || 1; }
+        function setOptionField(secId, qi, ci, field, value) { var q = findQuestion(secId, qi, ci); if (q) { if (!q.options) q.options = {}; q.options[field] = value; } }
+        function setOptionListField(secId, qi, ci, field, text) { var q = findQuestion(secId, qi, ci); if (q) { if (!q.options) q.options = {}; q.options[field] = text.split('\n'); } }
+        function setMcChoice(secId, qi, ci, idx, value) { var q = findQuestion(secId, qi, ci); if (q) q.options.choices[idx] = value; }
+        function setMcCorrect(secId, qi, ci, idx) { var q = findQuestion(secId, qi, ci); if (q) q.options.correct = idx; }
+        function addMcChoice(secId, qi, ci) { var q = findQuestion(secId, qi, ci); if (q) { q.options.choices.push(''); renderEB(); } }
+        function removeMcChoice(secId, qi, ci, idx) {
+            var q = findQuestion(secId, qi, ci);
+            if (!q) return;
+            q.options.choices.splice(idx, 1);
+            if (q.options.correct >= q.options.choices.length) q.options.correct = 0;
             renderEB();
         }
 
-        function deleteSection(secId) {
-            if (!confirm('Delete this section?')) return;
-            ebSections = ebSections.filter(function(s) { return s.id !== secId; });
+        function deleteQuestion(secId, qi, ci) {
+            var sec = findSection(secId);
+            if (!sec) return;
+            if (ci === null || ci === undefined) {
+                sec.questions.splice(qi, 1);
+            } else {
+                sec.questions[qi].children.splice(ci, 1);
+            }
             renderEB();
         }
-
-        function updateSectionTitle(secId, val) {
-            var sec = ebSections.find(function(s) { return s.id === secId; });
-            if (sec) { sec.title = val; renderSectionsBar(); }
+        function copyQuestion(secId, qi) {
+            var sec = findSection(secId);
+            if (!sec) return;
+            var copy = JSON.parse(JSON.stringify(sec.questions[qi]));
+            sec.questions.splice(qi + 1, 0, copy);
+            renderEB();
         }
 
         // Question Type Modal
-        function openQTypeModal(secId) {
-            currentSectionId = secId;
+        function openQTypeModal(secId, qi) {
+            qtypeTarget = { secId: secId, qi: (qi === undefined ? null : qi) };
+            document.getElementById('qtype-title').textContent = qtypeTarget.qi === null ? 'Choose Question Type' : 'Choose Sub-question Type';
             document.getElementById('qtype-overlay').classList.add('open');
         }
+        function closeQTypeModal() { document.getElementById('qtype-overlay').classList.remove('open'); }
+        document.getElementById('qtype-overlay').addEventListener('click', function(e) { if (e.target === this) closeQTypeModal(); });
 
-        function closeQTypeModal() {
-            document.getElementById('qtype-overlay').classList.remove('open');
+        // ══════════════════════════════
+        // AI-ASSISTED QUESTION GENERATION
+        // ══════════════════════════════
+        let aiGenTarget = null; // section id to insert generated questions into
+
+        function aiGenTopicOptionsHtml() {
+            var byAssignment = (currentExam && TOPICS_BY_ASSIGNMENT[currentExam.program_assignment_id]) || {};
+            var topics = byAssignment[currentExam.grading_period] || [];
+            return topics.map(function(t) {
+                return '<option value="' + t.id + '">' + escapeHtml(t.topic) + ' (' + t.hours + ' hrs)</option>';
+            }).join('');
         }
 
-        document.getElementById('qtype-overlay').addEventListener('click', function(e) {
-            if (e.target === this) closeQTypeModal();
-        });
+        function openAiGenModal(secId) {
+            if (!currentExam) return;
+            aiGenTarget = secId;
+            document.getElementById('ai-gen-topic').innerHTML = '<option value="" disabled selected>Select topic</option>' + aiGenTopicOptionsHtml();
+            document.getElementById('ai-gen-error').style.display = 'none';
+            document.getElementById('ai-gen-overlay').classList.add('open');
+        }
+        function closeAiGenModal() { document.getElementById('ai-gen-overlay').classList.remove('open'); }
+        document.getElementById('ai-gen-overlay').addEventListener('click', function(e) { if (e.target === this) closeAiGenModal(); });
+
+        async function submitAiGen() {
+            var topicId = document.getElementById('ai-gen-topic').value;
+            var type = document.getElementById('ai-gen-type').value;
+            var count = parseInt(document.getElementById('ai-gen-count').value) || 3;
+            var errBox = document.getElementById('ai-gen-error');
+            errBox.style.display = 'none';
+
+            if (!topicId) {
+                errBox.textContent = 'Please select a topic.';
+                errBox.style.display = 'block';
+                return;
+            }
+
+            var btn = document.getElementById('ai-gen-submit');
+            btn.disabled = true;
+            btn.textContent = 'Generating…';
+
+            try {
+                var result = await api('/faculty/exam-generator/generate-questions', {
+                    method: 'POST',
+                    body: { course_topic_id: topicId, type: type, count: count }
+                });
+                var sec = findSection(aiGenTarget);
+                if (sec) {
+                    result.questions.forEach(function(q) {
+                        sec.questions.push({
+                            type: q.type, topic: q.topic, question_text: q.question_text,
+                            points: q.points, options: q.options, children: []
+                        });
+                    });
+                    renderEB();
+                }
+                closeAiGenModal();
+            } catch (e) {
+                errBox.textContent = e.message;
+                errBox.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Generate';
+            }
+        }
 
         function addQuestion(type) {
             closeQTypeModal();
-            var sec = ebSections.find(function(s) { return s.id === currentSectionId; });
+            var sec = findSection(qtypeTarget.secId);
             if (!sec) return;
 
-            var blooms = document.getElementById('eb-blooms').value || 'Remember';
-            var defaultTexts = {
-                'mc-single':    'What is the time complexity of accessing an element in an array by index?',
-                'true-false':   'A binary tree can have at most two children per node.',
-                'fill-blank':   'The process of ________ involves converting data into information.',
-                'short-answer': 'Explain the concept of recursion in your own words.',
-                'matching':     'Match each term with its correct definition.',
-                'ordering':     'Arrange the following steps in the correct order.',
-                'enumeration':  'Enumerate the following items.',
-                'identification':'Identify the term being described.',
-                'diagram':      'Label the parts of the diagram below.'
-            };
+            if (qtypeTarget.qi !== null && type === 'case-analysis') {
+                alert('A Case Analysis sub-question cannot itself be a Case Analysis.');
+                return;
+            }
 
-            sec.questions.push({
-                type:    type,
-                text:    defaultTexts[type] || 'Question text here.',
-                options: QTYPE_DEFAULTS[type] ? QTYPE_DEFAULTS[type].slice() : [],
-                blooms:  blooms,
-                pts:     1
-            });
+            var newQ = { type: type, topic: null, question_text: '', points: 1, options: defaultOptionsFor(type), children: [] };
 
+            if (qtypeTarget.qi === null) {
+                sec.questions.push(newQ);
+            } else {
+                var parent = sec.questions[qtypeTarget.qi];
+                if (!parent.children) parent.children = [];
+                parent.children.push(newQ);
+            }
             renderEB();
         }
 
-        function deleteQuestion(secId, qi) {
-            var sec = ebSections.find(function(s) { return s.id === secId; });
-            if (sec) { sec.questions.splice(qi, 1); renderEB(); }
+        // ══════════════════════════════
+        // SAVE / PREVIEW / FINALIZE
+        // ══════════════════════════════
+        function serializeQuestion(q) {
+            return {
+                type: q.type,
+                topic: q.topic || null,
+                question_text: q.question_text || '',
+                points: q.points || 1,
+                options: q.options || null,
+                children: (q.children || []).map(serializeQuestion)
+            };
         }
 
-        function copyQuestion(secId, qi) {
-            var sec = ebSections.find(function(s) { return s.id === secId; });
-            if (sec) {
-                var copy = JSON.parse(JSON.stringify(sec.questions[qi]));
-                sec.questions.splice(qi + 1, 0, copy);
+        async function saveExam() {
+            if (!currentExam) return;
+            var body = {
+                title: document.getElementById('eb-title-input').value,
+                duration_minutes: currentExam.duration_minutes || null,
+                sections: currentExam.sections.map(function(sec) {
+                    return {
+                        title: sec.title,
+                        instructions: sec.instructions,
+                        questions: (sec.questions || []).map(serializeQuestion)
+                    };
+                })
+            };
+
+            try {
+                currentExam = await api('/faculty/exam-generator/' + currentExam.id, { method: 'PUT', body: body });
+                currentExam.sections.forEach(function(sec) {
+                    (sec.questions || []).forEach(function(q) { if (!q.children) q.children = []; });
+                });
                 renderEB();
+                await refreshTosProgress();
+                alert('Exam saved.');
+            } catch (e) {
+                alert('Save failed: ' + e.message);
             }
         }
 
-        function updatePts(secId, qi, val) {
-            var sec = ebSections.find(function(s) { return s.id === secId; });
-            if (sec && sec.questions[qi]) sec.questions[qi].pts = parseInt(val) || 1;
-        }
+        function toRoman(n) { return ['I','II','III','IV','V','VI','VII','VIII'][n - 1] || n; }
 
-        function saveExam() {
-            alert('Exam saved successfully! (Frontend prototype — data is stored in memory only.)');
+        function previewOptionsHtml(q) {
+            var o = q.options || {};
+            if (q.type === 'mc-single') {
+                return '<div style="margin-top:4px;">' + (o.choices || []).map(function(c, i) { return '<div>' + String.fromCharCode(97 + i) + '. ' + escapeHtml(c) + '</div>'; }).join('') + '</div>';
+            }
+            if (q.type === 'true-false' || q.type === 'modified-true-false') {
+                return '<div style="margin-top:4px;">_____ (True / False)</div>';
+            }
+            if (q.type === 'matching') {
+                var left = o.left || [], right = o.right || [];
+                return '<div style="display:flex;gap:20px;margin-top:4px;"><div>' +
+                    left.map(function(l, i) { return (i + 1) + '. ' + escapeHtml(l); }).join('<br>') +
+                    '</div><div>' + right.map(function(r, i) { return String.fromCharCode(97 + i) + '. ' + escapeHtml(r); }).join('<br>') + '</div></div>';
+            }
+            return '';
         }
 
         function previewExam() {
-            if (ebSections.length === 0) {
+            if (!currentExam || currentExam.sections.length === 0) {
                 alert('No sections to preview. Add sections and questions first.');
                 return;
             }
-            var total = 0;
-            var summary = ebSections.map(function(sec) {
-                var q = sec.questions.length;
-                var pts = sec.questions.reduce(function(s, q) { return s + (q.pts || 1); }, 0);
-                total += pts;
-                return sec.title + ': ' + q + ' question(s), ' + pts + ' pts';
-            }).join('\n');
-            alert('EXAM PREVIEW\n\n' + summary + '\n\nTotal Points: ' + total);
+            var html = '<div style="max-width:700px;margin:0 auto;font-family:Arial, sans-serif;">' +
+                '<div style="text-align:center;margin-bottom:20px;">' +
+                    '<div style="font-weight:700;font-size:16px;">' + escapeHtml(currentExam.program_assignment.course.title) + '</div>' +
+                    '<div style="font-size:13px;color:#555;">' + escapeHtml(currentExam.title) + ' — ' + currentExam.grading_period + ' Examination</div>' +
+                    '<div style="font-size:11px;color:#888;">Name: _______________________  Score: _______</div>' +
+                '</div>';
+
+            currentExam.sections.forEach(function(sec, si) {
+                html += '<div style="margin-bottom:20px;">' +
+                    '<div style="font-weight:700;font-size:13.5px;margin-bottom:4px;">Test ' + toRoman(si + 1) + ' — ' + escapeHtml(sec.title) + '</div>' +
+                    (sec.instructions ? '<div style="font-style:italic;font-size:11.5px;color:#666;margin-bottom:8px;">' + escapeHtml(sec.instructions) + '</div>' : '') +
+                    '<ol style="font-size:12.5px;padding-left:20px;">';
+                (sec.questions || []).forEach(function(q) {
+                    html += '<li style="margin-bottom:8px;">' + escapeHtml(q.question_text || '(no question text)') +
+                        previewOptionsHtml(q) +
+                        (q.children && q.children.length ? '<ol type="a" style="margin-top:6px;">' + q.children.map(function(c) {
+                            return '<li style="margin-bottom:6px;">' + escapeHtml(c.question_text || '') + previewOptionsHtml(c) + '</li>';
+                        }).join('') + '</ol>' : '') +
+                    '</li>';
+                });
+                html += '</ol></div>';
+            });
+            html += '</div>';
+
+            document.getElementById('preview-body').innerHTML = html;
+            document.getElementById('preview-overlay').classList.add('open');
+        }
+        function closePreview() { document.getElementById('preview-overlay').classList.remove('open'); }
+        document.getElementById('preview-overlay').addEventListener('click', function(e) { if (e.target === this) closePreview(); });
+
+        async function finalizeExam() {
+            if (!currentExam) return;
+            if (!confirm('Finalize this exam? It can no longer be edited afterward.')) return;
+            try {
+                await fetch('/faculty/exam-generator/' + currentExam.id + '/finalize', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+                });
+                await loadExam(currentExam.id);
+            } catch (e) {
+                alert(e.message);
+            }
+        }
+
+        // ══════════════════════════════
+        // LIVE TOS PROGRESS (actual vs. target)
+        // ══════════════════════════════
+        async function refreshTosProgress() {
+            var container = document.getElementById('eb-tos-progress');
+            if (!currentExam || !currentExam.target_items) { container.innerHTML = ''; return; }
+
+            var actual, target;
+            try {
+                actual = await api('/faculty/exam-generator/' + currentExam.id + '/tos');
+                target = await api('/faculty/exam-generator/tos-target', {
+                    method: 'POST',
+                    body: {
+                        program_assignment_id: currentExam.program_assignment_id,
+                        grading_period: currentExam.grading_period,
+                        total_items: currentExam.target_items
+                    }
+                });
+            } catch (e) {
+                container.innerHTML = '';
+                return;
+            }
+
+            var rows = (target.topics || []).map(function(t) {
+                var a = actual.topics[t.topic] || { items: 0 };
+                return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0;font-size:11.5px;">' +
+                    '<span>' + escapeHtml(t.topic) + '</span>' +
+                    '<span style="color:' + (a.items >= t.target_items ? '#16a34a' : '#888') + ';">' + a.items + ' / ' + t.target_items + ' items</span>' +
+                '</div>';
+            }).join('');
+
+            container.innerHTML = '<div class="obe-section" style="margin-bottom:12px;">' +
+                '<div class="obe-header"><span class="obe-title">TOS Progress — ' + actual.total_items + ' / ' + currentExam.target_items + ' total items</span></div>' +
+                rows +
+            '</div>';
+        }
+
+        // ══════════════════════════════
+        // ITEM BANK
+        // ══════════════════════════════
+        async function loadItemBank() {
+            var courseId = document.getElementById('bank-course-select').value;
+            var container = document.getElementById('bank-items-container');
+            if (!courseId) return;
+
+            container.innerHTML = '<div class="tab-empty">Loading…</div>';
+            var items;
+            try {
+                items = await api('/faculty/exam-generator/item-bank?course_id=' + courseId);
+            } catch (e) {
+                container.innerHTML = '<div class="tab-empty" style="color:#ef4444;">' + escapeHtml(e.message) + '</div>';
+                return;
+            }
+
+            if (items.length === 0) {
+                container.innerHTML = '<div class="tab-empty"><div class="empty-icon">🗃️</div>No reusable items yet for this subject. Add questions in the Exam Builder first.</div>';
+                return;
+            }
+
+            container.innerHTML = items.map(function(item) {
+                var ct = QUESTION_TYPES[item.type] || {};
+                return '<div class="question-card" style="margin-bottom:10px;">' +
+                    '<div class="q-header"><div class="q-num" style="flex:1;">' + escapeHtml(item.question_text || '(Case Analysis scenario)') + '</div>' +
+                    '<button class="btn-q-action" onclick="reuseBankItem(' + item.id + ')" title="Add to current exam" ' + (currentExam ? '' : 'disabled') + '>+ Add</button></div>' +
+                    '<div class="q-footer"><span class="q-type-label">' + (ct.label || item.type) + '</span>' +
+                    (ct.bloom ? '<span class="q-blooms-badge">' + ct.bloom + '</span>' : '') +
+                    (item.topic ? '<span class="q-type-label">' + escapeHtml(item.topic) + '</span>' : '') + '</div>' +
+                '</div>';
+            }).join('');
+        }
+
+        async function reuseBankItem(questionId) {
+            if (!currentExam || currentExam.sections.length === 0) {
+                alert('Open an exam with at least one section in the Exam Builder first.');
+                return;
+            }
+            var targetSectionId = currentExam.sections[0].id;
+            if (currentExam.sections.length > 1) {
+                var choice = prompt('Add to which section?\n' + currentExam.sections.map(function(s, i) { return (i + 1) + '. ' + s.title; }).join('\n'), '1');
+                var idx = parseInt(choice) - 1;
+                if (isNaN(idx) || !currentExam.sections[idx]) return;
+                targetSectionId = currentExam.sections[idx].id;
+            }
+
+            if (String(targetSectionId).indexOf('new-') === 0) {
+                alert('Save the exam first so this section exists on the server, then try again.');
+                return;
+            }
+
+            try {
+                await api('/faculty/exam-generator/item-bank/' + questionId + '/reuse', {
+                    method: 'POST',
+                    body: { exam_section_id: targetSectionId }
+                });
+                await loadExam(currentExam.id);
+                alert('Item added.');
+            } catch (e) {
+                alert(e.message);
+            }
         }
 
         function handleLogout() {

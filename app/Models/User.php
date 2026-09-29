@@ -20,6 +20,8 @@ class User extends Authenticatable
      */
         protected $fillable = [
         'name',
+        'first_name',
+        'last_name',
         'email',
         'google_email',
         'password',
@@ -55,6 +57,12 @@ class User extends Authenticatable
     }
     public function getInitialsAttribute(): string
 {
+    if ($this->first_name || $this->last_name) {
+        $initials = mb_strtoupper(mb_substr($this->first_name ?? '', 0, 1))
+            . mb_strtoupper(mb_substr($this->last_name ?? '', 0, 1));
+        return $initials ?: '?';
+    }
+
     $parts = preg_split('/\s+/', trim($this->name));
     $initials = '';
     foreach (array_slice($parts, 0, 2) as $p) {

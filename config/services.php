@@ -41,4 +41,8 @@ return [
         'refresh_token' => env('GOOGLE_REFRESH_TOKEN'),
     ],
 
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY'),
+    ],
+
 ];

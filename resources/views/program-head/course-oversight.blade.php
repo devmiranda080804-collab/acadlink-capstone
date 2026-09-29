@@ -136,9 +136,6 @@
                 <a href="{{ url('/program-head/course-oversight') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Oversight</a>
             </li>
             @endif
-            @if($navPermissions['program-assignment'] ?? true)
-            <li class="{{ request()->is('program-head/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/program-head/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
-            @endif
             @if($navPermissions['submissions'] ?? true)
             <li class="{{ request()->is('program-head/submissions*') ? 'active' : '' }}"><a href="{{ url('/program-head/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
             @endif
@@ -225,6 +222,7 @@
             <div class="sub-tabs">
                 <span class="sub-tab active" onclick="switchSubTab('materials', this)">Materials</span>
                 <span class="sub-tab" onclick="switchSubTab('outcomes', this)">Outcomes (OBE)</span>
+                <span class="sub-tab" onclick="switchSubTab('topics', this)">Topics & Hours (OBTL)</span>
             </div>
 
             {{-- ═══ MATERIALS ═══ --}}
@@ -368,6 +366,41 @@
                 @endif
             </div>
 
+            {{-- ═══ TOPICS & HOURS (OBTL) ═══ --}}
+            <div class="tab-content" id="tab-topics">
+                @if(!$selectedCourse)
+                    <div class="folder-panel">
+                        <div class="folder-empty">📁 Select a course above to manage its Topics & Hours (OBTL).</div>
+                    </div>
+                @else
+                    @foreach(['Prelim', 'Midterm', 'Final'] as $period)
+                        @php $periodTopics = $courseTopics->get($period, collect()); @endphp
+                        <div class="folder-panel" style="margin-bottom: 14px;">
+                            <div class="folder-panel-header">
+                                <span class="folder-icon">🕒</span>
+                                <div>
+                                    <div class="folder-title">{{ $period }} — {{ $selectedCourse->code }}</div>
+                                    <div class="folder-sub">{{ $periodTopics->sum('hours') }} hrs allocated · prepared by faculty assigned to this course · view only</div>
+                                </div>
+                            </div>
+
+                            @forelse($periodTopics as $topic)
+                                <div class="file-row">
+                                    <div class="file-left">
+                                        <div>
+                                            <div class="file-name">{{ $topic->topic }}</div>
+                                            <div class="file-meta">{{ $topic->hours }} hrs @if($topic->creator) · by {{ $topic->creator->name }} @endif</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="folder-empty">No topics defined yet for {{ $period }}.</div>
+                            @endforelse
+                        </div>
+                    @endforeach
+                @endif
+            </div>
+
         </div>
     </div>
 
@@ -436,7 +469,10 @@
                     <label>Category <span style="color:#ef4444">*</span></label>
                     <select name="type" required>
                         @foreach(\App\Models\CourseMaterial::TYPES as $typeKey => $typeLabel)
-                            <option value="{{ $typeKey }}">{{ $typeLabel }}</option>
+                            {{-- OBTL is uploaded by faculty (Course Coordination), not here --}}
+                            @if($typeKey !== 'obtl')
+                                <option value="{{ $typeKey }}">{{ $typeLabel }}</option>
+                            @endif
                         @endforeach
                     </select>
                 </div>

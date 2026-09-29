@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\TemplateDocument;
 use App\Services\GoogleDocsService;
+use App\Support\Programs;
 use Illuminate\Http\Request;
 use App\Models\AuditLog;
 
@@ -51,7 +52,7 @@ class TemplateApprovalController extends Controller
         $document = TemplateDocument::create($data);
 
         // Every program gets its own row so each Program Head can distribute independently
-        foreach (['BSA', 'BSMA', 'BSOA'] as $program) {
+        foreach (Programs::codes() as $program) {
             $document->programs()->create(['program' => $program]);
         }
 

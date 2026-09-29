@@ -197,7 +197,7 @@
                                 <td>
                                     <div class="program-tags">
                                         @foreach($template->programs as $row)
-                                            <span class="program-tag {{ $row->distributed_at ? 'distributed' : 'pending' }}">{{ $row->program }}</span>
+                                            <span class="program-tag {{ $row->distributed_at ? 'distributed' : 'pending' }}" title="{{ \App\Support\Programs::label($row->program) }}">{{ $row->program }}</span>
                                         @endforeach
                                     </div>
                                 </td>

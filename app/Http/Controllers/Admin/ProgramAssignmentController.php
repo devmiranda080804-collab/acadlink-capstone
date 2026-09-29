@@ -1,32 +1,35 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\ProgramAssignment;
 use App\Models\User;
+use App\Support\AcademicTerm;
 use Illuminate\Http\Request;
 
+// Only Admin/Dean assigns faculty to courses — Secretary and Program Head
+// used to have write access here too, but the client asked that this be
+// centralized to Admin/Dean only.
 class ProgramAssignmentController extends Controller
 {
-    protected function currentSchoolYear(): string
-    {
-        $now = now();
-        $year = $now->year;
-        return $now->month >= 8 ? $year . '-' . ($year + 1) : ($year - 1) . '-' . $year;
-    }
-
     public function index(Request $request)
     {
-        $role = auth()->user()->role;
-        $program = $role === 'program_head' ? auth()->user()->program : $request->get('program');
-
-        $courses = Course::when($program, fn($q) => $q->where('program', $program))
-            ->orderBy('program')->orderBy('code')
-            ->get();
-
-        $schoolYear = $request->get('school_year', $this->currentSchoolYear());
+        $program    = $request->get('program');
+        $yearLevel  = $request->get('year_level');
+        $schoolYear = $request->get('school_year', AcademicTerm::currentSchoolYear());
         $semester   = $request->get('semester', 'First Semester');
+
+        // Courses shown are scoped to the selected year level and curriculum
+        // semester too — e.g. picking "Second Year" + "First Semester" only
+        // lists the subjects actually taught in Second Year, First Semester.
+        $courses = Course::when($program, fn($q) => $q->where('program', $program))
+            ->when($yearLevel, fn($q) => $q->where('year_level', $yearLevel))
+            ->when($semester, fn($q) => $q->where('semester_offered', $semester))
+            ->orderBy('program')
+            ->curriculumOrder()
+            ->get();
 
         $assignments = ProgramAssignment::with('faculty')
             ->where('school_year', $schoolYear)
@@ -34,41 +37,26 @@ class ProgramAssignmentController extends Controller
             ->get()
             ->groupBy('course_id');
 
-        // Faculty list for the dropdown (filtered by program when Program Head)
         $facultyList = User::where('role', 'faculty')
             ->whereNull('archived_at')
             ->when($program, fn($q) => $q->where('program', $program))
             ->orderBy('name')
             ->get();
 
-        $viewMap = [
-            'admin'        => 'admin.program-assignment',
-            'program_head' => 'program-head.program-assignment',
-            'secretary'    => 'secretary.program-assignment',
-        ];
-
-        return view($viewMap[$role], compact(
-            'courses', 'assignments', 'facultyList', 'program',
+        return view('admin.program-assignment', compact(
+            'courses', 'assignments', 'facultyList', 'program', 'yearLevel',
             'schoolYear', 'semester'
         ));
     }
 
     public function store(Request $request)
     {
-        abort_unless(in_array(auth()->user()->role, ['admin', 'program_head', 'secretary']), 403);
-
         $request->validate([
             'course_id'   => 'required|exists:courses,id',
             'faculty_id'  => 'required|exists:users,id',
             'school_year' => 'required|string',
             'semester'    => 'required|string',
         ]);
-
-        // If Program Head, make sure only their own program is allowed
-        if (auth()->user()->role === 'program_head') {
-            $course = Course::findOrFail($request->course_id);
-            abort_unless($course->program === auth()->user()->program, 403);
-        }
 
         ProgramAssignment::firstOrCreate([
             'course_id'   => $request->course_id,
@@ -84,12 +72,6 @@ class ProgramAssignmentController extends Controller
 
     public function destroy(ProgramAssignment $assignment)
     {
-        abort_unless(in_array(auth()->user()->role, ['admin', 'program_head', 'secretary']), 403);
-
-        if (auth()->user()->role === 'program_head') {
-            abort_unless($assignment->course->program === auth()->user()->program, 403);
-        }
-
         $assignment->delete();
 
         return back()->with('success', 'Assignment removed.');

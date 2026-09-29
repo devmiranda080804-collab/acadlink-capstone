@@ -20,6 +20,7 @@ class CourseMaterial extends Model
 
     const TYPES = [
         'syllabus'         => 'Official Syllabus',
+        'obtl'             => 'Official OBTL',
         'tos'              => 'Official TOS',
         'exam_bank'        => 'Standard Exam Bank',
         'teaching_material' => 'Core Teaching Materials',
