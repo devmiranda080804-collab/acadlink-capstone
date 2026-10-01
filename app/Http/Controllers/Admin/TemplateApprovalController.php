@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\TemplateDocument;
+use App\Services\AcademicDocumentValidator;
 use App\Services\GoogleDocsService;
 use App\Support\Programs;
 use Illuminate\Http\Request;
@@ -23,36 +24,48 @@ class TemplateApprovalController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'type'  => 'required|string|max:100',
-            'mode'  => 'required|in:google_doc,upload_file',
-            'file'  => 'required_if:mode,upload_file|nullable|file|mimes:pdf,doc,docx|max:20480',
+            'title'       => 'required|string|max:255',
+            'type'        => 'required|string|max:100',
+            'file'        => 'required|file|mimes:pdf,doc,docx|max:20480',
+            'programs'    => 'required|array|min:1',
+            'programs.*'  => 'in:' . implode(',', Programs::codes()),
         ]);
+
+        // Templates are now always a plain file through the whole pipeline —
+        // Secretary forwards it, Program Head distributes it, and faculty
+        // view/download it. No Google Doc is created here anymore (legacy
+        // google_doc_id-based templates, if any remain, still work via the
+        // backward-compatible branches in destroy() and elsewhere).
+        $file = $request->file('file');
+
+        // Content sanity-check — this is specifically claimed to be a
+        // {type}, so it should actually look like one.
+        $check = (new AcademicDocumentValidator())->validate($file->getRealPath(), $file->getClientOriginalExtension(), $request->type);
+        if (!$check['valid']) {
+            return back()->withErrors([
+                'file' => ($check['reason'] ?? 'This file does not appear to match the selected template type.')
+                    . ' Please upload the correct type of document, or pick a different Template Type.',
+            ]);
+        }
+
+        $path = $file->store('template-documents', 'public');
 
         $data = [
             'created_by' => auth()->id(),
             'title'      => $request->title,
             'type'       => $request->type,
+            'file_path'  => $path,
+            'file_name'  => $file->getClientOriginalName(),
+            'file_type'  => $file->getClientOriginalExtension(),
+            'file_size'  => $file->getSize(),
         ];
-
-        if ($request->mode === 'google_doc') {
-            // Create it directly as an editable Google Doc — this becomes the
-            // protected "master" faculty can view and copy from
-            $data['google_doc_id'] = (new GoogleDocsService())->createDocument($request->title);
-        } else {
-            $file = $request->file('file');
-            $path = $file->store('template-documents', 'public');
-
-            $data['file_path'] = $path;
-            $data['file_name'] = $file->getClientOriginalName();
-            $data['file_type'] = $file->getClientOriginalExtension();
-            $data['file_size'] = $file->getSize();
-        }
 
         $document = TemplateDocument::create($data);
 
-        // Every program gets its own row so each Program Head can distribute independently
-        foreach (Programs::codes() as $program) {
+        // Only the Dean/Admin-selected programs get a row — each Program
+        // Head only ever sees templates meant for their own program (see
+        // ProgramHead\TemplateReviewController::index()'s whereHas filter).
+        foreach ($request->programs as $program) {
             $document->programs()->create(['program' => $program]);
         }
 

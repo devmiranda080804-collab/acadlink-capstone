@@ -35,7 +35,7 @@ class GoogleDocsService
         $this->client->setClientSecret($clientSecret);
         $this->client->setAccessType('offline');
         $this->client->addScope(Docs::DOCUMENTS);
-        $this->client->addScope(Drive::DRIVE_FILE);
+        $this->client->addScope(Drive::DRIVE);
         $this->client->fetchAccessTokenWithRefreshToken($refreshToken);
     }
 
@@ -83,5 +83,15 @@ class GoogleDocsService
     public function editUrl(string $fileId): string
     {
         return "https://docs.google.com/document/d/{$fileId}/edit";
+    }
+
+    // Plain-text snapshot of a Doc's current content — used to save version history
+    // rows in-app, since Google Docs' own version history isn't reachable from here.
+    public function exportPlainText(string $fileId): string
+    {
+        $drive = new Drive($this->client);
+        $response = $drive->files->export($fileId, 'text/plain');
+
+        return (string) $response->getBody();
     }
 }

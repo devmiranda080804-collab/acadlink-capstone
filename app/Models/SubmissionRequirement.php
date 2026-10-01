@@ -41,4 +41,23 @@ class SubmissionRequirement extends Model
     {
         return $this->days_left >= 0 && $this->days_left <= 3;
     }
+
+    // How many of this faculty member's own requirements still need urgent
+    // attention (overdue or due within 3 days, with nothing submitted yet) —
+    // drives the nav badge, same role Announcement::unreadCountFor() plays.
+    public static function urgentCountFor(User $user): int
+    {
+        return static::where('program', $user->program)
+            ->get()
+            ->filter(function ($req) use ($user) {
+                if (!$req->is_overdue && !$req->is_due_soon) {
+                    return false;
+                }
+
+                return !Submission::where('requirement_id', $req->id)
+                    ->where('faculty_id', $user->id)
+                    ->exists();
+            })
+            ->count();
+    }
 }

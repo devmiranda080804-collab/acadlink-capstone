@@ -85,11 +85,20 @@
         .modal-field input, .modal-field select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; outline: none; font-family: Arial, sans-serif; }
         .modal-field select { appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E") no-repeat right 10px center; cursor: pointer; }
         .modal-error { display: none; background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; font-size: 11px; padding: 8px 10px; border-radius: 4px; margin-bottom: 12px; }
+        .modal-hint { font-size: 10.5px; color: #999; margin-top: 4px; }
+        .program-checklist { border: 1px solid #ccc; border-radius: 5px; padding: 8px 10px; max-height: 150px; overflow-y: auto; }
+        .program-check-all { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: #0f2557; padding: 4px 2px 7px; margin-bottom: 6px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .program-check { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #333; padding: 3px 2px; cursor: pointer; }
+        .program-checklist input[type=checkbox] { width: auto; cursor: pointer; }
         .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
         .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 5px; cursor: pointer; }
         .btn-cancel:hover { background: #f5f5f5; }
         .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
         .btn-save:hover { background: #1a3a7a; }
+        .btn-danger { background: #ef4444; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-danger:hover { background: #dc2626; }
+        .delete-target { font-size: 13px; color: #555; margin-bottom: 4px; }
+        .delete-target strong { color: #1a1a2e; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -130,6 +139,9 @@
             @endif
             @if($navPermissions['calendar'] ?? true)
             <li class="{{ request()->is('admin/calendar*') ? 'active' : '' }}"><a href="{{ url('/admin/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
+            @endif
+            @if($navPermissions['analytics'] ?? true)
+            <li class="{{ request()->is('admin/analytics*') ? 'active' : '' }}"><a href="{{ url('/admin/analytics') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></li>
             @endif
         </ul>
         <div class="sidebar-logout">
@@ -217,14 +229,10 @@
                                             {{ $template->isGoogleDoc() ? 'Open in Google Docs' : 'View' }}
                                         </a>
                                         @unless($template->isForwarded())
-                                            <form method="POST" action="{{ url('/admin/template-approvals/' . $template->id) }}" style="display:inline;" onsubmit="return confirm('Remove this template?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn-del">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                                    Remove
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn-del" onclick="openDeleteModal({{ $template->id }}, @js($template->title))">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                                Remove
+                                            </button>
                                         @endunless
                                     </div>
                                 </td>
@@ -256,27 +264,31 @@
                     <label>Template Type <span style="color:#ef4444">*</span></label>
                     <select name="type">
                         <option value="syllabus">Syllabus</option>
-                        <option value="lesson_plan">Lesson Plan</option>
                         <option value="course_guide">Course Guide</option>
                         <option value="module">Module</option>
                     </select>
                 </div>
 
                 <div class="modal-field">
-                    <label>How do you want to provide this? <span style="color:#ef4444">*</span></label>
-                    <select name="mode" id="mode-select" onchange="toggleMode()">
-                        <option value="google_doc">Create as Google Doc (editable, collaborative)</option>
-                        <option value="upload_file">Upload a File (PDF/Word, static)</option>
-                    </select>
+                    <label>Send to Programs <span style="color:#ef4444">*</span></label>
+                    <div class="program-checklist">
+                        <label class="program-check-all">
+                            <input type="checkbox" id="programs-select-all" onchange="toggleAllPrograms(this)">
+                            <span>All Programs</span>
+                        </label>
+                        @foreach(\App\Support\Programs::options() as $code => $label)
+                            <label class="program-check">
+                                <input type="checkbox" name="programs[]" value="{{ $code }}" class="program-check-item" onchange="syncSelectAll()" {{ in_array($code, old('programs', [])) ? 'checked' : '' }}>
+                                <span title="{{ $label }}">{{ $code }} — {{ $label }}</span>
+                            </label>
+                        @endforeach
+                    </div>
                 </div>
 
-                <div class="modal-field" id="file-field">
+                <div class="modal-field">
                     <label>File <span style="color:#ef4444">*</span></label>
-                    <input type="file" name="file" accept=".pdf,.doc,.docx">
-                </div>
-
-                <div class="modal-field" id="google-doc-note" style="display:none; background:#eef2ff; border:1px solid #c7d2fe; border-radius:6px; padding:10px 12px;">
-                    <span style="font-size:11.5px; color:#3730a3;">A blank Google Doc will be created. Once forwarded and distributed, faculty can view the master and make their own editable copy.</span>
+                    <input type="file" name="file" accept=".pdf,.doc,.docx" required>
+                    <div class="modal-hint">Secretary forwards it, Program Head distributes it, and faculty can view/download it.</div>
                 </div>
 
                 <div class="modal-actions">
@@ -287,7 +299,35 @@
         </div>
     </div>
 
+    {{-- Delete Confirmation Modal --}}
+    <div class="modal-overlay" id="delete-overlay">
+        <div class="modal" style="width:420px;">
+            <div class="modal-title">Remove Template</div>
+            <div class="delete-target">Remove <strong id="delete-target-title"></strong>? This cannot be undone.</div>
+            <form id="delete-form" method="POST">
+                @csrf
+                @method('DELETE')
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+                    <button type="submit" class="btn-danger">Remove Template</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        function openDeleteModal(id, title) {
+            document.getElementById('delete-target-title').textContent = title;
+            document.getElementById('delete-form').action = '{{ url("/admin/template-approvals") }}/' + id;
+            document.getElementById('delete-overlay').classList.add('open');
+        }
+        function closeDeleteModal() {
+            document.getElementById('delete-overlay').classList.remove('open');
+        }
+        document.getElementById('delete-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteModal();
+        });
+
         function filterRows(status, el) {
             document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
             el.classList.add('active');
@@ -297,15 +337,19 @@
             });
         }
 
-        function toggleMode() {
-            const isUpload = document.getElementById('mode-select').value === 'upload_file';
-            document.getElementById('file-field').style.display = isUpload ? '' : 'none';
-            document.getElementById('google-doc-note').style.display = isUpload ? 'none' : '';
+        function toggleAllPrograms(selectAllCheckbox) {
+            document.querySelectorAll('.program-check-item').forEach(function(cb) {
+                cb.checked = selectAllCheckbox.checked;
+            });
+        }
+        function syncSelectAll() {
+            var items = document.querySelectorAll('.program-check-item');
+            var allChecked = Array.from(items).every(function(cb) { return cb.checked; });
+            document.getElementById('programs-select-all').checked = allChecked;
         }
 
         function openCreateModal() {
             document.getElementById('modal-overlay').classList.add('open');
-            toggleMode();
         }
         function closeModal() {
             document.getElementById('modal-overlay').classList.remove('open');
@@ -318,7 +362,6 @@
             document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('modal-overlay').classList.add('open');
                 document.getElementById('modal-error').style.display = 'block';
-                toggleMode();
             });
         @endif
     </script>

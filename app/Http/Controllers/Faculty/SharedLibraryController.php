@@ -31,8 +31,9 @@ class SharedLibraryController extends Controller
                         'type'      => str_replace('_', ' ', $t->type),
                         'shared_by' => $t->creator->name ?? 'Unknown',
                         'desc'      => 'Official distributed template',
-                        'file_type' => $t->file_type,
-                        'file_url'  => Storage::url($t->file_path),
+                        'file_type' => $t->isGoogleDoc() ? 'gdoc' : $t->file_type,
+                        'file_size' => $t->readable_size,
+                        'file_url'  => url("/faculty/shared-library/file/template/{$t->id}"),
                         'date'      => $t->programRow($myProgram)->distributed_at,
                         'can_delete'=> false,
                     ]);
@@ -53,7 +54,8 @@ class SharedLibraryController extends Controller
                         'shared_by' => $m->uploader->name ?? 'Unknown',
                         'desc'      => $m->course->code ?? 'Course material',
                         'file_type' => $m->file_type,
-                        'file_url'  => Storage::url($m->file_path),
+                        'file_size' => $m->readable_size,
+                        'file_url'  => url("/faculty/shared-library/file/material/{$m->id}"),
                         'date'      => $m->created_at,
                         'can_delete'=> false,
                     ]);
@@ -74,7 +76,8 @@ class SharedLibraryController extends Controller
                         'shared_by' => $r->sharer->name ?? 'Unknown',
                         'desc'      => $r->description ?? 'Shared by faculty',
                         'file_type' => $r->file_type,
-                        'file_url'  => Storage::url($r->file_path),
+                        'file_size' => $r->readable_size,
+                        'file_url'  => url("/faculty/shared-library/file/shared/{$r->id}"),
                         'date'      => $r->created_at,
                         'can_delete'=> $r->shared_by === auth()->id(), // own upload only
                     ]);
@@ -83,7 +86,52 @@ class SharedLibraryController extends Controller
 
         $items = $items->sortByDesc('date')->values();
 
-        return view('faculty.shared-library', compact('items', 'filter', 'myProgram'));
+        // Cheap counts (no eager loading) so the filter tabs can show totals
+        // regardless of which filter is currently active.
+        $counts = [
+            'templates' => TemplateDocument::whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))->count(),
+            'materials' => CourseMaterial::whereHas('course', fn($c) => $c->where('program', $myProgram))->count(),
+            'shared'    => SharedResource::where('program', $myProgram)->count(),
+        ];
+        $counts['all'] = $counts['templates'] + $counts['materials'] + $counts['shared'];
+
+        return view('faculty.shared-library', compact('items', 'filter', 'myProgram', 'counts'));
+    }
+
+    // Every file in the library is served through here instead of a raw public
+    // storage URL, so access can actually be checked — a public URL would let
+    // anyone (any program, even logged out) open a file just by having the
+    // link, no matter what the listing above already filtered out.
+    public function file(string $source, int $id)
+    {
+        $myProgram = auth()->user()->program;
+
+        if ($source === 'template') {
+            $template = TemplateDocument::findOrFail($id);
+            abort_unless($template->isDistributedTo($myProgram), 403, 'This template has not been distributed to your program.');
+
+            if ($template->isGoogleDoc()) {
+                return redirect($template->google_view_url);
+            }
+
+            return Storage::disk('public')->response($template->file_path, $template->file_name);
+        }
+
+        if ($source === 'material') {
+            $material = CourseMaterial::with('course')->findOrFail($id);
+            abort_unless($material->course && $material->course->program === $myProgram, 403, 'This material belongs to a different program.');
+
+            return Storage::disk('public')->response($material->file_path, $material->file_name);
+        }
+
+        if ($source === 'shared') {
+            $resource = SharedResource::findOrFail($id);
+            abort_unless($resource->program === $myProgram, 403, 'This resource belongs to a different program.');
+
+            return Storage::disk('public')->response($resource->file_path, $resource->file_name);
+        }
+
+        abort(404);
     }
 
     public function store(Request $request)

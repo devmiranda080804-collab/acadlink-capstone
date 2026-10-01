@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Announcement;
+use App\Models\SubmissionRequirement;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,6 +36,12 @@ class AppServiceProvider extends ServiceProvider
 
                 $view->with('navPermissions', $permissions);
                 $view->with('unreadAnnouncementsCount', Announcement::unreadCountFor(Auth::user()));
+
+                // Only faculty submit against requirements — Program Head/Admin
+                // create them, so this count wouldn't mean anything for those roles.
+                if ($role === 'faculty') {
+                    $view->with('urgentSubmissionsCount', SubmissionRequirement::urgentCountFor(Auth::user()));
+                }
             }
         });
     }

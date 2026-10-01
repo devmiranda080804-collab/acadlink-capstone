@@ -36,6 +36,8 @@
         .user-avatar { width: 34px; height: 34px; border-radius: 50%; background-color: #0f2557; color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 
         .content { flex: 1; overflow-y: auto; padding: 24px 28px 28px; }
+        .alert-success { background: #dcfce7; color: #166534; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 13px; }
+        .alert-error { background: #fee2e2; color: #b91c1c; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #fca5a5; border-radius: 8px; font-size: 13px; }
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .page-sub { font-size: 11.5px; color: #888; margin-bottom: 18px; }
 
@@ -144,6 +146,8 @@
         .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
         .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 5px; cursor: pointer; }
         .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-danger { background: #ef4444; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-danger:hover { background: #dc2626; }
 
         .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #0f2557; color: #fff; font-size: 12.5px; padding: 10px 20px; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.25); z-index: 2000; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
         .toast.show { opacity: 1; }
@@ -167,7 +171,7 @@
             <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates</a></li>
             @endif
             @if($navPermissions['exam-generator'] ?? true)
-            <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}"><a href="{{ url('/faculty/exam-generator') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Exam Generator</a></li>
+            <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}"><a href="{{ url('/faculty/exam-generator') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Assessment Generator</a></li>
             @endif
             @if($navPermissions['shared-library'] ?? true)
             <li class="{{ request()->is('faculty/shared-library*') ? 'active' : '' }}"><a href="{{ url('/faculty/shared-library') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Shared Library</a></li>
@@ -189,7 +193,11 @@
             </a></li>
             @endif
             @if($navPermissions['submissions'] ?? true)
-            <li class="{{ request()->is('faculty/submissions*') ? 'active' : '' }}"><a href="{{ url('/faculty/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
+            <li class="{{ request()->is('faculty/submissions*') ? 'active' : '' }}"><a href="{{ url('/faculty/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline
+                @if(($urgentSubmissionsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $urgentSubmissionsCount }}</span>
+                @endif
+            </a></li>
             @endif
             @if($navPermissions['cms'] ?? true)
             <li class="{{ request()->is('faculty/cms*') ? 'active' : '' }}"><a href="{{ url('/faculty/cms') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>CMS</a></li>
@@ -220,6 +228,13 @@
         </div>
 
         <div class="content">
+            @if(session('success'))
+                <div class="alert-success">{{ session('success') }}</div>
+            @endif
+            @if($errors->any())
+                <div class="alert-error">{{ $errors->first() }}</div>
+            @endif
+
             <div class="page-title">Course Coordination</div>
             <div class="page-sub">Access master course folder and instructor collaboration</div>
 
@@ -357,13 +372,13 @@
                                 </div>
                                 <div class="file-actions">
                                     <a class="btn-view" href="{{ Storage::url($material->file_path) }}" target="_blank">View</a>
-                                    <form method="POST" action="{{ url('/faculty/course-coordination/materials/' . $material->id) }}" onsubmit="return confirm('Delete this OBTL document?')">
+                                    <form method="POST" action="{{ url('/faculty/course-coordination/materials/' . $material->id) }}" id="remove-material-form-{{ $material->id }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn-del" title="Delete">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                        </button>
                                     </form>
+                                    <button type="button" class="btn-del" title="Delete" onclick="openConfirm('Delete this OBTL document?', 'remove-material-form-{{ $material->id }}')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                    </button>
                                 </div>
                             </div>
                         @empty
@@ -402,13 +417,13 @@
                                             <a class="btn-view" href="{{ Storage::url($topic->module_path) }}" target="_blank">View</a>
                                         @endif
                                         <button type="button" class="btn-view" onclick='openEditTopicModal(@json($topic))'>Edit</button>
-                                        <form method="POST" action="{{ url('/faculty/course-coordination/course-topics/' . $topic->id) }}" onsubmit="return confirm('Remove this topic?')">
+                                        <form method="POST" action="{{ url('/faculty/course-coordination/course-topics/' . $topic->id) }}" id="remove-topic-form-{{ $topic->id }}">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn-del" title="Delete">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                            </button>
                                         </form>
+                                        <button type="button" class="btn-del" title="Delete" onclick="openConfirm('Remove this topic?', 'remove-topic-form-{{ $topic->id }}')">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                        </button>
                                     </div>
                                 </div>
                             @empty
@@ -443,6 +458,17 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="confirm-overlay">
+        <div class="modal" style="width:380px;">
+            <div class="modal-title">Please Confirm</div>
+            <div class="modal-hint" id="confirm-text">—</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+                <button type="button" class="btn-danger" onclick="runConfirm()">Remove</button>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="topic-overlay">
         <div class="modal">
             <form method="POST" action="{{ url('/faculty/course-coordination/course-topics') }}" enctype="multipart/form-data" id="topic-form">
@@ -453,24 +479,24 @@
                 <div class="modal-hint" id="topic-modal-sub">—</div>
                 <div class="modal-field">
                     <label>Topic</label>
-                    <input type="text" name="topic" id="topic-field-topic" placeholder="e.g. Journalizing and Posting" required>
+                    <input type="text" name="topic" id="topic-field-topic" required>
                 </div>
                 <div class="modal-field">
-                    <label>Weeks <span style="font-size:10px;color:#999;">(optional, e.g. "Week 1-2")</span></label>
-                    <input type="text" name="weeks" id="topic-field-weeks" placeholder="e.g. Week 1-2">
+                    <label>Weeks <span style="font-size:10px;color:#999;">(optional)</span></label>
+                    <input type="text" name="weeks" id="topic-field-weeks">
                 </div>
                 <div class="modal-field">
                     <label>Hours</label>
-                    <input type="number" name="hours" id="topic-field-hours" min="1" placeholder="e.g. 6" required>
+                    <input type="number" name="hours" id="topic-field-hours" min="1" required>
                 </div>
                 <div class="modal-field">
                     <label>Teaching Notes <span style="font-size:10px;color:#999;">(optional — short summary; used by AI if no module is uploaded)</span></label>
-                    <textarea name="notes" id="topic-field-notes" rows="3" placeholder="e.g. Definition of an asset, examples (cash, receivables, inventory, equipment), the accounting equation..." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
+                    <textarea name="notes" id="topic-field-notes" rows="3" style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
                 </div>
                 <div class="modal-field">
-                    <label>Module <span style="font-size:10px;color:#999;">(optional, PDF only — AI reads this directly, most accurate source for question generation)</span></label>
+                    <label>Module <span id="topic-field-module-hint" style="font-size:10px;color:#999;">(PDF or Word — PDF is read directly by AI; Word content is auto-extracted into Teaching Notes above)</span></label>
                     <div id="topic-current-module" style="font-size:11.5px;color:#666;margin-bottom:4px;display:none;"></div>
-                    <input type="file" name="module" accept=".pdf">
+                    <input type="file" name="module" id="topic-field-module" accept=".pdf,.docx">
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeTopicModal()">Cancel</button>
@@ -488,7 +514,7 @@
                 <div class="modal-title">Upload OBTL Document</div>
                 <div class="modal-field">
                     <label>Title</label>
-                    <input type="text" name="title" placeholder="e.g. OBTL - IT08 Integrative Programming" required>
+                    <input type="text" name="title" required>
                 </div>
                 <div class="modal-field">
                     <label>Version</label>
@@ -512,12 +538,33 @@
             <div class="modal-title">New Document</div>
             <div class="modal-field">
                 <label>Document Title</label>
-                <input type="text" id="new-doc-title" placeholder="e.g. Lesson Plan – Week 1">
+                <input type="text" id="new-doc-title">
             </div>
             <div class="modal-hint">This creates a real Google Doc and shares it with every instructor who has taught this course.</div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeNewDocModal()">Cancel</button>
                 <button class="btn-save" onclick="createDocument()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="doc-detail-overlay">
+        <div class="modal" style="width:480px;max-height:80vh;overflow-y:auto;">
+            <div class="modal-title" id="doc-detail-title">—</div>
+            <div class="modal-hint" style="margin-bottom:16px;">Actual editing happens in Google Docs. This panel is AcadLink's own record of who's been viewing this document and its saved version history.</div>
+
+            <div style="font-size:11.5px;font-weight:700;color:#333;margin-bottom:6px;">Recently active</div>
+            <div id="doc-detail-viewers" style="margin-bottom:16px;font-size:12px;color:#666;">Loading...</div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                <div style="font-size:11.5px;font-weight:700;color:#333;">Version history</div>
+                <button type="button" class="btn-save" style="padding:5px 12px;font-size:11.5px;" onclick="saveVersionNow()">📸 Save Version Now</button>
+            </div>
+            <div id="doc-detail-versions" style="font-size:12px;color:#666;">Loading...</div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeDocDetail()">Close</button>
+                <a class="btn-save" id="doc-detail-open-link" href="#" target="_blank" rel="noopener" style="text-decoration:none;text-align:center;">Open in Google Docs ↗</a>
             </div>
         </div>
     </div>
@@ -556,11 +603,11 @@
                        </button>`
                     : '';
                 item.innerHTML = `
-                    <div class="file-left">
+                    <div class="file-left" style="cursor:pointer;" onclick="openDocDetail(${doc.id}, '${escapeHtml(doc.title).replace(/'/g, "\\'")}', '${doc.google_edit_url}')">
                         <span class="file-icon">🤝</span>
                         <div>
                             <div class="file-name">${escapeHtml(doc.title)}</div>
-                            <div class="file-meta">Created by ${escapeHtml(creator)}</div>
+                            <div class="file-meta">Created by ${escapeHtml(creator)} · click for viewers &amp; version history</div>
                         </div>
                     </div>
                     <div class="file-actions">
@@ -578,8 +625,22 @@
             return div.innerHTML;
         }
 
-        async function deleteDocument(docId, title) {
-            if (!confirm(`Delete "${title}"? This removes it from Google Drive too — other instructors will lose access.`)) return;
+        let toastTimer = null;
+        function showToast(message) {
+            const el = document.getElementById('toast');
+            el.textContent = message;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        function deleteDocument(docId, title) {
+            openConfirm(`Delete "${title}"? This removes it from Google Drive too — other instructors will lose access.`, null, function() {
+                performDeleteDocument(docId);
+            });
+        }
+
+        async function performDeleteDocument(docId) {
             const res = await fetch(`${BASE}/collab/documents/${docId}`, {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
@@ -598,6 +659,83 @@
         }
         function closeNewDocModal() { document.getElementById('new-doc-overlay').classList.remove('open'); }
 
+        let currentDetailDocId = null;
+
+        async function openDocDetail(docId, title, editUrl) {
+            currentDetailDocId = docId;
+            document.getElementById('doc-detail-title').textContent = title;
+            document.getElementById('doc-detail-open-link').href = editUrl;
+            document.getElementById('doc-detail-viewers').innerHTML = 'Loading...';
+            document.getElementById('doc-detail-versions').innerHTML = 'Loading...';
+            document.getElementById('doc-detail-overlay').classList.add('open');
+            await refreshDocDetail();
+        }
+
+        async function refreshDocDetail() {
+            if (!currentDetailDocId) return;
+            const res = await fetch(`${BASE}/collab/documents/${currentDetailDocId}`, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) { showToast('Could not load document details.'); return; }
+            const data = await res.json();
+
+            const viewersBox = document.getElementById('doc-detail-viewers');
+            if (data.viewers.length === 0) {
+                viewersBox.innerHTML = '<span style="color:#bbb;">No one has opened this document yet.</span>';
+            } else {
+                viewersBox.innerHTML = data.viewers
+                    .sort((a, b) => new Date(b.last_opened_at) - new Date(a.last_opened_at))
+                    .map(v => `<div style="display:flex;justify-content:space-between;padding:5px 0;">
+                        <span>${escapeHtml(v.name)} ${v.active_now ? '<span style="color:#10b981;font-weight:700;">● active</span>' : ''}</span>
+                        <span style="color:#999;">${timeAgo(v.last_opened_at)}</span>
+                    </div>`).join('');
+            }
+
+            const versionsBox = document.getElementById('doc-detail-versions');
+            if (data.versions.length === 0) {
+                versionsBox.innerHTML = '<span style="color:#bbb;">No saved versions yet.</span>';
+            } else {
+                versionsBox.innerHTML = data.versions.map(v => `
+                    <div style="border-top:1px solid #f0f0f0;padding:8px 0;">
+                        <div style="display:flex;justify-content:space-between;font-weight:600;">
+                            <span>${escapeHtml(v.editor || 'Unknown')}</span>
+                            <span style="color:#999;font-weight:400;">${timeAgo(v.created_at)}</span>
+                        </div>
+                        <div style="color:#888;margin-top:3px;white-space:pre-wrap;">${escapeHtml(v.preview || '(empty)')}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        async function saveVersionNow() {
+            if (!currentDetailDocId) return;
+            const res = await fetch(`${BASE}/collab/documents/${currentDetailDocId}/snapshot`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                showToast(err.message || 'Could not save a version right now.');
+                return;
+            }
+            showToast('Version saved.');
+            await refreshDocDetail();
+        }
+
+        function closeDocDetail() {
+            currentDetailDocId = null;
+            document.getElementById('doc-detail-overlay').classList.remove('open');
+        }
+        document.getElementById('doc-detail-overlay').addEventListener('click', function(e) { if (e.target === this) closeDocDetail(); });
+
+        function timeAgo(iso) {
+            const diffMs = Date.now() - new Date(iso).getTime();
+            const mins = Math.floor(diffMs / 60000);
+            if (mins < 1) return 'just now';
+            if (mins < 60) return mins + 'm ago';
+            const hours = Math.floor(mins / 60);
+            if (hours < 24) return hours + 'h ago';
+            return Math.floor(hours / 24) + 'd ago';
+        }
+
         function resetTopicForm() {
             document.getElementById('topic-field-topic').value = '';
             document.getElementById('topic-field-weeks').value = '';
@@ -613,6 +751,8 @@
             document.getElementById('topic-modal-title').textContent = 'Add Topic';
             document.getElementById('topic-modal-sub').textContent = 'Grading period: ' + period;
             document.getElementById('topic-form-submit').textContent = 'Add';
+            document.getElementById('topic-field-module').required = true;
+            document.getElementById('topic-field-module-hint').textContent = '(required — PDF or Word; PDF is read directly by AI, Word content is auto-extracted into Teaching Notes above)';
             document.getElementById('topic-overlay').classList.add('open');
         }
 
@@ -626,6 +766,8 @@
             document.getElementById('topic-field-weeks').value = topic.weeks || '';
             document.getElementById('topic-field-hours').value = topic.hours || '';
             document.getElementById('topic-field-notes').value = topic.notes || '';
+            document.getElementById('topic-field-module').required = false;
+            document.getElementById('topic-field-module-hint').textContent = '(optional — PDF or Word; upload a new file only if you want to replace the current one)';
             var currentModule = document.getElementById('topic-current-module');
             if (topic.module_file_name) {
                 currentModule.textContent = 'Current module: ' + topic.module_file_name + ' (upload a new file to replace it)';
@@ -641,6 +783,32 @@
         function openObtlUploadModal() { document.getElementById('obtl-upload-overlay').classList.add('open'); }
         function closeObtlUploadModal() { document.getElementById('obtl-upload-overlay').classList.remove('open'); }
         document.getElementById('obtl-upload-overlay').addEventListener('click', function(e) { if (e.target === this) closeObtlUploadModal(); });
+
+        // Generic delete-confirmation modal, shared by every "Delete/Remove" action on
+        // this page — replaces the browser's native confirm() with the app's own modal
+        // style. Pass a formId to submit a hidden form, or a callback for AJAX deletes.
+        var confirmFormId = null;
+        var confirmCallback = null;
+        function openConfirm(message, formId, callback) {
+            confirmFormId = formId || null;
+            confirmCallback = callback || null;
+            document.getElementById('confirm-text').textContent = message;
+            document.getElementById('confirm-overlay').classList.add('open');
+        }
+        function closeConfirm() {
+            confirmFormId = null;
+            confirmCallback = null;
+            document.getElementById('confirm-overlay').classList.remove('open');
+        }
+        function runConfirm() {
+            if (confirmFormId) {
+                document.getElementById(confirmFormId).submit();
+            } else if (confirmCallback) {
+                confirmCallback();
+            }
+            closeConfirm();
+        }
+        document.getElementById('confirm-overlay').addEventListener('click', function(e) { if (e.target === this) closeConfirm(); });
 
         async function createDocument() {
             const title = document.getElementById('new-doc-title').value.trim();
@@ -660,6 +828,19 @@
             await loadDocuments();
             window.open(`https://docs.google.com/document/d/${doc.google_doc_id}/edit`, '_blank');
         }
+
+        // Re-open whichever sub-tab the faculty was on before a form submit redirected
+        // back here — without this, every Add/Edit/Delete in Topics & Hours (or the OBTL
+        // upload) bounces the page back to Master Folder, losing their place.
+        @if(session('active_tab'))
+            document.addEventListener('DOMContentLoaded', function() {
+                var target = @json(session('active_tab'));
+                var tabs = document.querySelectorAll('.sub-tab');
+                var order = ['master-folder', 'outcomes', 'topics', 'collaboration'];
+                var idx = order.indexOf(target);
+                if (idx !== -1 && tabs[idx]) switchSubTab(target, tabs[idx]);
+            });
+        @endif
     </script>
 
 </body>

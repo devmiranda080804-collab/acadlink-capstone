@@ -34,6 +34,11 @@ class CollaborativeDocument extends Model
         return $this->hasMany(DocumentVersion::class, 'document_id')->latest();
     }
 
+    public function viewers()
+    {
+        return $this->hasMany(CollaborativeDocumentViewer::class);
+    }
+
     public function getGoogleEditUrlAttribute(): ?string
     {
         return $this->google_doc_id

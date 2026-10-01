@@ -161,10 +161,7 @@
                     </thead>
                     <tbody>
                         @forelse($filing as $row)
-                            @php
-                                $done = ($row['has_syllabus'] ? 1 : 0) + ($row['has_tos'] ? 1 : 0) + ($row['has_exam_bank'] ? 1 : 0) + ($row['materials'] > 0 ? 1 : 0);
-                                $pct = round(($done / 4) * 100);
-                            @endphp
+                            @php $pct = $row['completion_pct']; @endphp
                             <tr>
                                 <td><span class="course-code">{{ $row['code'] }}</span></td>
                                 <td>{{ $row['title'] }}</td>

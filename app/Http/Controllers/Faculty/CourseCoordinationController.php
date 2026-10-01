@@ -7,9 +7,11 @@ use App\Models\Course;
 use App\Models\CourseMaterial;
 use App\Models\CourseTopic;
 use App\Models\ProgramAssignment;
+use App\Services\AcademicDocumentValidator;
 use App\Support\AcademicTerm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpWord\IOFactory;
 
 class CourseCoordinationController extends Controller
 {
@@ -64,7 +66,11 @@ class CourseCoordinationController extends Controller
             'weeks'          => 'nullable|string|max:50',
             'hours'          => 'required|integer|min:1',
             'notes'          => 'nullable|string|max:5000',
-            'module'         => 'nullable|file|mimes:pdf|max:20480', // 20MB max — PDF only, fed directly to Claude's document input
+            // Required when first adding a topic — Teaching Notes alone is not
+            // enough grounding for the Assessment Generator's AI question
+            // drafting. Editing an existing topic can still leave it as-is
+            // (see updateCourseTopic()), since it may already have a module.
+            'module'         => 'required|file|mimes:pdf,docx|max:20480', // 20MB max
         ]);
 
         // Security: only for courses this faculty is actually assigned to teach
@@ -76,13 +82,7 @@ class CourseCoordinationController extends Controller
             ->where('grading_period', $request->grading_period)
             ->max('order') + 1;
 
-        $modulePath = null;
-        $moduleFileName = null;
-        if ($request->hasFile('module')) {
-            $file = $request->file('module');
-            $modulePath = $file->store('course-topic-modules', 'public');
-            $moduleFileName = $file->getClientOriginalName();
-        }
+        $moduleData = $this->storeModuleFile($request);
 
         CourseTopic::create([
             'course_id'        => $course->id,
@@ -90,14 +90,14 @@ class CourseCoordinationController extends Controller
             'topic'            => $request->topic,
             'weeks'            => $request->weeks,
             'hours'            => $request->hours,
-            'notes'            => $request->notes,
-            'module_path'      => $modulePath,
-            'module_file_name' => $moduleFileName,
+            'notes'            => $moduleData['extracted_notes'] ?? $request->notes,
+            'module_path'      => $moduleData['module_path'],
+            'module_file_name' => $moduleData['module_file_name'],
             'order'            => $nextOrder,
             'created_by'       => auth()->id(),
         ]);
 
-        return back()->with('success', 'Topic added.');
+        return back()->with('success', 'Topic added.')->with('active_tab', 'topics');
     }
 
     public function updateCourseTopic(Request $request, CourseTopic $courseTopic)
@@ -109,7 +109,7 @@ class CourseCoordinationController extends Controller
             'weeks'  => 'nullable|string|max:50',
             'hours'  => 'required|integer|min:1',
             'notes'  => 'nullable|string|max:5000',
-            'module' => 'nullable|file|mimes:pdf|max:20480',
+            'module' => 'nullable|file|mimes:pdf,docx|max:20480',
         ]);
 
         $data = [
@@ -123,14 +123,67 @@ class CourseCoordinationController extends Controller
             if ($courseTopic->module_path) {
                 Storage::disk('public')->delete($courseTopic->module_path);
             }
-            $file = $request->file('module');
-            $data['module_path'] = $file->store('course-topic-modules', 'public');
-            $data['module_file_name'] = $file->getClientOriginalName();
+            $moduleData = $this->storeModuleFile($request);
+            $data['module_path'] = $moduleData['module_path'];
+            $data['module_file_name'] = $moduleData['module_file_name'];
+            if ($moduleData['extracted_notes']) {
+                $data['notes'] = $moduleData['extracted_notes'];
+            }
         }
 
         $courseTopic->update($data);
 
-        return back()->with('success', 'Topic updated.');
+        return back()->with('success', 'Topic updated.')->with('active_tab', 'topics');
+    }
+
+    // Stores the uploaded module file. PDFs are kept as-is — the Assessment
+    // Generator feeds the actual PDF to Claude's document input directly, the
+    // highest-fidelity option. DOCX files can't be read natively by the API, so
+    // their text is extracted here (once, at upload time) and used to fill/replace
+    // Teaching Notes instead — everything downstream only ever needs to check
+    // "is there a PDF" vs "is there text", never re-parse the DOCX.
+    protected function storeModuleFile(Request $request): array
+    {
+        $result = ['module_path' => null, 'module_file_name' => null, 'extracted_notes' => null];
+
+        if (! $request->hasFile('module')) {
+            return $result;
+        }
+
+        $file = $request->file('module');
+        $result['module_path'] = $file->store('course-topic-modules', 'public');
+        $result['module_file_name'] = $file->getClientOriginalName();
+
+        if (strtolower($file->getClientOriginalExtension()) === 'docx') {
+            $result['extracted_notes'] = $this->extractDocxText($file->getRealPath());
+        }
+
+        return $result;
+    }
+
+    protected function extractDocxText(string $path): string
+    {
+        $phpWord = IOFactory::load($path);
+        $text = '';
+
+        foreach ($phpWord->getSections() as $section) {
+            foreach ($section->getElements() as $element) {
+                if (method_exists($element, 'getText')) {
+                    $t = $element->getText();
+                    $text .= (is_string($t) ? $t : '') . "\n";
+                } elseif (method_exists($element, 'getElements')) {
+                    foreach ($element->getElements() as $child) {
+                        if (method_exists($child, 'getText')) {
+                            $childText = $child->getText();
+                            $text .= is_string($childText) ? $childText : '';
+                        }
+                    }
+                    $text .= "\n";
+                }
+            }
+        }
+
+        return trim($text);
     }
 
     public function destroyCourseTopic(CourseTopic $courseTopic)
@@ -142,7 +195,7 @@ class CourseCoordinationController extends Controller
         }
         $courseTopic->delete();
 
-        return back()->with('success', 'Topic removed.');
+        return back()->with('success', 'Topic removed.')->with('active_tab', 'topics');
     }
 
     // ─── Official OBTL document upload ─────────────────────────────
@@ -165,6 +218,17 @@ class CourseCoordinationController extends Controller
             ->firstOrFail();
 
         $file = $request->file('file');
+
+        // Content sanity-check — this upload is specifically claimed to be the
+        // official OBTL, so it should actually look like one.
+        $check = (new AcademicDocumentValidator())->validate($file->getRealPath(), $file->getClientOriginalExtension(), 'obtl');
+        if (!$check['valid']) {
+            return back()->withErrors([
+                'file' => ($check['reason'] ?? 'This file does not appear to be an OBTL document.')
+                    . ' Please upload the official OBTL file for this course.',
+            ])->with('active_tab', 'topics');
+        }
+
         $path = $file->store('course-materials', 'public');
 
         CourseMaterial::create([
@@ -179,7 +243,7 @@ class CourseCoordinationController extends Controller
             'file_size'   => $file->getSize(),
         ]);
 
-        return back()->with('success', 'OBTL document uploaded successfully.');
+        return back()->with('success', 'OBTL document uploaded successfully.')->with('active_tab', 'topics');
     }
 
     public function destroyMaterial(CourseMaterial $material)
@@ -192,6 +256,6 @@ class CourseCoordinationController extends Controller
         Storage::disk('public')->delete($material->file_path);
         $material->delete();
 
-        return back()->with('success', 'OBTL document deleted.');
+        return back()->with('success', 'OBTL document deleted.')->with('active_tab', 'topics');
     }
 }

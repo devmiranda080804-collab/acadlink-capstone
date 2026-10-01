@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SubmissionRequirement;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class SubmissionController extends Controller
 {
@@ -68,6 +69,12 @@ class SubmissionController extends Controller
     public function destroy(SubmissionRequirement $requirement)
     {
         abort_unless($requirement->program === auth()->user()->program, 403);
+
+        // Deleting the requirement cascades to its Submission rows in the DB,
+        // but the actual uploaded files on disk are only cleaned up here.
+        foreach ($requirement->submissions as $submission) {
+            Storage::disk('public')->delete($submission->file_path);
+        }
 
         $requirement->delete();
 

@@ -324,7 +324,6 @@
                             <option value="memo">Memo</option>
                             <option value="form">Form</option>
                             <option value="syllabus">Syllabus</option>
-                            <option value="lesson_plan">Lesson Plan</option>
                             <option value="other">Other</option>
                         </select>
                     </div>

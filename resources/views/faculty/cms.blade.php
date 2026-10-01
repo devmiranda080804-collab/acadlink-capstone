@@ -110,6 +110,9 @@
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
         .modal { background: #fff; border-radius: 10px; padding: 24px 26px; width: 440px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
+        .modal.modal-wide { width: 960px; }
+        .editor-wrap { border-radius: 5px; overflow: hidden; }
+        .view-content-body { border: 1px solid #e4e4e4; border-radius: 6px; padding: 16px 18px; max-height: 60vh; overflow-y: auto; font-size: 13px; line-height: 1.6; color: #222; }
         .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 16px; }
         .modal-field { margin-bottom: 13px; }
         .modal-field label { display: block; font-size: 11.5px; font-weight: 700; color: #333; margin-bottom: 4px; }
@@ -158,7 +161,7 @@
         <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}">
             <a href="{{ url('/faculty/exam-generator') }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                Exam Generator
+                Assessment Generator
             </a>
         </li>
         @endif
@@ -210,6 +213,9 @@
             <a href="{{ url('/faculty/submissions') }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
                 Submissions and Deadline
+                @if(($urgentSubmissionsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $urgentSubmissionsCount }}</span>
+                @endif
             </a>
         </li>
         @endif
@@ -261,7 +267,7 @@
             <div class="page-header">
                 <div>
                     <div class="page-title">CMS — My Content</div>
-                    <div class="page-sub">Create, edit, and manage your own instructional content and modules — as a live Google Doc or an uploaded file.</div>
+                    <div class="page-sub">Create, edit, and manage your own instructional content and modules — written and edited directly here, or uploaded as a file.</div>
                 </div>
                 <button class="btn-create" type="button" onclick="openCreateModal()">+ New Module</button>
             </div>
@@ -271,7 +277,7 @@
                     <div class="module-card">
                         <div class="card-top">
                             <span class="card-icon">
-                                @if($module->isGoogleDoc()) 📑 @elseif($module->file_type == 'pdf') 📄 @else 📝 @endif
+                                @if($module->isWritten()) ✍️ @elseif($module->isGoogleDoc()) 📑 @elseif($module->file_type == 'pdf') 📄 @else 📝 @endif
                             </span>
                         </div>
 
@@ -280,7 +286,9 @@
                             <div class="card-desc">{{ $module->description }}</div>
                         @endif
                         <div class="card-meta">
-                            @if($module->isGoogleDoc())
+                            @if($module->isWritten())
+                                Written in AcadLink
+                            @elseif($module->isGoogleDoc())
                                 Google Doc
                             @else
                                 {{ strtoupper($module->file_type) }} • {{ $module->readable_size }}
@@ -289,21 +297,30 @@
                         </div>
 
                         <div class="card-actions">
-                            @if($module->isGoogleDoc())
+                            @if($module->isWritten())
+                                <button type="button" class="btn-sm btn-edit-sm" onclick="openContentEditor({{ $module->id }}, {{ json_encode($module->title) }}, {{ json_encode($module->description) }}, {{ json_encode($module->content) }})">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                                    Open & Edit
+                                </button>
+                            @elseif($module->isGoogleDoc())
                                 <a class="btn-sm btn-view-file" href="{{ $module->google_edit_url }}" target="_blank">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                     Open
                                 </a>
+                                <button type="button" class="btn-sm btn-edit-sm" onclick="openEditModal({{ $module->id }}, {{ json_encode($module->title) }}, {{ json_encode($module->description) }})">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                                    Edit
+                                </button>
                             @else
                                 <a class="btn-sm btn-view-file" href="{{ Storage::url($module->file_path) }}" target="_blank">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                     View
                                 </a>
+                                <button type="button" class="btn-sm btn-edit-sm" onclick="openEditModal({{ $module->id }}, {{ json_encode($module->title) }}, {{ json_encode($module->description) }})">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                                    Edit
+                                </button>
                             @endif
-                            <button type="button" class="btn-sm btn-edit-sm" onclick="openEditModal({{ $module->id }}, {{ json_encode($module->title) }}, {{ json_encode($module->description) }})">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
-                                Edit
-                            </button>
                             <form method="POST" action="{{ url('/faculty/cms/' . $module->id) }}" style="display:inline;" onsubmit="return confirm('Delete this module? This cannot be undone.')">
                                 @csrf
                                 @method('DELETE')
@@ -324,8 +341,8 @@
 
     {{-- Create Modal --}}
     <div class="modal-overlay" id="create-modal-overlay">
-        <div class="modal">
-            <form action="{{ url('/faculty/cms') }}" method="POST" enctype="multipart/form-data">
+        <div class="modal" id="create-modal" >
+            <form action="{{ url('/faculty/cms') }}" method="POST" enctype="multipart/form-data" id="create-form">
                 @csrf
                 <div class="modal-title">New Module</div>
                 <div class="modal-error" id="create-modal-error">{{ $errors->first() }}</div>
@@ -343,7 +360,7 @@
                 <div class="modal-field">
                     <label>How do you want to create this? <span style="color:#ef4444">*</span></label>
                     <select name="mode" id="mode-select" onchange="toggleMode()">
-                        <option value="google_doc">Create as Google Doc (editable, live)</option>
+                        <option value="write">Write content here (AcadLink editor)</option>
                         <option value="upload_file">Upload a File (PDF/Word)</option>
                     </select>
                 </div>
@@ -351,10 +368,13 @@
                 <div class="modal-field" id="file-field">
                     <label>File <span style="color:#ef4444">*</span></label>
                     <input type="file" name="file" accept=".pdf,.doc,.docx">
+                    <div class="modal-hint">For PDF/Word files, we'll try to bring the content in as editable text here — like importing a file into Google Docs. If that's not possible (e.g. older .doc files, or a scanned PDF with no selectable text), it's kept as a plain file instead.</div>
                 </div>
 
-                <div class="modal-field" id="google-doc-note">
-                    <div class="modal-hint">A blank Google Doc will be created and shared to your Google email (set this in your account if you haven't).</div>
+                <div class="modal-field" id="write-field">
+                    <label>Content <span style="color:#ef4444">*</span></label>
+                    <div class="editor-wrap"><textarea id="create-editor"></textarea></div>
+                    <input type="hidden" name="content" id="create-content-input">
                 </div>
 
                 <div class="modal-actions">
@@ -391,15 +411,70 @@
         </div>
     </div>
 
+    {{-- Content Editor Modal (written modules — open and edit in one place) --}}
+    <div class="modal-overlay" id="content-editor-overlay">
+        <div class="modal modal-wide">
+            <form id="content-editor-form" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-title">Edit Module</div>
+
+                <div class="modal-field">
+                    <label>Title <span style="color:#ef4444">*</span></label>
+                    <input type="text" name="title" id="content-editor-title">
+                </div>
+
+                <div class="modal-field">
+                    <label>Description</label>
+                    <textarea name="description" id="content-editor-description"></textarea>
+                </div>
+
+                <div class="modal-field">
+                    <label>Content</label>
+                    <div class="editor-wrap"><textarea id="content-editor"></textarea></div>
+                    <input type="hidden" name="content" id="content-editor-input">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeContentEditor()">Cancel</button>
+                    <button type="submit" class="btn-save">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js"></script>
     <script>
+        // TinyMCE instead of a plain Quill WYSIWYG — it has real table support
+        // and richer formatting (fonts, colors, alignment), so an uploaded
+        // Word/PDF file's structure (including tables) actually survives once
+        // opened here, not just at the storage level.
+        var TINY_CONFIG = {
+            menubar: false,
+            plugins: 'lists table link code fullscreen',
+            toolbar: 'undo redo | blocks | bold italic underline | forecolor backcolor | alignleft aligncenter alignright | bullist numlist | table | link | removeformat | fullscreen',
+            height: 320,
+            branding: false,
+            promotion: false,
+        };
+
         function toggleMode() {
             const isUpload = document.getElementById('mode-select').value === 'upload_file';
             document.getElementById('file-field').style.display = isUpload ? '' : 'none';
-            document.getElementById('google-doc-note').style.display = isUpload ? 'none' : '';
+            document.getElementById('write-field').style.display = isUpload ? 'none' : '';
+            if (!isUpload) {
+                var ed = tinymce.get('create-editor');
+                if (!ed) {
+                    tinymce.init(Object.assign({ selector: '#create-editor' }, TINY_CONFIG));
+                } else {
+                    ed.setContent('');
+                }
+            }
         }
 
         function openCreateModal() {
             document.getElementById('create-modal-overlay').classList.add('open');
+            document.getElementById('mode-select').value = 'write';
             toggleMode();
         }
         function closeCreateModal() {
@@ -407,6 +482,12 @@
         }
         document.getElementById('create-modal-overlay').addEventListener('click', function(e) {
             if (e.target === this) closeCreateModal();
+        });
+        document.getElementById('create-form').addEventListener('submit', function(e) {
+            if (document.getElementById('mode-select').value === 'write') {
+                var ed = tinymce.get('create-editor');
+                document.getElementById('create-content-input').value = ed ? ed.getContent() : '';
+            }
         });
 
         function openEditModal(id, title, description) {
@@ -422,10 +503,37 @@
             if (e.target === this) closeEditModal();
         });
 
+        function openContentEditor(id, title, description, content) {
+            document.getElementById('content-editor-form').action = '{{ url("/faculty/cms") }}/' + id;
+            document.getElementById('content-editor-title').value = title;
+            document.getElementById('content-editor-description').value = description || '';
+            document.getElementById('content-editor-overlay').classList.add('open');
+
+            var ed = tinymce.get('content-editor');
+            if (ed) {
+                ed.setContent(content || '');
+            } else {
+                tinymce.init(Object.assign({ selector: '#content-editor', height: 560 }, TINY_CONFIG)).then(function(editors) {
+                    editors[0].setContent(content || '');
+                });
+            }
+        }
+        function closeContentEditor() {
+            document.getElementById('content-editor-overlay').classList.remove('open');
+        }
+        document.getElementById('content-editor-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeContentEditor();
+        });
+        document.getElementById('content-editor-form').addEventListener('submit', function(e) {
+            var ed = tinymce.get('content-editor');
+            document.getElementById('content-editor-input').value = ed ? ed.getContent() : '';
+        });
+
         @if($errors->any())
             document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('create-modal-overlay').classList.add('open');
                 document.getElementById('create-modal-error').style.display = 'block';
+                document.getElementById('mode-select').value = @json(old('mode', 'write'));
                 toggleMode();
             });
         @endif

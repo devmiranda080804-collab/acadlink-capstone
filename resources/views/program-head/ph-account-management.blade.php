@@ -140,9 +140,12 @@
                 Course Oversight
             </a>
         </li>
+        @endif
+        @if($navPermissions['program-assignment'] ?? true)
+        <li class="{{ request()->is('program-head/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/program-head/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
+        @endif
         @if($navPermissions['submissions'] ?? true)
         <li class="{{ request()->is('program-head/submissions*') ? 'active' : '' }}"><a href="{{ url('/program-head/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
-        @endif
         @endif
         @if($navPermissions['account-management'] ?? true)
         <li class="{{ request()->is('program-head/account-management*') ? 'active' : '' }}">
@@ -168,6 +171,14 @@
             <a href="{{ url('/program-head/calendar') }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 Calendar of Activities
+            </a>
+        </li>
+        @endif
+        @if($navPermissions['analytics'] ?? true)
+        <li class="{{ request()->is('program-head/analytics*') ? 'active' : '' }}">
+            <a href="{{ url('/program-head/analytics') }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                Analytics
             </a>
         </li>
         @endif

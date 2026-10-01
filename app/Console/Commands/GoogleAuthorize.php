@@ -30,11 +30,11 @@ class GoogleAuthorize extends Command
         $client = new Client();
         $client->setClientId($clientId);
         $client->setClientSecret($clientSecret);
-        $client->setRedirectUri('http://localhost');
+        $client->setRedirectUri('http://localhost:51739');
         $client->setAccessType('offline');
         $client->setPrompt('consent'); // force a refresh_token even on repeat runs
         $client->addScope(Docs::DOCUMENTS);
-        $client->addScope(Drive::DRIVE_FILE);
+        $client->addScope(Drive::DRIVE);
 
         $authUrl = $client->createAuthUrl();
 

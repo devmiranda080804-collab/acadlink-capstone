@@ -9,9 +9,13 @@ namespace App\Support;
 // Generator's LOTS/HOTS split.
 class BloomLevels
 {
-    // 'case-analysis' is a scenario container only — it carries no points/Bloom level
-    // of its own; its child questions (added separately, of any other type below) are
-    // classified normally. This is what gives Case Analysis its sub-questions.
+    // Trimmed to this set for now, per the client's own reference list. 'bloom'/'category'
+    // here are only a TYPE's *natural* default — actual Bloom's Level is no longer taken
+    // 1:1 from type. It's resolved from the question's POSITION within its topic against
+    // the TOS's own per-level breakdown (see CourseTopic::resolveBloomLevelForPosition()),
+    // since the same format (e.g. Multiple Choice) can legitimately sit at different levels
+    // depending on where it falls in a topic's TOS sequence. This field is now just a
+    // sensible fallback for topics/exams that have no TOS target_items to align against.
     const TYPES = [
         'mc-single' => [
             'label' => 'Multiple Choice (Single)',
@@ -25,13 +29,6 @@ class BloomLevels
             'desc'  => 'Single true/false question',
             'icon'  => '✓',
             'bloom' => 'Remembering',
-            'category' => 'LOTS',
-        ],
-        'modified-true-false' => [
-            'label' => 'Modified True or False',
-            'desc'  => 'True/False — if false, student supplies the correct term',
-            'icon'  => '✓',
-            'bloom' => 'Understanding',
             'category' => 'LOTS',
         ],
         'identification' => [
@@ -48,32 +45,11 @@ class BloomLevels
             'bloom' => 'Remembering',
             'category' => 'LOTS',
         ],
-        'fill-blank' => [
-            'label' => 'Fill in the Blank',
-            'desc'  => 'Each blank filled with frames',
+        'short-answer' => [
+            'label' => 'Short Answer / Essay',
+            'desc'  => 'Longform text answer',
             'icon'  => 'T',
-            'bloom' => 'Remembering',
-            'category' => 'LOTS',
-        ],
-        'matching' => [
-            'label' => 'Matching Type',
-            'desc'  => 'Matching items from two columns',
-            'icon'  => '⇄',
-            'bloom' => 'Understanding',
-            'category' => 'LOTS',
-        ],
-        'ordering' => [
-            'label' => 'Ordering / Sequencing',
-            'desc'  => 'Arrange items in order',
-            'icon'  => '↕',
-            'bloom' => 'Applying',
-            'category' => 'HOTS',
-        ],
-        'diagram' => [
-            'label' => 'Label the Diagram',
-            'desc'  => 'Single text, label with frames',
-            'icon'  => '🖼',
-            'bloom' => 'Applying',
+            'bloom' => 'Analyzing',
             'category' => 'HOTS',
         ],
         'problem-solving' => [
@@ -83,26 +59,39 @@ class BloomLevels
             'bloom' => 'Applying',
             'category' => 'HOTS',
         ],
-        'short-answer' => [
-            'label' => 'Short Answer / Essay',
-            'desc'  => 'Longform text answer',
-            'icon'  => 'T',
-            'bloom' => 'Analyzing',
-            'category' => 'HOTS',
-        ],
-        'case-analysis' => [
-            'label' => 'Case Analysis',
-            'desc'  => 'Scenario with its own sub-questions of any type',
-            'icon'  => '📄',
-            'bloom' => null,
-            'category' => null,
-        ],
     ];
 
     // Panel comment #9: exact HOTS/LOTS ratio still pending client confirmation.
     // Common DepEd/CHED TOS convention used as the default until then.
     const LOTS_PERCENT = 60;
     const HOTS_PERCENT = 40;
+
+    // Canonical Bloom's Taxonomy order, used by the TOS Generator to build the
+    // official-format table (Remembering through Creating as separate columns).
+    const LEVELS = ['Remembering', 'Understanding', 'Applying', 'Analyzing', 'Evaluating', 'Creating'];
+
+    // Re-derives the LOTS/HOTS split above, subdivided evenly within each category
+    // (LOTS 60% over Remembering+Understanding, HOTS 40% over the other four).
+    const LEVEL_WEIGHTS = [
+        'Remembering'   => 30,
+        'Understanding' => 30,
+        'Applying'      => 10,
+        'Analyzing'     => 10,
+        'Evaluating'    => 10,
+        'Creating'      => 10,
+    ];
+
+    // Every level is worth exactly 1 point per item, so "No. of Items/Points" always
+    // equals the Total Items the faculty configured — no separate points system to
+    // reconcile.
+    const POINTS_PER_ITEM = [
+        'Remembering'   => 1,
+        'Understanding' => 1,
+        'Applying'      => 1,
+        'Analyzing'     => 1,
+        'Evaluating'    => 1,
+        'Creating'      => 1,
+    ];
 
     public static function bloomFor(string $type): ?string
     {

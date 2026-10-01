@@ -23,7 +23,6 @@ class DashboardController extends Controller
 
         // Templates distributed to my program, broken down by type
         $syllabusCount    = $this->distributedForMyProgram($myProgram)->where('type', 'syllabus')->count();
-        $lessonPlanCount  = $this->distributedForMyProgram($myProgram)->where('type', 'lesson_plan')->count();
         $courseGuideCount = $this->distributedForMyProgram($myProgram)->where('type', 'course_guide')->count();
         $moduleCount      = $this->distributedForMyProgram($myProgram)->where('type', 'module')->count();
 
@@ -63,7 +62,7 @@ class DashboardController extends Controller
             ->get();
 
         return view('faculty.dashboard', compact(
-            'syllabusCount', 'lessonPlanCount', 'courseGuideCount', 'moduleCount',
+            'syllabusCount', 'courseGuideCount', 'moduleCount',
             'revisionTemplates', 'recentAnnouncements', 'upcomingActivities', 'myCourses',
             'unreadAnnouncements'
         ));

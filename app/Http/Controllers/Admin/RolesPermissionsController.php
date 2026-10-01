@@ -12,13 +12,15 @@ class RolesPermissionsController extends Controller
     // All modules per role — this order matches the sidebar order
     protected array $roleModules = [
         'program_head' => [
-            'dashboard'          => 'Dashboard',
-            'template-review'    => 'Template Distribution',
-            'course-oversight'   => 'Course Oversight',
-            'submissions'        => 'Submissions and Deadline',
-            'account-management' => 'Account Management',
-            'announcements'      => 'Announcements',
-            'calendar'           => 'Calendar of Activities',
+            'dashboard'           => 'Dashboard',
+            'template-review'     => 'Template Distribution',
+            'course-oversight'    => 'Course Oversight',
+            'program-assignment'  => 'Program Assignment',
+            'submissions'         => 'Submissions and Deadline',
+            'account-management'  => 'Account Management',
+            'announcements'       => 'Announcements',
+            'calendar'            => 'Calendar of Activities',
+            'analytics'           => 'Analytics',
         ],
         'secretary' => [
             'dashboard'              => 'Dashboard',
@@ -32,7 +34,7 @@ class RolesPermissionsController extends Controller
         'faculty' => [
             'dashboard'           => 'Dashboard',
             'my-template'         => 'Templates',
-            'exam-generator'      => 'Exam Generator',
+            'exam-generator'      => 'Assessment Generator',
             'shared-library'      => 'Shared Library',
             'course-coordination' => 'Course Coordination',
             'analytics'           => 'Analytics',

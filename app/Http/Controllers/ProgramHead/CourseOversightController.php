@@ -77,7 +77,7 @@ class CourseOversightController extends Controller
             'file_size'   => $file->getSize(),
         ]);
 
-        return back()->with('success', 'Course material uploaded successfully.');
+        return back()->with('success', 'Course material uploaded successfully.')->with('active_tab', 'materials');
     }
 
     public function destroy(CourseMaterial $material)
@@ -91,7 +91,7 @@ class CourseOversightController extends Controller
         Storage::disk('public')->delete($material->file_path);
         $material->delete();
 
-        return back()->with('success', 'Course material deleted.');
+        return back()->with('success', 'Course material deleted.')->with('active_tab', 'materials');
     }
 
     // ─── Program Outcomes ───────────────────────────────────────────
@@ -114,7 +114,7 @@ class CourseOversightController extends Controller
             'created_by'  => auth()->id(),
         ]);
 
-        return back()->with('success', 'Program Outcome added.');
+        return back()->with('success', 'Program Outcome added.')->with('active_tab', 'outcomes');
     }
 
     public function destroyProgramOutcome(ProgramOutcome $programOutcome)
@@ -123,7 +123,7 @@ class CourseOversightController extends Controller
 
         $programOutcome->delete();
 
-        return back()->with('success', 'Program Outcome removed.');
+        return back()->with('success', 'Program Outcome removed.')->with('active_tab', 'outcomes');
     }
 
     // ─── Course Outcomes ────────────────────────────────────────────
@@ -154,7 +154,7 @@ class CourseOversightController extends Controller
             'created_by'        => auth()->id(),
         ]);
 
-        return back()->with('success', 'Course Outcome added.');
+        return back()->with('success', 'Course Outcome added.')->with('active_tab', 'outcomes');
     }
 
     public function destroyCourseOutcome(CourseOutcome $courseOutcome)
@@ -163,7 +163,7 @@ class CourseOversightController extends Controller
 
         $courseOutcome->delete();
 
-        return back()->with('success', 'Course Outcome removed.');
+        return back()->with('success', 'Course Outcome removed.')->with('active_tab', 'outcomes');
     }
 
     // Topics & Hours (OBTL) are authored by Faculty for the courses they're
@@ -184,6 +184,6 @@ class CourseOversightController extends Controller
             $courseOutcome->programOutcomes()->attach($programOutcome->id);
         }
 
-        return back()->with('success', 'CO–PO mapping updated.');
+        return back()->with('success', 'CO–PO mapping updated.')->with('active_tab', 'outcomes');
     }
 }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class ContentModule extends Model
 {
     protected $fillable = [
-        'created_by', 'title', 'description',
+        'created_by', 'title', 'description', 'content',
         'google_doc_id', 'file_path', 'file_name', 'file_type', 'file_size',
     ];
 
@@ -16,9 +16,17 @@ class ContentModule extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    // Legacy — new modules no longer create Google Docs (see
+    // ContentModuleController::store()), but older rows may still have one.
     public function isGoogleDoc(): bool
     {
         return $this->google_doc_id !== null;
+    }
+
+    // In-app WYSIWYG content, written and edited directly inside AcadLink.
+    public function isWritten(): bool
+    {
+        return $this->google_doc_id === null && $this->file_path === null;
     }
 
     public function getGoogleEditUrlAttribute(): ?string

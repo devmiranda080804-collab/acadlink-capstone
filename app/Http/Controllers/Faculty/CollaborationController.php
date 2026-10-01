@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Faculty;
 
 use App\Http\Controllers\Controller;
 use App\Models\CollaborativeDocument;
+use App\Models\CollaborativeDocumentViewer;
 use App\Models\Course;
+use App\Models\DocumentVersion;
 use App\Models\ProgramAssignment;
 use App\Models\User;
 use App\Services\GoogleDocsService;
@@ -85,17 +87,75 @@ class CollaborationController extends Controller
     }
 
     // Document metadata + the Google Docs edit link — editing itself happens
-    // live inside Google Docs, not in this app
+    // live inside Google Docs, not in this app. Also tracks that this user just
+    // opened it ("who's active") and, if the last saved snapshot is stale, takes
+    // a fresh one automatically — an honest, in-app approximation of the
+    // manuscript's "automatic saving" / "who's editing" claims, since the real
+    // editing happens inside Google Docs where this app has no live visibility.
     public function show(CollaborativeDocument $document)
     {
         $this->authorizeDocument($document);
 
+        CollaborativeDocumentViewer::updateOrCreate(
+            ['collaborative_document_id' => $document->id, 'user_id' => auth()->id()],
+            ['last_opened_at' => now()]
+        );
+
+        // Best-effort: a transient Google API hiccup shouldn't break viewing the
+        // document. The explicit snapshot() endpoint below still surfaces failures,
+        // since there the user asked for a save and deserves to know it didn't happen.
+        $latestVersion = $document->versions()->first();
+        if (!$latestVersion || $latestVersion->created_at->lt(now()->subMinutes(5))) {
+            try {
+                $this->takeSnapshot($document);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+
+        $activeSince = now()->subMinutes(30);
+
         return response()->json([
-            'id'             => $document->id,
-            'title'          => $document->title,
+            'id'              => $document->id,
+            'title'           => $document->title,
             'google_edit_url' => $document->google_edit_url,
-            'creator'        => $document->creator?->name,
-            'updated_at'     => $document->updated_at->toIso8601String(),
+            'creator'         => $document->creator?->name,
+            'updated_at'      => $document->updated_at->toIso8601String(),
+            'viewers'         => $document->viewers()->with('user')->get()->map(fn($v) => [
+                'name'           => $v->user->name,
+                'last_opened_at' => $v->last_opened_at->toIso8601String(),
+                'active_now'     => $v->last_opened_at->gte($activeSince),
+            ]),
+            'versions' => $document->versions()->with('editor')->get()->map(fn($v) => [
+                'id'         => $v->id,
+                'editor'     => $v->editor?->name,
+                'created_at' => $v->created_at->toIso8601String(),
+                'preview'    => \Illuminate\Support\Str::limit($v->content, 200),
+            ]),
+        ]);
+    }
+
+    // Explicit "Save Version Now" action — same export+snapshot logic as the
+    // throttled automatic one in show(), just user-triggered and unthrottled.
+    public function snapshot(CollaborativeDocument $document)
+    {
+        $this->authorizeDocument($document);
+        $this->takeSnapshot($document);
+
+        return response()->json(['status' => 'snapshotted']);
+    }
+
+    private function takeSnapshot(CollaborativeDocument $document): void
+    {
+        abort_unless($document->google_doc_id, 422, 'This document has no linked Google Doc.');
+
+        $content = (new GoogleDocsService())->exportPlainText($document->google_doc_id);
+
+        DocumentVersion::create([
+            'document_id' => $document->id,
+            'edited_by'   => auth()->id(),
+            'content'     => $content,
+            'created_at'  => now(),
         ]);
     }
 

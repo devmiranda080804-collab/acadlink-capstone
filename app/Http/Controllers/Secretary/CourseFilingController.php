@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Secretary;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\CourseMaterial;
-use App\Models\Template;
 use Illuminate\Http\Request;
 
 class CourseFilingController extends Controller
@@ -24,34 +23,24 @@ class CourseFilingController extends Controller
             // Materials for this course
             $materials = CourseMaterial::where('course_id', $course->id)->get();
 
-            // Syllabus: has an approved syllabus template for the program, or a material containing "syllabus"
-            $hasSyllabus = Template::where('program', $course->program)
-                ->where('type', 'syllabus')
-                ->where('status', 'approved')
-                ->exists()
-                || $materials->contains(fn($m) => stripos($m->title, 'syllabus') !== false);
+            // Filing status is read straight off each material's own category
+            // (CourseMaterial.type), set when it was uploaded — not guessed
+            // from the filename.
+            $hasSyllabus = $materials->contains(fn($m) => $m->type === 'syllabus');
+            $hasTos      = $materials->contains(fn($m) => $m->type === 'tos');
+            $hasExamBank = $materials->contains(fn($m) => $m->type === 'exam_bank');
 
-            // TOS: a material containing "TOS" or "table of specification"
-            $hasTos = $materials->contains(fn($m) =>
-                stripos($m->title, 'tos') !== false ||
-                stripos($m->title, 'specification') !== false
-            );
-
-            // Exam Bank: a material containing "exam", "bank", or "item"
-            $hasExamBank = $materials->contains(fn($m) =>
-                stripos($m->title, 'exam') !== false ||
-                stripos($m->title, 'bank') !== false ||
-                stripos($m->title, 'item') !== false
-            );
+            $done = ($hasSyllabus ? 1 : 0) + ($hasTos ? 1 : 0) + ($hasExamBank ? 1 : 0) + ($materials->count() > 0 ? 1 : 0);
 
             return [
-                'code'         => $course->code,
-                'title'        => $course->title,
-                'program'      => $course->program,
-                'has_syllabus' => $hasSyllabus,
-                'has_tos'      => $hasTos,
-                'has_exam_bank'=> $hasExamBank,
-                'materials'    => $materials->count(),
+                'code'            => $course->code,
+                'title'           => $course->title,
+                'program'         => $course->program,
+                'has_syllabus'    => $hasSyllabus,
+                'has_tos'         => $hasTos,
+                'has_exam_bank'   => $hasExamBank,
+                'materials'       => $materials->count(),
+                'completion_pct'  => round(($done / 4) * 100),
             ];
         });
 

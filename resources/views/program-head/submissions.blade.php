@@ -117,6 +117,12 @@
         .btn-cancel:hover { background: #f5f5f5; }
         .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
         .btn-save:hover { background: #1a3a7a; }
+        .btn-danger { background: #ef4444; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-danger:hover { background: #dc2626; }
+        .delete-warning { display: flex; gap: 10px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 7px; padding: 10px 12px; font-size: 12px; line-height: 1.5; margin: 14px 0; }
+        .delete-warning svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+        .delete-target { font-size: 13px; color: #555; }
+        .delete-target strong { color: #1a1a2e; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -139,6 +145,9 @@
             @if($navPermissions['course-oversight'] ?? true)
             <li class="{{ request()->is('program-head/course-oversight*') ? 'active' : '' }}"><a href="{{ url('/program-head/course-oversight') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Oversight</a></li>
             @endif
+            @if($navPermissions['program-assignment'] ?? true)
+            <li class="{{ request()->is('program-head/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/program-head/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
+            @endif
             @if($navPermissions['submissions'] ?? true)
             <li class="{{ request()->is('program-head/submissions*') ? 'active' : '' }}"><a href="{{ url('/program-head/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
             @endif
@@ -154,6 +163,9 @@
             @endif
             @if($navPermissions['calendar'] ?? true)
             <li class="{{ request()->is('program-head/calendar*') ? 'active' : '' }}"><a href="{{ url('/program-head/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
+            @endif
+            @if($navPermissions['analytics'] ?? true)
+            <li class="{{ request()->is('program-head/analytics*') ? 'active' : '' }}"><a href="{{ url('/program-head/analytics') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></li>
             @endif
         </ul>
         <div class="sidebar-logout">
@@ -270,11 +282,7 @@
                         <div class="req-actions">
                             <button class="btn-mini btn-mini-toggle" onclick="toggleSubmitters({{ $req->id }})">View Submitters</button>
                             <button class="btn-mini btn-mini-edit" onclick='editRequirement(@json($req))'>Edit</button>
-                            <form method="POST" action="{{ url('/program-head/submissions/' . $req->id) }}" onsubmit="return confirm('Delete this requirement?')" style="display:inline;">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn-mini btn-mini-del">Delete</button>
-                            </form>
+                            <button type="button" class="btn-mini btn-mini-del" onclick="openDeleteModal({{ $req->id }}, @js($req->title), {{ $req->submissions->count() }})">Delete</button>
                         </div>
 
                         <div class="submitters-list" id="submitters-{{ $req->id }}">
@@ -315,7 +323,6 @@
                         <label>Type</label>
                         <select name="type" id="f-type">
                             <option value="syllabus">Syllabus</option>
-                            <option value="lesson_plan">Lesson Plan</option>
                             <option value="tos">TOS</option>
                             <option value="exam_bank">Exam Bank</option>
                             <option value="other">Other</option>
@@ -339,6 +346,42 @@
             </form>
         </div>
     </div>
+
+    <div class="modal-overlay" id="delete-overlay">
+        <div class="modal" style="width:420px;">
+            <div class="modal-title">Delete Requirement</div>
+            <div class="delete-target">Delete <strong id="delete-target-title"></strong>?</div>
+            <div class="delete-warning" id="delete-warning" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span><span id="delete-warning-count"></span> faculty member(s) already submitted files for this requirement. Deleting it will also permanently delete those submitted files.</span>
+            </div>
+            <form id="delete-form" method="POST">
+                @csrf
+                @method('DELETE')
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+                    <button type="submit" class="btn-danger">Delete Requirement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openDeleteModal(id, title, submittedCount) {
+            document.getElementById('delete-target-title').textContent = title;
+            document.getElementById('delete-form').action = BASE + '/' + id;
+            const warning = document.getElementById('delete-warning');
+            if (submittedCount > 0) {
+                document.getElementById('delete-warning-count').textContent = submittedCount;
+                warning.style.display = 'flex';
+            } else {
+                warning.style.display = 'none';
+            }
+            document.getElementById('delete-overlay').classList.add('open');
+        }
+        function closeDeleteModal() { document.getElementById('delete-overlay').classList.remove('open'); }
+        document.getElementById('delete-overlay').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
+    </script>
 
     <script>
         const BASE = '{{ url('/program-head/submissions') }}';

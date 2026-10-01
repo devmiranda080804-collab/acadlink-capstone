@@ -43,23 +43,32 @@
         .btn-share { display: flex; align-items: center; gap: 6px; background: #0f2557; color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; white-space: nowrap; }
         .btn-share:hover { background: #1a3a7a; }
 
-        .filter-tabs { display: flex; gap: 4px; margin-bottom: 18px; }
-        .filter-tab { padding: 7px 16px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; text-decoration: none; }
+        .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+        .filter-tabs { display: flex; gap: 4px; }
+        .filter-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; text-decoration: none; }
         .filter-tab:hover { border-color: #0f2557; color: #0f2557; }
         .filter-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
+        .filter-count { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: rgba(15,37,87,0.08); color: #0f2557; }
+        .filter-tab.active .filter-count { background: rgba(255,255,255,0.22); color: #fff; }
+
+        .search-box { position: relative; width: 240px; max-width: 100%; }
+        .search-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #999; pointer-events: none; }
+        .search-box input { width: 100%; padding: 8px 10px 8px 30px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; outline: none; font-family: Arial, sans-serif; }
+        .search-box input:focus { border-color: #0f2557; }
 
         .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
-        .lib-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; transition: box-shadow 0.15s; }
-        .lib-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
+        .lib-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; transition: box-shadow 0.15s, transform 0.15s; }
+        .lib-card:hover { box-shadow: 0 6px 18px rgba(15,37,87,0.1); transform: translateY(-2px); }
         .lib-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
-        .lib-icon { font-size: 26px; }
-        .source-badge { font-size: 9.5px; font-weight: 700; padding: 3px 9px; border-radius: 10px; }
+        .lib-icon { font-size: 26px; line-height: 1; }
+        .source-badge { font-size: 9.5px; font-weight: 700; padding: 3px 9px; border-radius: 10px; white-space: nowrap; }
         .source-template { background: #dbeafe; color: #1e40af; }
         .source-material { background: #d1fae5; color: #065f46; }
         .source-shared { background: #ede9fe; color: #6d28d9; }
-        .lib-title { font-size: 13.5px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+        .lib-title { font-size: 13.5px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .lib-desc { font-size: 11px; color: #888; line-height: 1.4; margin-bottom: 10px; flex: 1; }
-        .lib-meta { font-size: 10.5px; color: #aaa; margin-bottom: 12px; }
+        .lib-meta { font-size: 10.5px; color: #aaa; margin-bottom: 12px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+        .lib-meta .dot { color: #ddd; }
         .lib-actions { display: flex; gap: 6px; }
         .btn-view { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #0f2557; color: #fff; border: none; font-size: 11.5px; font-weight: 600; padding: 7px 12px; border-radius: 5px; text-decoration: none; }
         .btn-view:hover { background: #1a3a7a; }
@@ -67,7 +76,9 @@
         .btn-del:hover { color: #ef4444; border-color: #fca5a5; background: #fee2e2; }
         .btn-view svg, .btn-del svg { width: 12px; height: 12px; }
 
-        .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #bbb; font-size: 13px; }
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #bbb; }
+        .empty-state svg { width: 40px; height: 40px; color: #ddd; margin-bottom: 10px; }
+        .empty-state p { font-size: 13px; }
 
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
@@ -106,7 +117,7 @@
             <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates</a></li>
             @endif
             @if($navPermissions['exam-generator'] ?? true)
-            <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}"><a href="{{ url('/faculty/exam-generator') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Exam Generator</a></li>
+            <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}"><a href="{{ url('/faculty/exam-generator') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Assessment Generator</a></li>
             @endif
             @if($navPermissions['shared-library'] ?? true)
             <li class="{{ request()->is('faculty/shared-library*') ? 'active' : '' }}"><a href="{{ url('/faculty/shared-library') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Shared Library</a></li>
@@ -128,7 +139,11 @@
             </a></li>
             @endif
             @if($navPermissions['submissions'] ?? true)
-            <li class="{{ request()->is('faculty/submissions*') ? 'active' : '' }}"><a href="{{ url('/faculty/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
+            <li class="{{ request()->is('faculty/submissions*') ? 'active' : '' }}"><a href="{{ url('/faculty/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline
+                @if(($urgentSubmissionsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $urgentSubmissionsCount }}</span>
+                @endif
+            </a></li>
             @endif
             @if($navPermissions['cms'] ?? true)
             <li class="{{ request()->is('faculty/cms*') ? 'active' : '' }}"><a href="{{ url('/faculty/cms') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>CMS</a></li>
@@ -177,20 +192,26 @@
                 </button>
             </div>
 
-            {{-- Filter tabs --}}
-            <div class="filter-tabs">
-                <a class="filter-tab {{ $filter == 'all' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=all') }}">All</a>
-                <a class="filter-tab {{ $filter == 'templates' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=templates') }}">Templates</a>
-                <a class="filter-tab {{ $filter == 'materials' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=materials') }}">Course Materials</a>
-                <a class="filter-tab {{ $filter == 'shared' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=shared') }}">Faculty Shared</a>
+            {{-- Toolbar: filter tabs + search --}}
+            <div class="toolbar">
+                <div class="filter-tabs">
+                    <a class="filter-tab {{ $filter == 'all' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=all') }}">All <span class="filter-count">{{ $counts['all'] }}</span></a>
+                    <a class="filter-tab {{ $filter == 'templates' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=templates') }}">Templates <span class="filter-count">{{ $counts['templates'] }}</span></a>
+                    <a class="filter-tab {{ $filter == 'materials' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=materials') }}">Course Materials <span class="filter-count">{{ $counts['materials'] }}</span></a>
+                    <a class="filter-tab {{ $filter == 'shared' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=shared') }}">Faculty Shared <span class="filter-count">{{ $counts['shared'] }}</span></a>
+                </div>
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="lib-search" placeholder="Search by title..." oninput="filterCards(this.value)">
+                </div>
             </div>
 
             {{-- Resource grid --}}
-            <div class="lib-grid">
+            <div class="lib-grid" id="lib-grid">
                 @forelse($items as $item)
-                    <div class="lib-card">
+                    <div class="lib-card" data-title="{{ strtolower($item['title']) }}">
                         <div class="lib-card-top">
-                            <span class="lib-icon">@if($item['file_type'] == 'pdf') 📄 @elseif(in_array($item['file_type'], ['xls','xlsx'])) 📊 @elseif(in_array($item['file_type'], ['ppt','pptx'])) 📊 @else 📝 @endif</span>
+                            <span class="lib-icon">@if($item['file_type'] == 'gdoc') 📑 @elseif($item['file_type'] == 'pdf') 📄 @elseif(in_array($item['file_type'], ['xls','xlsx'])) 📊 @elseif(in_array($item['file_type'], ['ppt','pptx'])) 📊 @else 📝 @endif</span>
                             @if($item['source'] == 'template')
                                 <span class="source-badge source-template">Template</span>
                             @elseif($item['source'] == 'material')
@@ -201,7 +222,15 @@
                         </div>
                         <div class="lib-title">{{ $item['title'] }}</div>
                         <div class="lib-desc">{{ $item['desc'] }}</div>
-                        <div class="lib-meta">By {{ $item['shared_by'] }} · {{ $item['date']->format('M d, Y') }}</div>
+                        <div class="lib-meta">
+                            <span>By {{ $item['shared_by'] }}</span>
+                            <span class="dot">·</span>
+                            <span>{{ $item['date']->format('M d, Y') }}</span>
+                            @if(!empty($item['file_size']))
+                                <span class="dot">·</span>
+                                <span>{{ $item['file_size'] }}</span>
+                            @endif
+                        </div>
                         <div class="lib-actions">
                             <a class="btn-view" href="{{ $item['file_url'] }}" target="_blank">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -219,8 +248,15 @@
                         </div>
                     </div>
                 @empty
-                    <div class="empty-state">No resources yet for this filter. Share a resource to help fellow faculty!</div>
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                        <p>No resources yet for this filter.<br>Share a resource to help fellow faculty in <strong>{{ $myProgram }}</strong>!</p>
+                    </div>
                 @endforelse
+            </div>
+            <div class="empty-state" id="no-search-results" style="display:none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <p>No resources match your search.</p>
             </div>
         </div>
     </div>
@@ -270,6 +306,23 @@
         function openShareModal() { document.getElementById('share-overlay').classList.add('open'); }
         function closeShareModal() { document.getElementById('share-overlay').classList.remove('open'); }
         document.getElementById('share-overlay').addEventListener('click', function(e) { if (e.target === this) closeShareModal(); });
+
+        function filterCards(query) {
+            query = query.trim().toLowerCase();
+            var cards = document.querySelectorAll('#lib-grid .lib-card');
+            var visibleCount = 0;
+            cards.forEach(function(card) {
+                var match = card.dataset.title.includes(query);
+                card.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
+            });
+            var noResults = document.getElementById('no-search-results');
+            if (noResults) {
+                noResults.style.display = (query && visibleCount === 0 && cards.length > 0) ? 'flex' : 'none';
+                noResults.style.flexDirection = 'column';
+                noResults.style.alignItems = 'center';
+            }
+        }
     </script>
 
 </body>

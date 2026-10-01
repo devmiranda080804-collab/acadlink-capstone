@@ -118,48 +118,6 @@
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .page-sub { font-size: 11.5px; color: #888; }
 
-        .btn-export {
-            display: flex; align-items: center; gap: 6px;
-            background: #0f2557; color: #fff;
-            border: none; border-radius: 6px;
-            font-size: 12.5px; font-weight: 600;
-            padding: 9px 18px; cursor: pointer;
-            transition: background 0.15s;
-        }
-
-        .btn-export:hover { background: #1a3a7a; }
-
-        /* Semester box */
-        .semester-box {
-            background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 14px 18px;
-            margin-bottom: 18px;
-            display: inline-block;
-            width: 100%;
-        }
-
-        .semester-label { font-size: 11.5px; font-weight: 600; color: #444; margin-bottom: 8px; }
-
-        .semester-select {
-            height: 34px;
-            padding: 0 32px 0 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 12.5px;
-            color: #333;
-            background: #fff;
-            outline: none;
-            appearance: none;
-            -webkit-appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 10px center;
-            cursor: pointer;
-            min-width: 220px;
-        }
-
         /* ── Stat cards ── */
         .stat-cards {
             display: grid;
@@ -189,21 +147,6 @@
             color: #1a1a2e;
         }
 
-        /* ── Charts row ── */
-        .charts-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-
-        .chart-panel {
-            background: #fff;
-            border: 1px solid #e8e8e8;
-            border-radius: 8px;
-            padding: 16px 18px;
-        }
-
         .chart-title {
             font-size: 13px; font-weight: 700;
             color: #1a1a2e; margin-bottom: 14px;
@@ -221,6 +164,27 @@
             padding: 16px 18px;
             margin-bottom: 16px;
         }
+
+        /* ── Report panels (tables) ── */
+        .report-panel {
+            background: #fff;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 16px 18px;
+            margin-bottom: 16px;
+        }
+        .report-title { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 2px; }
+        .report-sub { font-size: 11px; color: #888; margin-bottom: 14px; }
+        .report-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .report-table thead tr { border-bottom: 1px solid #eee; }
+        .report-table th { padding: 8px 10px; text-align: left; font-size: 10.5px; font-weight: 700; color: #666; text-transform: uppercase; }
+        .report-table td { padding: 9px 10px; border-bottom: 1px solid #f5f5f5; color: #333; }
+        .report-table tbody tr:last-child td { border-bottom: none; }
+        .report-table .empty-row { text-align: center; color: #999; padding: 20px 10px; }
+        .pill { display: inline-block; font-size: 10.5px; font-weight: 600; padding: 2px 9px; border-radius: 10px; }
+        .pill-ok { background: #dcfce7; color: #166534; }
+        .pill-warn { background: #fef3c7; color: #92400e; }
+        .pill-bad { background: #fee2e2; color: #991b1b; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -256,7 +220,7 @@
         <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}">
             <a href="{{ url('/faculty/exam-generator') }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                Exam Generator
+                Assessment Generator
             </a>
         </li>
         @endif
@@ -308,6 +272,9 @@
             <a href="{{ url('/faculty/submissions') }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
                 Submissions and Deadline
+                @if(($urgentSubmissionsCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $urgentSubmissionsCount }}</span>
+                @endif
             </a>
         </li>
         @endif
@@ -339,10 +306,10 @@
                 <span class="role-badge">Faculty</span>
                 <div class="user-info">
                     <div class="user-text">
-                        <div class="user-name">—</div>
-                        <div class="user-email">—</div>
+                        <div class="user-name">{{ auth()->user()->name }}</div>
+                        <div class="user-email">{{ auth()->user()->email }}</div>
                     </div>
-                    <div class="user-avatar">—</div>
+                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
                 </div>
             </div>
         </div>
@@ -353,66 +320,130 @@
             <div class="page-header">
                 <div>
                     <div class="page-title">Analytics</div>
-                    <div class="page-sub">Course performance and outcome analysis</div>
+                    <div class="page-sub">Instructional reports based on live system data — {{ $activity['school_year'] }}, {{ $activity['semester'] }}</div>
                 </div>
-                <button class="btn-export" type="button">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"/><polyline points="8 12 12 16 16 12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
-                    Export Report
-                </button>
             </div>
 
-            {{-- Semester selector --}}
-            <div class="semester-box">
-                <div class="semester-label">Semester</div>
-                <select class="semester-select" onchange="updateCharts()">
-                    <option value="2025-2026-2" selected>2025-2026 &nbsp; Second Semester</option>
-                    <option value="2025-2026-1">2025-2026 &nbsp; First Semester</option>
-                    <option value="2024-2025-2">2024-2025 &nbsp; Second Semester</option>
-                    <option value="2024-2025-1">2024-2025 &nbsp; First Semester</option>
-                </select>
-            </div>
-
-            {{-- Stat cards --}}
+            {{-- Stat cards: Instructional Compliance --}}
             <div class="stat-cards">
                 <div class="stat-card">
                     <div class="stat-card-header">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                        Average Grade
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                        Compliance Rate
                     </div>
-                    <div class="stat-value" id="avg-grade">—</div>
+                    <div class="stat-value">{{ $compliance['compliance_rate'] }}%</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-card-header">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-                        CO Attainment
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        On-Time Rate
                     </div>
-                    <div class="stat-value" id="co-attainment">—</div>
+                    <div class="stat-value">{{ $compliance['on_time_rate'] }}%</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-card-header">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                        Pass Rate
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        Exams Finalized
                     </div>
-                    <div class="stat-value" id="pass-rate">—</div>
+                    <div class="stat-value">{{ $activity['faculty'][0]['exams_finalized'] ?? 0 }}</div>
                 </div>
             </div>
 
-            {{-- Grade Distribution + Course Outcome --}}
-            <div class="charts-row">
-                <div class="chart-panel">
-                    <div class="chart-title">Grade Distribution</div>
-                    <div class="chart-wrap"><canvas id="gradeChart" height="160"></canvas></div>
-                </div>
-                <div class="chart-panel">
-                    <div class="chart-title">Course Outcome</div>
-                    <div class="chart-wrap"><canvas id="outcomeChart" height="160"></canvas></div>
-                </div>
+            {{-- 1. Instructional Compliance Report --}}
+            <div class="report-panel">
+                <div class="report-title">Instructional Compliance Report</div>
+                <div class="report-sub">Your submission status against active Submissions &amp; Deadline requirements, by type</div>
+                <table class="report-table">
+                    <thead><tr><th>Requirement Type</th><th>Expected</th><th>Submitted</th><th>On Time</th></tr></thead>
+                    <tbody>
+                        @forelse($compliance['by_type'] as $type => $row)
+                            <tr>
+                                <td>{{ ucwords(str_replace('_', ' ', $type)) }}</td>
+                                <td>{{ $row['expected'] }}</td>
+                                <td>{{ $row['submitted'] }}</td>
+                                <td>{{ $row['on_time'] }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="4" class="empty-row">No submission requirements posted yet.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
 
-            {{-- Bloom's Taxonomy Coverage --}}
+            {{-- 2. Assessment Coverage Report --}}
             <div class="chart-panel-full">
-                <div class="chart-title">Bloom's Taxonomy Coverage</div>
+                <div class="chart-title">Assessment Coverage Report — Bloom's Taxonomy (Actual vs. TOS Target)</div>
+                <div class="report-sub">Item counts from your finalized exams compared to each course's Table of Specifications target, {{ $coverage['exams_analyzed'] }} exam(s) analyzed</div>
                 <div class="chart-wrap"><canvas id="bloomChart" height="100"></canvas></div>
+            </div>
+
+            <div class="report-panel">
+                <div class="report-title">Coverage by Course</div>
+                <table class="report-table">
+                    <thead><tr><th>Course</th><th>Actual Items</th><th>TOS Target Items</th></tr></thead>
+                    <tbody>
+                        @forelse($coverage['per_course'] as $course => $row)
+                            <tr>
+                                <td>{{ $course }}</td>
+                                <td>{{ $row['actual'] }}</td>
+                                <td>{{ $row['target'] }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="3" class="empty-row">No finalized exams yet.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- 3. Faculty Activity Summary --}}
+            <div class="report-panel">
+                <div class="report-title">Faculty Activity Summary</div>
+                <div class="report-sub">Your recorded activity this term</div>
+                @php($mine = $activity['faculty'][0] ?? null)
+                <table class="report-table">
+                    <thead><tr><th>Exams Created</th><th>Exams Finalized</th><th>Topics Filed</th><th>Content Modules</th><th>Shared Resources</th><th>Submissions Filed</th></tr></thead>
+                    <tbody>
+                        @if($mine)
+                            <tr>
+                                <td>{{ $mine['exams_created'] }}</td>
+                                <td>{{ $mine['exams_finalized'] }}</td>
+                                <td>{{ $mine['topics_filed'] }}</td>
+                                <td>{{ $mine['content_modules'] }}</td>
+                                <td>{{ $mine['shared_resources'] }}</td>
+                                <td>{{ $mine['submissions_filed'] }}</td>
+                            </tr>
+                        @else
+                            <tr><td colspan="6" class="empty-row">No activity recorded yet.</td></tr>
+                        @endif
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- 4. Course Coordination Status Report --}}
+            <div class="report-panel">
+                <div class="report-title">Course Coordination Status Report</div>
+                <div class="report-sub">Multi-section courses in your program — exam finalization alignment across co-faculty</div>
+                <table class="report-table">
+                    <thead><tr><th>Course</th><th>Faculty</th><th>Prelim</th><th>Midterm</th><th>Final</th></tr></thead>
+                    <tbody>
+                        @forelse($coordination['courses'] as $row)
+                            <tr>
+                                <td>{{ $row['course'] }}</td>
+                                <td>{{ implode(', ', $row['faculty']) }}</td>
+                                @foreach(['Prelim','Midterm','Final'] as $period)
+                                    @php($p = $row['periods'][$period])
+                                    <td>
+                                        <span class="pill {{ $p['finalized'] == $p['of'] ? 'pill-ok' : ($p['finalized'] == 0 ? 'pill-bad' : 'pill-warn') }}">
+                                            {{ $p['finalized'] }} of {{ $p['of'] }}
+                                        </span>
+                                    </td>
+                                @endforeach
+                            </tr>
+                        @empty
+                            <tr><td colspan="5" class="empty-row">No multi-section courses in your program this term.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
 
         </div>
@@ -422,96 +453,31 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
     <script>
-        var GOLD  = '#c9963a';
-        var NAVY  = '#0f2557';
-        var LIGHT = '#e8e8e8';
+        var GOLD = '#c9963a';
+        var NAVY = '#0f2557';
 
-        // ── Chart instances ──
-        var gradeChart, outcomeChart, bloomChart;
+        var bloomLabels = @json(array_keys($coverage['by_level']));
+        var bloomActual = @json(array_values(array_map(fn($r) => $r['actual'], $coverage['by_level'])));
+        var bloomTarget = @json(array_values(array_map(fn($r) => $r['target'], $coverage['by_level'])));
 
-        function buildCharts() {
-            // Grade Distribution (navy bars — A,B,C,D,E)
-            var gradeCtx = document.getElementById('gradeChart').getContext('2d');
-            gradeChart = new Chart(gradeCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['A', 'B', 'C', 'D', 'E'],
-                    datasets: [{
-                        data: [13, 18, 9, 5, 1],
-                        backgroundColor: NAVY,
-                        borderRadius: 3,
-                        barPercentage: 0.55
-                    }]
-                },
-                options: {
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, max: 20, ticks: { stepSize: 5, font: { size: 10 } }, grid: { color: '#f0f0f0' } },
-                        x: { ticks: { font: { size: 11 } }, grid: { display: false } }
-                    }
+        var bloomCtx = document.getElementById('bloomChart').getContext('2d');
+        new Chart(bloomCtx, {
+            type: 'bar',
+            data: {
+                labels: bloomLabels,
+                datasets: [
+                    { label: 'Actual', data: bloomActual, backgroundColor: NAVY, borderRadius: 3, barPercentage: 0.7 },
+                    { label: 'TOS Target', data: bloomTarget, backgroundColor: GOLD, borderRadius: 3, barPercentage: 0.7 }
+                ]
+            },
+            options: {
+                plugins: { legend: { display: true, position: 'top', labels: { font: { size: 11 } } } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { font: { size: 10 } }, grid: { color: '#f0f0f0' } },
+                    x: { ticks: { font: { size: 11 } }, grid: { display: false } }
                 }
-            });
-
-            // Course Outcome (gold bars — CAE1-4)
-            var outcomeCtx = document.getElementById('outcomeChart').getContext('2d');
-            outcomeChart = new Chart(outcomeCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['CAE1', 'CAE2', 'CAE3', 'CAE4'],
-                    datasets: [{
-                        data: [82, 75, 60, 78],
-                        backgroundColor: GOLD,
-                        borderRadius: 3,
-                        barPercentage: 0.55
-                    }]
-                },
-                options: {
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, max: 100, ticks: { stepSize: 25, font: { size: 10 } }, grid: { color: '#f0f0f0' } },
-                        x: { ticks: { font: { size: 11 } }, grid: { display: false } }
-                    }
-                }
-            });
-
-            // Bloom's Taxonomy (navy bars)
-            var bloomCtx = document.getElementById('bloomChart').getContext('2d');
-            bloomChart = new Chart(bloomCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'],
-                    datasets: [{
-                        data: [16, 11, 19, 6, 4, 5],
-                        backgroundColor: NAVY,
-                        borderRadius: 3,
-                        barPercentage: 0.55
-                    }]
-                },
-                options: {
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, max: 20, ticks: { stepSize: 5, font: { size: 10 } }, grid: { color: '#f0f0f0' } },
-                        x: { ticks: { font: { size: 11 } }, grid: { display: false } }
-                    }
-                }
-            });
-        }
-
-        // ── Update stat values and charts on semester change ──
-        function updateCharts() {
-            // Frontend prototype — values stay the same regardless of selection
-            document.getElementById('avg-grade').textContent    = '—';
-            document.getElementById('co-attainment').textContent = '—';
-            document.getElementById('pass-rate').textContent    = '—';
-        }
-
-        // ── Logout ──
-        function handleLogout() {
-            window.location.href = '{{ url("/login") }}';
-        }
-
-        // ── Init ──
-        buildCharts();
+            }
+        });
     </script>
 
 </body>

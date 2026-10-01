@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Secretary;
 
 use App\Http\Controllers\Controller;
-use App\Models\Template;
+use App\Models\TemplateDocument;
 use App\Models\CourseMaterial;
 use App\Models\RepositoryDocument;
 use App\Support\Programs;
@@ -38,22 +38,31 @@ class DocumentRepositoryController extends Controller
     {
         $documents = collect();
 
-        // 1. Approved templates
-        Template::with('faculty')->where('status', 'approved')->get()->each(function ($t) use (&$documents) {
-            $documents->push([
-                'id'        => $t->id,
-                'source'    => 'template',
-                'title'     => $t->title,
-                'type'      => ucwords(str_replace('_', ' ', $t->type)),
-                'program'   => $t->program,
-                'uploader'  => $t->faculty->name ?? 'Unknown',
-                'file_type' => $t->file_type,
-                'file_url'  => Storage::url($t->file_path),
-                'version'   => 'v1.0',
-                'date'      => $t->updated_at,
-                'can_delete'=> false,
-            ]);
-        });
+        // 1. Forwarded templates — the current pipeline is Admin creates ->
+        // Secretary forwards -> Program Head distributes per program. A
+        // forwarded template counts as "official" here since forwarding is
+        // this Secretary's own action; one row per program it serves, since
+        // a single master template can be shared across several programs.
+        TemplateDocument::with(['creator', 'programs'])
+            ->whereNotNull('forwarded_at')
+            ->get()
+            ->each(function ($t) use (&$documents) {
+                foreach ($t->programs as $p) {
+                    $documents->push([
+                        'id'        => $t->id,
+                        'source'    => 'template',
+                        'title'     => $t->title,
+                        'type'      => ucwords(str_replace('_', ' ', $t->type)),
+                        'program'   => $p->program,
+                        'uploader'  => $t->creator->name ?? 'Unknown',
+                        'file_type' => $t->file_type,
+                        'file_url'  => $t->file_path ? Storage::url($t->file_path) : $t->google_view_url,
+                        'version'   => 'v1.0',
+                        'date'      => $p->distributed_at ?? $t->forwarded_at,
+                        'can_delete'=> false,
+                    ]);
+                }
+            });
 
         // 2. Course materials
         CourseMaterial::with(['course', 'uploader'])->get()->each(function ($m) use (&$documents) {

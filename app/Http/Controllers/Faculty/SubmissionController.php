@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Faculty;
 use App\Http\Controllers\Controller;
 use App\Models\SubmissionRequirement;
 use App\Models\Submission;
+use App\Services\AcademicDocumentValidator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -35,11 +36,7 @@ class SubmissionController extends Controller
                 ];
             });
 
-        $urgentCount = $requirements->filter(function ($req) {
-            return !$req['submission'] && $req['is_due_soon'];
-        })->count();
-
-        return view('faculty.submissions', compact('requirements', 'urgentCount'));
+        return view('faculty.submissions', compact('requirements'));
     }
 
     public function store(Request $request, SubmissionRequirement $requirement)
@@ -51,6 +48,19 @@ class SubmissionController extends Controller
         ]);
 
         $file = $request->file('file');
+        $extension = $file->getClientOriginalExtension();
+
+        // Content sanity-check against what this requirement actually expects
+        // (e.g. a "TOS" requirement shouldn't accept an unrelated file) — runs
+        // on the uploaded temp file, before anything is stored.
+        $check = (new AcademicDocumentValidator())->validate($file->getRealPath(), $extension, $requirement->type);
+        if (!$check['valid']) {
+            return back()->withErrors([
+                'file' => ($check['reason'] ?? 'This file does not appear to match what "' . $requirement->title . '" expects.')
+                    . ' If you believe this is a mistake, please contact your Program Head.',
+            ]);
+        }
+
         $path = $file->store('submissions', 'public');
 
         $isLate = $requirement->deadline->isPast() && !$requirement->deadline->isToday();

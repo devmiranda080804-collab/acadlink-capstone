@@ -8,12 +8,16 @@ use App\Models\Exam;
 use App\Models\ExamQuestion;
 use App\Models\ExamSection;
 use App\Models\ProgramAssignment;
+use App\Models\Tos;
+use App\Models\TosTopic;
 use App\Services\QuestionGeneratorService;
+use App\Services\TosDocumentBuilder;
 use App\Support\AcademicTerm;
 use App\Support\BloomLevels;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use PhpOffice\PhpWord\IOFactory;
 
 class ExamGeneratorController extends Controller
 {
@@ -44,6 +48,9 @@ class ExamGeneratorController extends Controller
                 ->groupBy('grading_period')
                 ->map(fn($group) => $group->map(fn($t) => [
                     'id' => $t->id, 'topic' => $t->topic, 'hours' => $t->hours,
+                    // Lets the AI Generate modal warn immediately if a topic has nothing
+                    // for the AI to read from, instead of only failing after submit.
+                    'has_content' => (bool) ($t->notes || $t->module_path),
                 ])->values());
 
             return [$assignment->id => $topics];
@@ -76,6 +83,13 @@ class ExamGeneratorController extends Controller
             'target_items'          => $request->target_items,
         ]);
 
+        // Link this exam to its originating TOS, if one was generated for the same
+        // program assignment + grading period and isn't already linked to another exam.
+        Tos::where('program_assignment_id', $assignment->id)
+            ->where('grading_period', $request->grading_period)
+            ->whereNull('exam_id')
+            ->update(['exam_id' => $exam->id]);
+
         return response()->json($exam->load('programAssignment.course'), 201);
     }
 
@@ -91,7 +105,8 @@ class ExamGeneratorController extends Controller
     public function update(Request $request, Exam $exam)
     {
         abort_unless($exam->faculty_id === auth()->id(), 403);
-        abort_if($exam->isFinalized(), 403, 'This exam is already finalized and can no longer be edited.');
+        // Finalizing marks the exam ready for printing/export — it no longer locks out
+        // further edits, so faculty can still fix things afterward.
 
         $request->validate([
             'title'                        => 'required|string|max:255',
@@ -105,6 +120,7 @@ class ExamGeneratorController extends Controller
             'sections.*.questions.*.question_text' => 'required|string',
             'sections.*.questions.*.points'        => 'required|integer|min:1',
             'sections.*.questions.*.options'       => 'nullable|array',
+            'sections.*.questions.*.bloom_level'   => ['nullable', Rule::in(BloomLevels::LEVELS)],
             'sections.*.questions.*.children'      => 'array',
         ]);
 
@@ -118,6 +134,20 @@ class ExamGeneratorController extends Controller
             // always sends its full in-memory structure, there's no partial-patch mode
             $exam->sections()->delete();
 
+            // TOS breakdown for this exam's target_items, keyed by topic name, so each
+            // question's Bloom's Level can be resolved from its position within its topic
+            // (see createQuestion()) instead of a fixed per-type mapping.
+            $levelsByTopic = collect();
+            if ($exam->target_items) {
+                $breakdown = CourseTopic::targetBreakdown(
+                    $exam->programAssignment->course_id,
+                    $exam->grading_period,
+                    (int) $exam->target_items
+                );
+                $levelsByTopic = collect($breakdown['topics'])->keyBy('topic');
+            }
+            $topicPositions = [];
+
             foreach ($request->input('sections', []) as $sectionIndex => $sectionData) {
                 $section = $exam->sections()->create([
                     'title'        => $sectionData['title'],
@@ -126,7 +156,7 @@ class ExamGeneratorController extends Controller
                 ]);
 
                 foreach ($sectionData['questions'] ?? [] as $questionIndex => $questionData) {
-                    $this->createQuestion($section->id, null, $questionData, $questionIndex);
+                    $this->createQuestion($section->id, null, $questionData, $questionIndex, $levelsByTopic, $topicPositions);
                 }
             }
         });
@@ -134,16 +164,45 @@ class ExamGeneratorController extends Controller
         return response()->json($exam->load('sections.questions.children'));
     }
 
-    protected function createQuestion(int $sectionId, ?int $parentId, array $data, int $order): void
+    protected function createQuestion(int $sectionId, ?int $parentId, array $data, int $order, $levelsByTopic, array &$topicPositions): void
     {
+        // Bloom's Level: a value the faculty explicitly picked (validated above as one of
+        // the 6 real levels — never free text) is trusted and kept as-is, so a manual
+        // override actually sticks instead of being silently recomputed away. Otherwise
+        // it's resolved from this question's position within its topic's own running
+        // count, against the TOS's per-level breakdown — e.g. the 1st-5th question under a
+        // topic land under Remembering, the 6th-10th under Understanding, matching the
+        // TOS's own numbering, regardless of the question's format/type (instructor's
+        // requirement: exam items must align to both the TOS and Bloom's Taxonomy). Case
+        // Analysis containers carry no level of their own. The per-topic position still
+        // advances for every question regardless of whether it was manually set, so
+        // later auto-resolved questions in the same topic don't skip/repeat a slot.
+        $bloomLevel = null;
+        if ($data['type'] !== 'case-analysis') {
+            $topic = $data['topic'] ?? null;
+            $position = null;
+            if ($topic) {
+                $topicPositions[$topic] = ($topicPositions[$topic] ?? 0) + 1;
+                $position = $topicPositions[$topic];
+            }
+
+            if (!empty($data['bloom_level'])) {
+                $bloomLevel = $data['bloom_level'];
+            } elseif ($topic && $levelsByTopic->has($topic)) {
+                $bloomLevel = CourseTopic::resolveBloomLevelForPosition($levelsByTopic->get($topic), $position);
+            } else {
+                // No topic assigned, or the topic has no TOS data (e.g. exam wasn't
+                // started from a TOS target) — fall back to the type's own default level.
+                $bloomLevel = BloomLevels::bloomFor($data['type']);
+            }
+        }
+
         $question = ExamQuestion::create([
             'exam_section_id' => $sectionId,
             'parent_id'       => $parentId,
             'type'            => $data['type'],
             'topic'           => $data['topic'] ?? null,
-            // Bloom's Level is never taken from the client (Panel comment #11 — auto-filled
-            // by predefined logic, manual input prevented). Case Analysis containers carry none.
-            'bloom_level'     => BloomLevels::bloomFor($data['type']),
+            'bloom_level'     => $bloomLevel,
             'question_text'   => $data['question_text'],
             'points'          => $data['points'],
             'options'         => $data['options'] ?? null,
@@ -151,7 +210,7 @@ class ExamGeneratorController extends Controller
         ]);
 
         foreach ($data['children'] ?? [] as $childIndex => $childData) {
-            $this->createQuestion($sectionId, $question->id, $childData, $childIndex);
+            $this->createQuestion($sectionId, $question->id, $childData, $childIndex, $levelsByTopic, $topicPositions);
         }
     }
 
@@ -165,7 +224,9 @@ class ExamGeneratorController extends Controller
     }
 
     // TOS Generator preview (Panel comment #8: Total Hours auto-fetched from OBE data,
-    // no manual input) — computed on the fly from CourseTopic, nothing is persisted here.
+    // no manual input). Every generate also persists a Tos/TosTopic snapshot — matching
+    // the manuscript's ERD, which models TableOfSpecifications as a stored entity, not a
+    // purely on-the-fly computation.
     public function tosTarget(Request $request)
     {
         $request->validate([
@@ -178,9 +239,98 @@ class ExamGeneratorController extends Controller
             ->where('faculty_id', auth()->id())
             ->firstOrFail();
 
-        return response()->json(
-            CourseTopic::targetBreakdown($assignment->course_id, $request->grading_period, (int) $request->total_items)
+        $breakdown = CourseTopic::targetBreakdown($assignment->course_id, $request->grading_period, (int) $request->total_items);
+
+        $this->persistTos($assignment, $request->grading_period, $breakdown);
+
+        return response()->json($breakdown);
+    }
+
+    // Saves (or replaces) the persisted TOS snapshot for this program assignment +
+    // grading period — called from both tosTarget() (auto-computed) and tosDownload()
+    // (possibly faculty-edited), so the stored record always reflects the latest version.
+    private function persistTos(ProgramAssignment $assignment, string $gradingPeriod, array $breakdown): Tos
+    {
+        $tos = Tos::updateOrCreate(
+            ['program_assignment_id' => $assignment->id, 'grading_period' => $gradingPeriod],
+            [
+                'total_hours'  => $breakdown['total_hours'] ?? 0,
+                'total_items'  => $breakdown['total_items'] ?? 0,
+                'total_points' => $breakdown['total_points'] ?? 0,
+                'created_by'   => auth()->id(),
+            ]
         );
+
+        $tos->topics()->delete();
+        foreach ($breakdown['topics'] as $topic) {
+            TosTopic::create([
+                'tos_id'          => $tos->id,
+                'course_topic_id' => $topic['id'] ?? null,
+                'topic'           => $topic['topic'] ?? '',
+                'hours'           => $topic['hours'] ?? 0,
+                'weight_percent'  => $topic['weight_percent'] ?? 0,
+                'target_items'    => $topic['target_items'] ?? 0,
+                'topic_points'    => $topic['topic_points'] ?? 0,
+                'levels'          => $topic['levels'] ?? [],
+            ]);
+        }
+
+        return $tos;
+    }
+
+    // Downloadable, editable .docx matching the official TOS template — faculty fill in
+    // the schedule, sign, or adjust wording after downloading; nothing round-trips back.
+    // Takes the breakdown exactly as shown on screen (the client mirrors targetBreakdown()'s
+    // numbering/rounding rules in JS), so any Edit-mode adjustments the faculty made are
+    // reflected in the downloaded document instead of being silently recomputed away.
+    public function tosDownload(Request $request)
+    {
+        $request->validate([
+            'program_assignment_id' => 'required|exists:program_assignments,id',
+            'grading_period'        => 'required|in:Prelim,Midterm,Final',
+            'breakdown'             => 'required|string',
+        ]);
+
+        $assignment = ProgramAssignment::with('course')
+            ->where('id', $request->program_assignment_id)
+            ->where('faculty_id', auth()->id())
+            ->firstOrFail();
+
+        $breakdown = json_decode($request->breakdown, true);
+
+        if (!is_array($breakdown) || empty($breakdown['topics']) || !is_array($breakdown['topics'])) {
+            abort(422, 'Invalid Table of Specification data. Please regenerate and try again.');
+        }
+
+        // Defensive defaults so a partial/edited payload never crashes the document builder.
+        foreach ($breakdown['topics'] as &$topic) {
+            $topic['topic'] = (string) ($topic['topic'] ?? '');
+            $topic['hours'] = (int) ($topic['hours'] ?? 0);
+            $topic['weight_percent'] = $topic['weight_percent'] ?? 0;
+            $topic['target_items'] = (int) ($topic['target_items'] ?? 0);
+            foreach (BloomLevels::LEVELS as $level) {
+                $topic['levels'][$level] = array_merge(
+                    ['count' => 0, 'range' => null, 'points' => 0, 'points_per_item' => 1],
+                    is_array($topic['levels'][$level] ?? null) ? $topic['levels'][$level] : []
+                );
+            }
+        }
+        unset($topic);
+        $breakdown['total_hours'] = (int) ($breakdown['total_hours'] ?? 0);
+        $breakdown['total_items'] = (int) ($breakdown['total_items'] ?? 0);
+        $breakdown['total_points'] = (int) ($breakdown['total_points'] ?? array_sum(array_column($breakdown['topics'], 'topic_points')));
+
+        $this->persistTos($assignment, $request->grading_period, $breakdown);
+
+        $phpWord = (new TosDocumentBuilder())->build($assignment->course, $request->grading_period, $breakdown, auth()->user());
+
+        $filename = 'TOS-' . $assignment->course->code . '-' . $request->grading_period . '.docx';
+
+        return response()->streamDownload(function () use ($phpWord) {
+            IOFactory::createWriter($phpWord, 'Word2007')->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ]);
     }
 
     public function finalize(Exam $exam)
@@ -207,14 +357,22 @@ class ExamGeneratorController extends Controller
     }
 
     // AI-assisted question drafting (human-in-the-loop — nothing is persisted here,
-    // faculty review/edit/delete drafts in the builder just like manually-typed ones,
-    // and Bloom's Level is always re-assigned from $type on save, never from the AI).
+    // faculty review/edit/delete drafts in the builder just like manually-typed ones).
+    // Faculty still picks the question FORMAT ($type) for the whole batch, but each
+    // item's Bloom's Level is resolved from its position within the topic against the
+    // TOS breakdown — e.g. if the topic's TOS says positions 1-5 are Remembering and
+    // 6-10 are Understanding, and the faculty already has 4 questions for this topic and
+    // asks for 3 more (all Multiple Choice, say), positions 5-7 resolve to Remembering,
+    // Remembering, Understanding — so the 3 generated MC questions land at those levels
+    // respectively (display only; re-derived server-side from position again on save).
     public function generateQuestions(Request $request)
     {
         $request->validate([
             'course_topic_id' => 'required|exists:course_topics,id',
-            'type'             => ['required', Rule::in(QuestionGeneratorService::SUPPORTED_TYPES)],
-            'count'            => 'required|integer|min:1|max:10',
+            'type'            => ['required', Rule::in(QuestionGeneratorService::SUPPORTED_TYPES)],
+            'count'           => 'required|integer|min:1|max:10',
+            'existing_count'  => 'nullable|integer|min:0',
+            'target_items'    => 'nullable|integer|min:0',
         ]);
 
         $topic = CourseTopic::whereIn('course_id', $this->assignedCourseIds())
@@ -227,13 +385,33 @@ class ExamGeneratorController extends Controller
             ], 422);
         }
 
-        $modulePath = $topic->module_path
+        // Only PDFs are fed to Claude as a document — DOCX modules already had their
+        // text extracted into $topic->notes at upload time (see storeModuleFile()
+        // in CourseCoordinationController), so there's nothing further to attach here.
+        $modulePath = ($topic->module_path && str_ends_with(strtolower($topic->module_path), '.pdf'))
             ? \Illuminate\Support\Facades\Storage::disk('public')->path($topic->module_path)
             : null;
 
+        $topicRow = null;
+        if ($request->target_items) {
+            $breakdown = CourseTopic::targetBreakdown($topic->course_id, $topic->grading_period, (int) $request->target_items);
+            $topicRow = collect($breakdown['topics'])->firstWhere('topic', $topic->topic);
+        }
+
+        $existingCount = (int) ($request->existing_count ?? 0);
+        $count = (int) $request->count;
+
+        // Resolve each new question's Bloom's Level from its position within the topic,
+        // continuing after whatever's already been added for it.
+        $levels = [];
+        for ($p = $existingCount + 1; $p <= $existingCount + $count; $p++) {
+            $levels[] = CourseTopic::resolveBloomLevelForPosition($topicRow, $p);
+        }
+        $bloomLevelsForPrompt = array_values(array_unique(array_filter($levels)));
+
         try {
             $drafts = (new QuestionGeneratorService())->generate(
-                $request->type, $topic->topic, $topic->notes ?? '', (int) $request->count, $modulePath
+                $request->type, $topic->topic, $topic->notes ?? '', $count, $modulePath, $bloomLevelsForPrompt
             );
         } catch (\RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
@@ -241,16 +419,16 @@ class ExamGeneratorController extends Controller
             return response()->json(['message' => 'AI generation failed: ' . $e->getMessage()], 502);
         }
 
-        $bloom = BloomLevels::bloomFor($request->type);
+        $fallbackBloom = BloomLevels::bloomFor($request->type);
 
         return response()->json([
-            'questions' => collect($drafts)->map(fn($d) => [
+            'questions' => collect($drafts)->values()->map(fn($d, $i) => [
                 'type'          => $request->type,
                 'topic'         => $topic->topic,
                 'question_text' => $d['question_text'],
                 'options'       => $d['options'],
                 'points'        => 1,
-                'bloom_level'   => $bloom, // display only — re-derived server-side on save regardless
+                'bloom_level'   => $levels[$i] ?? $fallbackBloom, // display only — re-derived server-side on save regardless
             ])->all(),
         ]);
     }
