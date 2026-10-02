@@ -121,14 +121,18 @@ class ContentModuleController extends Controller
             // "repeat on every printed page" concept to translate them into. Pull
             // their text out separately so a letterhead/footer isn't just lost,
             // placed as plain blocks at the top/bottom instead of being "sticky."
-            $headerText = $this->extractHeaderFooterText($phpWord, 'getHeaders');
-            $footerText = $this->extractHeaderFooterText($phpWord, 'getFooters');
+            // A letterhead's logo images and side-by-side column layout still
+            // won't survive this (text only) — that's an honest limit of a
+            // text-only fallback, not something worth chasing for content that's
+            // really just teaching material, not a laid-out official form.
+            $headerBlocks = $this->extractHeaderFooterText($phpWord, 'getHeaders');
+            $footerBlocks = $this->extractHeaderFooterText($phpWord, 'getFooters');
 
-            if ($headerText) {
-                $body = '<p><em>' . e($headerText) . '</em></p><hr>' . $body;
+            if ($headerBlocks) {
+                $body = '<div>' . implode('', array_map(fn($b) => '<p><em>' . e($b) . '</em></p>', $headerBlocks)) . '</div><hr>' . $body;
             }
-            if ($footerText) {
-                $body .= '<hr><p><em>' . e($footerText) . '</em></p>';
+            if ($footerBlocks) {
+                $body .= '<hr><div>' . implode('', array_map(fn($b) => '<p><em>' . e($b) . '</em></p>', $footerBlocks)) . '</div>';
             }
 
             if ($body === '') {
@@ -187,29 +191,64 @@ class ContentModuleController extends Controller
         }, $css) ?? $css;
     }
 
-    protected function extractHeaderFooterText(\PhpOffice\PhpWord\PhpWord $phpWord, string $getter): string
+    // Returns one text block per top-level header/footer element (each
+    // paragraph, or each cell of a letterhead table) instead of one long
+    // joined string — so a two-column letterhead (e.g. university name on
+    // the left, college name on the right) comes out as separate lines
+    // instead of being run together into one unreadable sentence.
+    protected function extractHeaderFooterText(\PhpOffice\PhpWord\PhpWord $phpWord, string $getter): array
     {
-        $text = '';
+        $blocks = [];
 
         foreach ($phpWord->getSections() as $section) {
             foreach ($section->$getter() as $headerFooter) {
                 foreach ($headerFooter->getElements() as $element) {
-                    if (method_exists($element, 'getText')) {
-                        $t = $element->getText();
-                        $text .= (is_string($t) ? $t : '') . ' ';
-                    } elseif (method_exists($element, 'getElements')) {
-                        foreach ($element->getElements() as $child) {
-                            if (method_exists($child, 'getText')) {
-                                $childText = $child->getText();
-                                $text .= (is_string($childText) ? $childText : '') . ' ';
+                    if ($element instanceof \PhpOffice\PhpWord\Element\Table) {
+                        foreach ($element->getRows() as $row) {
+                            foreach ($row->getCells() as $cell) {
+                                foreach ($cell->getElements() as $cellElement) {
+                                    $text = $this->flattenElementText($cellElement);
+                                    if ($text !== '') {
+                                        $blocks[] = $text;
+                                    }
+                                }
                             }
                         }
+                        continue;
+                    }
+
+                    $text = $this->flattenElementText($element);
+                    if ($text !== '') {
+                        $blocks[] = $text;
                     }
                 }
             }
         }
 
-        return trim($text);
+        return $blocks;
+    }
+
+    protected function flattenElementText($element): string
+    {
+        if (method_exists($element, 'getText')) {
+            $t = $element->getText();
+
+            return is_string($t) ? trim($t) : '';
+        }
+
+        if (method_exists($element, 'getElements')) {
+            $parts = [];
+            foreach ($element->getElements() as $child) {
+                $childText = $this->flattenElementText($child);
+                if ($childText !== '') {
+                    $parts[] = $childText;
+                }
+            }
+
+            return trim(implode(' ', $parts));
+        }
+
+        return '';
     }
 
     // Uses the same Claude integration already wired up elsewhere in the app
