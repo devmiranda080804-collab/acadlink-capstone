@@ -40,60 +40,50 @@
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .page-sub { font-size: 11.5px; color: #888; margin-bottom: 20px; }
 
-        .review-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
+        .stat-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stat-icon svg { width: 22px; height: 22px; }
+        .stat-icon.blue { background: #dbeafe; color: #1d4ed8; }
+        .stat-icon.amber { background: #fef3c7; color: #b45309; }
+        .stat-icon.green { background: #d1fae5; color: #059669; }
+        .stat-info .stat-value { font-size: 24px; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
+        .stat-info .stat-label { font-size: 11.5px; color: #888; margin-top: 2px; }
 
-        /* Template list */
-        .review-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
+        .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+        .filter-tabs { display: flex; gap: 4px; }
+        .filter-tab { padding: 7px 16px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; user-select: none; }
+        .filter-tab:hover { border-color: #0f2557; color: #0f2557; }
+        .filter-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
+
+        .search-box { position: relative; width: 240px; max-width: 100%; }
+        .search-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #999; pointer-events: none; }
+        .search-box input { width: 100%; padding: 8px 10px 8px 30px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; outline: none; font-family: Arial, sans-serif; }
+        .search-box input:focus { border-color: #0f2557; }
+
+        .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .review-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; transition: box-shadow 0.15s; }
         .review-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.07); }
-        .review-card.selected { border-color: #0f2557; box-shadow: 0 0 0 1px #0f2557; }
-        .review-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
-        .review-card-title { font-size: 13px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 6px; }
-        .review-card-course { font-size: 12.5px; color: #0f2557; font-weight: 600; margin: 6px 0 3px; }
-        .review-card-type { font-size: 11px; color: #888; }
-        .review-card-meta { font-size: 10.5px; color: #aaa; margin-top: 6px; }
+        .review-card.distributed { border-left: 4px solid #10b981; }
+        .review-card.pending { border-left: 4px solid #f59e0b; }
+        .review-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+        .review-card-icon { font-size: 22px; line-height: 1; }
+        .review-card-title { font-size: 13.5px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+        .review-card-type { font-size: 11px; color: #888; text-transform: capitalize; }
+        .review-card-meta { font-size: 10.5px; color: #aaa; margin: 8px 0 14px; }
 
         .status-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
-        .status-pending_review   { background: #dbeafe; color: #1e40af; }
-        .status-needs_revision   { background: #fee2e2; color: #991b1b; }
-        .status-pending_approval { background: #fef9c3; color: #92400e; }
-        .status-approved         { background: #d1fae5; color: #065f46; }
-        .status-rejected         { background: #f3f4f6; color: #6b7280; }
+        .status-approved { background: #d1fae5; color: #065f46; }
+        .status-pending_approval { background: #fef3c7; color: #92400e; }
 
-        .empty-state { text-align: center; padding: 50px 20px; color: #bbb; font-size: 13px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; }
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #bbb; font-size: 13px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; }
 
-        /* Preview panel */
-        .preview-panel { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 20px; position: sticky; top: 0; }
-        .preview-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 16px; }
-        .preview-field { margin-bottom: 14px; }
-        .preview-field .plabel { font-size: 10.5px; font-weight: 700; color: #999; text-transform: uppercase; margin-bottom: 3px; }
-        .preview-field .pvalue { font-size: 12.5px; color: #333; }
-        .preview-empty { text-align: center; color: #bbb; font-size: 12px; padding: 30px 10px; }
-
-        .btn-view-file { display: inline-flex; align-items: center; gap: 5px; background: #fff; border: 1px solid #d0d0d0; color: #333; font-size: 11.5px; font-weight: 600; padding: 7px 14px; border-radius: 5px; text-decoration: none; margin-bottom: 16px; }
+        .card-actions { display: flex; gap: 8px; margin-top: auto; }
+        .btn-view-file { display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: #fff; border: 1px solid #d0d0d0; color: #333; font-size: 11.5px; font-weight: 600; padding: 8px 14px; border-radius: 5px; text-decoration: none; flex: 1; }
         .btn-view-file:hover { background: #f5f5f5; }
         .btn-view-file svg { width: 13px; height: 13px; }
-
-        .review-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-        .btn-approve { background: #16a34a; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; }
+        .btn-approve { background: #16a34a; color: #fff; border: none; font-size: 11.5px; font-weight: 600; padding: 9px 14px; border-radius: 5px; cursor: pointer; flex: 1; }
         .btn-approve:hover { background: #15803d; }
-        .btn-revision { background: #fff; color: #b45309; border: 1px solid #fcd34d; font-size: 12.5px; font-weight: 600; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; }
-        .btn-revision:hover { background: #fffbeb; }
-
-        .already-reviewed { font-size: 11.5px; color: #888; background: #f9fafb; border: 1px solid #eee; border-radius: 6px; padding: 10px; line-height: 1.5; }
-
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
-        .modal-overlay.open { display: flex; }
-        .modal { background: #fff; border-radius: 10px; padding: 24px 26px; width: 440px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
-        .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
-        .modal-sub { font-size: 11.5px; color: #888; margin-bottom: 16px; }
-        .modal-field label { display: block; font-size: 11.5px; font-weight: 700; color: #333; margin-bottom: 4px; }
-        .modal-field textarea { width: 100%; min-height: 90px; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; outline: none; font-family: Arial, sans-serif; resize: vertical; }
-        .modal-field textarea:focus { border-color: #0f2557; }
-        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
-        .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 5px; cursor: pointer; }
-        .btn-cancel:hover { background: #f5f5f5; }
-        .btn-submit-revision { background: #b45309; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
-        .btn-submit-revision:hover { background: #92400e; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -172,33 +162,70 @@
             <div class="page-title">Template Distribution</div>
             <div class="page-sub">Templates the Secretary has forwarded to you. Distribute each one so every faculty member in <strong>{{ $myProgram }}</strong> can access it.</div>
 
-            <div>
-                @forelse($templates as $template)
-                    @php $row = $template->programRow($myProgram); @endphp
-                    <div class="review-card">
+            @php
+                $rows = $templates->map(fn($t) => ['template' => $t, 'row' => $t->programRow($myProgram)]);
+                $distributedCount = $rows->filter(fn($r) => $r['row'] && $r['row']->distributed_at)->count();
+                $pendingCount = $rows->count() - $distributedCount;
+            @endphp
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $rows->count() }}</div><div class="stat-label">Total Forwarded</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $pendingCount }}</div><div class="stat-label">Awaiting Distribution</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $distributedCount }}</div><div class="stat-label">Distributed</div></div>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <div class="filter-tabs">
+                    <span class="filter-tab active" onclick="filterCards('all', this)">All</span>
+                    <span class="filter-tab" onclick="filterCards('pending', this)">Awaiting Distribution</span>
+                    <span class="filter-tab" onclick="filterCards('distributed', this)">Distributed</span>
+                </div>
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="template-search" placeholder="Search by title..." oninput="searchCards(this.value)">
+                </div>
+            </div>
+
+            <div class="template-grid" id="template-grid">
+                @forelse($rows as $r)
+                    @php $template = $r['template']; $row = $r['row']; $isDistributed = $row && $row->distributed_at; @endphp
+                    <div class="review-card {{ $isDistributed ? 'distributed' : 'pending' }}" data-status="{{ $isDistributed ? 'distributed' : 'pending' }}" data-title="{{ strtolower($template->title) }}">
                         <div class="review-card-top">
-                            <div class="review-card-title">
-                                <svg style="width:15px;height:15px;color:#0f2557;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                {{ $template->title }}
-                            </div>
-                            @if($row && $row->distributed_at)
+                            <span class="review-card-icon">
+                                @if($template->type == 'syllabus') 📘
+                                @elseif($template->type == 'course_guide') 📙
+                                @elseif($template->type == 'module') 📝
+                                @else 📄
+                                @endif
+                            </span>
+                            @if($isDistributed)
                                 <span class="status-badge status-approved">Distributed</span>
                             @else
                                 <span class="status-badge status-pending_approval">Not yet distributed</span>
                             @endif
                         </div>
+                        <div class="review-card-title">{{ $template->title }}</div>
                         <div class="review-card-type">{{ str_replace('_', ' ', $template->type) }}</div>
                         <div class="review-card-meta">Uploaded by {{ $template->creator->name }} • {{ $template->created_at->format('Y-m-d') }}</div>
 
-                        <div style="margin-top:12px; display:flex; gap:8px;">
-                            <a class="btn-view-file" style="margin-bottom:0;" href="{{ Storage::url($template->file_path) }}" target="_blank">
+                        <div class="card-actions">
+                            <a class="btn-view-file" href="{{ Storage::url($template->file_path) }}" target="_blank">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                View Document
+                                View
                             </a>
-                            @if(!$row || !$row->distributed_at)
-                                <form method="POST" action="{{ url('/program-head/template-review/' . $template->id . '/distribute') }}">
+                            @if(!$isDistributed)
+                                <form method="POST" action="{{ url('/program-head/template-review/' . $template->id . '/distribute') }}" style="flex:1;">
                                     @csrf
-                                    <button type="submit" class="btn-approve" style="width:auto; padding:9px 16px;">Distribute to My Faculty</button>
+                                    <button type="submit" class="btn-approve" style="width:100%;">Distribute</button>
                                 </form>
                             @endif
                         </div>
@@ -209,6 +236,31 @@
             </div>
         </div>
     </div>
+
+    <script>
+        var currentFilter = 'all';
+        var currentSearch = '';
+
+        function filterCards(status, el) {
+            currentFilter = status;
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            applyCardFilters();
+        }
+
+        function searchCards(query) {
+            currentSearch = query.trim().toLowerCase();
+            applyCardFilters();
+        }
+
+        function applyCardFilters() {
+            document.querySelectorAll('#template-grid .review-card').forEach(card => {
+                const matchesFilter = currentFilter === 'all' || card.dataset.status === currentFilter;
+                const matchesSearch = !currentSearch || card.dataset.title.includes(currentSearch);
+                card.style.display = (matchesFilter && matchesSearch) ? '' : 'none';
+            });
+        }
+    </script>
 
 </body>
 </html>

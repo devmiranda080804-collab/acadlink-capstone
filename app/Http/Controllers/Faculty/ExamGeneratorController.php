@@ -74,6 +74,30 @@ class ExamGeneratorController extends Controller
             ->where('faculty_id', auth()->id())
             ->firstOrFail();
 
+        // The exam's own content (topics, item counts, Bloom's level
+        // breakdown) is supposed to be built FROM the TOS, not the other way
+        // around — so the TOS for this subject + grading period must already
+        // exist (Generate TOS in the TOS Generator tab) before an exam can start.
+        $tosExists = Tos::where('program_assignment_id', $assignment->id)
+            ->where('grading_period', $request->grading_period)
+            ->exists();
+
+        abort_unless($tosExists, 422, 'Generate the Table of Specifications (TOS) for this subject and grading period first — the exam is built from it.');
+
+        // A faculty member should only ever have one unfinished (draft) exam
+        // per subject + grading period at a time — without this, clicking
+        // "+ New Exam" again (or a double-click) silently piles up empty
+        // duplicate drafts instead of resuming the one already started.
+        $existingDraft = Exam::where('program_assignment_id', $assignment->id)
+            ->where('faculty_id', auth()->id())
+            ->where('grading_period', $request->grading_period)
+            ->where('status', 'draft')
+            ->first();
+
+        if ($existingDraft) {
+            return response()->json($existingDraft->load('programAssignment.course'), 200);
+        }
+
         $exam = Exam::create([
             'program_assignment_id' => $assignment->id,
             'faculty_id'            => auth()->id(),

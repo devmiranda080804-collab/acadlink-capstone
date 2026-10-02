@@ -31,7 +31,7 @@ class SharedLibraryController extends Controller
                         'type'      => str_replace('_', ' ', $t->type),
                         'shared_by' => $t->creator->name ?? 'Unknown',
                         'desc'      => 'Official distributed template',
-                        'file_type' => $t->isGoogleDoc() ? 'gdoc' : $t->file_type,
+                        'file_type' => $t->file_type,
                         'file_size' => $t->readable_size,
                         'file_url'  => url("/faculty/shared-library/file/template/{$t->id}"),
                         'date'      => $t->programRow($myProgram)->distributed_at,
@@ -109,10 +109,6 @@ class SharedLibraryController extends Controller
         if ($source === 'template') {
             $template = TemplateDocument::findOrFail($id);
             abort_unless($template->isDistributedTo($myProgram), 403, 'This template has not been distributed to your program.');
-
-            if ($template->isGoogleDoc()) {
-                return redirect($template->google_view_url);
-            }
 
             return Storage::disk('public')->response($template->file_path, $template->file_name);
         }

@@ -56,7 +56,7 @@ class DocumentRepositoryController extends Controller
                         'program'   => $p->program,
                         'uploader'  => $t->creator->name ?? 'Unknown',
                         'file_type' => $t->file_type,
-                        'file_url'  => $t->file_path ? Storage::url($t->file_path) : $t->google_view_url,
+                        'file_url'  => Storage::url($t->file_path),
                         'version'   => 'v1.0',
                         'date'      => $p->distributed_at ?? $t->forwarded_at,
                         'can_delete'=> false,
@@ -109,12 +109,18 @@ class DocumentRepositoryController extends Controller
         // Sort the years, newest first
         krsort($tree);
 
-        // Arrange the semester order within each year
+        // Arrange the semester order within each year, and sort each
+        // semester's own documents newest-first — grouping alone left them
+        // in whatever order the three sources (templates/materials/uploads)
+        // happened to be queried in, not by date.
         $semOrder = ['First Semester', 'Second Semester', 'Summer'];
         foreach ($tree as $sy => $sems) {
             $ordered = [];
             foreach ($semOrder as $s) {
-                if (isset($sems[$s])) $ordered[$s] = $sems[$s];
+                if (isset($sems[$s])) {
+                    usort($sems[$s], fn($a, $b) => $b['date'] <=> $a['date']);
+                    $ordered[$s] = $sems[$s];
+                }
             }
             $tree[$sy] = $ordered;
         }

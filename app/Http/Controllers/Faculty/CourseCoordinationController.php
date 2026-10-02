@@ -83,6 +83,9 @@ class CourseCoordinationController extends Controller
             ->max('order') + 1;
 
         $moduleData = $this->storeModuleFile($request);
+        if ($moduleData['error']) {
+            return back()->withErrors(['module' => $moduleData['error']])->with('active_tab', 'topics');
+        }
 
         CourseTopic::create([
             'course_id'        => $course->id,
@@ -120,10 +123,14 @@ class CourseCoordinationController extends Controller
         ];
 
         if ($request->hasFile('module')) {
+            $moduleData = $this->storeModuleFile($request);
+            if ($moduleData['error']) {
+                return back()->withErrors(['module' => $moduleData['error']])->with('active_tab', 'topics');
+            }
+
             if ($courseTopic->module_path) {
                 Storage::disk('public')->delete($courseTopic->module_path);
             }
-            $moduleData = $this->storeModuleFile($request);
             $data['module_path'] = $moduleData['module_path'];
             $data['module_file_name'] = $moduleData['module_file_name'];
             if ($moduleData['extracted_notes']) {
@@ -142,15 +149,29 @@ class CourseCoordinationController extends Controller
     // their text is extracted here (once, at upload time) and used to fill/replace
     // Teaching Notes instead — everything downstream only ever needs to check
     // "is there a PDF" vs "is there text", never re-parse the DOCX.
+    //
+    // A content sanity-check runs first — anything can be picked in a file
+    // dialog, and if what's uploaded isn't actually teaching content, the
+    // Assessment Generator's AI question drafting would have nothing real
+    // to read from later. Returns ['error' => ...] instead of storing when
+    // the content clearly doesn't look like a module.
     protected function storeModuleFile(Request $request): array
     {
-        $result = ['module_path' => null, 'module_file_name' => null, 'extracted_notes' => null];
+        $result = ['module_path' => null, 'module_file_name' => null, 'extracted_notes' => null, 'error' => null];
 
         if (! $request->hasFile('module')) {
             return $result;
         }
 
         $file = $request->file('module');
+
+        $check = (new AcademicDocumentValidator())->validate($file->getRealPath(), $file->getClientOriginalExtension(), 'module');
+        if (!$check['valid']) {
+            $result['error'] = ($check['reason'] ?? 'This file does not appear to be a teaching module.')
+                . ' Please upload the actual learning material for this topic.';
+            return $result;
+        }
+
         $result['module_path'] = $file->store('course-topic-modules', 'public');
         $result['module_file_name'] = $file->getClientOriginalName();
 

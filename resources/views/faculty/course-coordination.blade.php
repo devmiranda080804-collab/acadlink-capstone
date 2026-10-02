@@ -540,7 +540,7 @@
                 <label>Document Title</label>
                 <input type="text" id="new-doc-title">
             </div>
-            <div class="modal-hint">This creates a real Google Doc and shares it with every instructor who has taught this course.</div>
+            <div class="modal-hint" style="margin-top:0;">This creates a real Google Doc and shares it with every instructor who has taught this course.</div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeNewDocModal()">Cancel</button>
                 <button class="btn-save" onclick="createDocument()">Create</button>
@@ -716,7 +716,8 @@
                 showToast(err.message || 'Could not save a version right now.');
                 return;
             }
-            showToast('Version saved.');
+            const data = await res.json();
+            showToast(data.status === 'unchanged' ? 'No changes since the last saved version.' : 'Version saved.');
             await refreshDocDetail();
         }
 

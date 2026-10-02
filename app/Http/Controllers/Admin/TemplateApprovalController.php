@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\TemplateDocument;
 use App\Services\AcademicDocumentValidator;
-use App\Services\GoogleDocsService;
 use App\Support\Programs;
 use Illuminate\Http\Request;
 use App\Models\AuditLog;
@@ -31,11 +30,9 @@ class TemplateApprovalController extends Controller
             'programs.*'  => 'in:' . implode(',', Programs::codes()),
         ]);
 
-        // Templates are now always a plain file through the whole pipeline —
+        // Templates are always a plain file through the whole pipeline —
         // Secretary forwards it, Program Head distributes it, and faculty
-        // view/download it. No Google Doc is created here anymore (legacy
-        // google_doc_id-based templates, if any remain, still work via the
-        // backward-compatible branches in destroy() and elsewhere).
+        // view/download it. No Google Docs anywhere in this pipeline.
         $file = $request->file('file');
 
         // Content sanity-check — this is specifically claimed to be a
@@ -80,10 +77,6 @@ class TemplateApprovalController extends Controller
 
         if ($template->file_path) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($template->file_path);
-        }
-
-        if ($template->google_doc_id) {
-            (new GoogleDocsService())->deleteDocument($template->google_doc_id);
         }
 
         $template->delete();

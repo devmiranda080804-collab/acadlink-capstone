@@ -66,13 +66,6 @@
         .btn-del-sm { background: #fff; color: #999; border: 1px solid #e0e0e0; }
         .btn-del-sm:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
         .btn-sm svg { width: 12px; height: 12px; }
-        .btn-copy { background: #16a34a; color: #fff; border: none; }
-        .btn-copy:hover { background: #15803d; }
-        .btn-copy:disabled { background: #d1d5db; cursor: default; }
-        .copies-list { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e4e4e4; }
-        .copies-list-label { font-size: 10px; font-weight: 700; color: #999; text-transform: uppercase; margin-bottom: 6px; }
-        .copy-link { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: #0f2557; font-weight: 600; text-decoration: none; margin-bottom: 4px; }
-        .copy-link:hover { text-decoration: underline; }
 
         .status-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; }
         .status-pending_review   { background: #dbeafe; color: #1e40af; }
@@ -198,51 +191,22 @@
                     <div class="template-card">
                         <div class="card-top">
                             <span class="card-icon">
-                                @if($template->isGoogleDoc()) 📑 @elseif($template->file_type == 'pdf') 📄 @else 📝 @endif
+                                @if($template->file_type == 'pdf') 📄 @else 📝 @endif
                             </span>
                             <span class="status-badge status-approved">{{ str_replace('_', ' ', $template->type) }}</span>
                         </div>
 
                         <div class="card-title">{{ $template->title }}</div>
                         <div class="card-meta">
-                            @if($template->isGoogleDoc())
-                                Google Doc (view-only master) • Provided by {{ $template->creator->name }}
-                            @else
-                                {{ strtoupper($template->file_type) }} • {{ $template->readable_size }} • Provided by {{ $template->creator->name }}
-                            @endif
+                            {{ strtoupper($template->file_type) }} • {{ $template->readable_size }} • Provided by {{ $template->creator->name }}
                         </div>
 
-                        @if($template->isGoogleDoc())
-                            <div class="card-actions">
-                                <a class="btn-sm btn-view-file" href="{{ $template->google_view_url }}" target="_blank">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    View Master
-                                </a>
-                                <button type="button" class="btn-sm btn-copy" onclick="makeCopy({{ $template->id }}, this)">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                                    <span class="btn-label">Make My Copy</span>
-                                </button>
-                            </div>
-
-                            <div class="copies-list" id="copies-{{ $template->id }}">
-                                @if($template->copies->isNotEmpty())
-                                    <div class="copies-list-label">My Copies</div>
-                                @endif
-                                @foreach($template->copies as $copy)
-                                    <a class="copy-link" href="{{ $copy->google_edit_url }}" target="_blank">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px;"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
-                                        {{ $copy->title }}
-                                    </a>
-                                @endforeach
-                            </div>
-                        @else
-                            <div class="card-actions">
-                                <a class="btn-sm btn-view-file" href="{{ Storage::url($template->file_path) }}" target="_blank">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    View / Download
-                                </a>
-                            </div>
-                        @endif
+                        <div class="card-actions">
+                            <a class="btn-sm btn-view-file" href="{{ Storage::url($template->file_path) }}" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                View / Download
+                            </a>
+                        </div>
                     </div>
                 @empty
                     <div class="empty-state">No templates have been distributed to your program yet.</div>
@@ -251,49 +215,6 @@
 
         </div>
     </div>
-
-    <script>
-        function makeCopy(templateId, btn) {
-            btn.disabled = true;
-            btn.querySelector('.btn-label').textContent = 'Copying...';
-
-            fetch(`/faculty/my-template/${templateId}/copy`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json',
-                },
-            })
-            .then(async (res) => {
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(data.message || 'Could not create your copy.');
-                return data;
-            })
-            .then((copy) => {
-                const list = document.getElementById(`copies-${templateId}`);
-                if (!list.querySelector('.copies-list-label')) {
-                    const label = document.createElement('div');
-                    label.className = 'copies-list-label';
-                    label.textContent = 'My Copies';
-                    list.appendChild(label);
-                }
-                const a = document.createElement('a');
-                a.className = 'copy-link';
-                a.href = copy.google_edit_url;
-                a.target = '_blank';
-                a.textContent = copy.title;
-                list.appendChild(a);
-                window.open(copy.google_edit_url, '_blank');
-            })
-            .catch((err) => {
-                alert(err.message);
-            })
-            .finally(() => {
-                btn.disabled = false;
-                btn.querySelector('.btn-label').textContent = 'Make My Copy';
-            });
-        }
-    </script>
 
 </body>
 </html>

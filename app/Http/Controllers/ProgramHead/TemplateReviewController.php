@@ -4,8 +4,6 @@ namespace App\Http\Controllers\ProgramHead;
 
 use App\Http\Controllers\Controller;
 use App\Models\TemplateDocument;
-use App\Models\User;
-use App\Services\GoogleDocsService;
 use Illuminate\Http\Request;
 use App\Models\AuditLog;
 
@@ -39,21 +37,6 @@ class TemplateReviewController extends Controller
             'distributed_by' => auth()->id(),
             'distributed_at' => now(),
         ]);
-
-        // Google Doc templates: give every faculty in the program view-only
-        // access to the protected master, so they can preview it and make
-        // their own editable copy
-        if ($template->google_doc_id) {
-            $google = new GoogleDocsService();
-            $facultyEmails = User::where('role', 'faculty')
-                ->where('program', $myProgram)
-                ->whereNotNull('google_email')
-                ->pluck('google_email');
-
-            foreach ($facultyEmails as $email) {
-                $google->shareWithEmail($template->google_doc_id, $email, 'reader');
-            }
-        }
 
         AuditLog::record('Template Distributed', "{$template->title} distributed to {$myProgram} faculty by " . auth()->user()->name);
 

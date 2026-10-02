@@ -224,9 +224,9 @@
                                 </td>
                                 <td>
                                     <div class="action-buttons">
-                                        <a class="btn-view" href="{{ $template->isGoogleDoc() ? $template->google_view_url : Storage::url($template->file_path) }}" target="_blank">
+                                        <a class="btn-view" href="{{ Storage::url($template->file_path) }}" target="_blank">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                            {{ $template->isGoogleDoc() ? 'Open in Google Docs' : 'View' }}
+                                            View
                                         </a>
                                         @unless($template->isForwarded())
                                             <button type="button" class="btn-del" onclick="openDeleteModal({{ $template->id }}, @js($template->title))">

@@ -140,16 +140,28 @@ class CollaborationController extends Controller
     public function snapshot(CollaborativeDocument $document)
     {
         $this->authorizeDocument($document);
-        $this->takeSnapshot($document);
+        $saved = $this->takeSnapshot($document);
 
-        return response()->json(['status' => 'snapshotted']);
+        return response()->json([
+            'status'  => $saved ? 'snapshotted' : 'unchanged',
+            'message' => $saved ? null : 'No changes since the last saved version.',
+        ]);
     }
 
-    private function takeSnapshot(CollaborativeDocument $document): void
+    // Returns true if a new version was actually saved, false if skipped
+    // because the content hasn't changed since the last saved version — this
+    // is what keeps "version history" meaning real edits, not just repeated
+    // views of an unchanged document.
+    private function takeSnapshot(CollaborativeDocument $document): bool
     {
         abort_unless($document->google_doc_id, 422, 'This document has no linked Google Doc.');
 
         $content = (new GoogleDocsService())->exportPlainText($document->google_doc_id);
+
+        $latest = $document->versions()->first();
+        if ($latest && $latest->content === $content) {
+            return false;
+        }
 
         DocumentVersion::create([
             'document_id' => $document->id,
@@ -157,6 +169,8 @@ class CollaborationController extends Controller
             'content'     => $content,
             'created_at'  => now(),
         ]);
+
+        return true;
     }
 
     // Re-share the document with anyone newly assigned to teach this course

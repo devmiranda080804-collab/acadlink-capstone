@@ -100,6 +100,10 @@
         .btn-cancel:hover { background: #f5f5f5; }
         .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
         .btn-save:hover { background: #1a3a7a; }
+        .btn-danger { background: #ef4444; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-danger:hover { background: #dc2626; }
+        .delete-target { font-size: 13px; color: #555; margin-bottom: 4px; }
+        .delete-target strong { color: #1a1a2e; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -257,6 +261,18 @@
         @method('DELETE')
     </form>
 
+    {{-- Delete Confirmation Modal --}}
+    <div class="modal-overlay" id="delete-confirm-overlay">
+        <div class="modal" style="width:420px;">
+            <div class="modal-title">Delete Activity</div>
+            <div class="delete-target">Delete <strong id="delete-confirm-title"></strong>? This cannot be undone.</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeDeleteConfirm()">Cancel</button>
+                <button type="button" class="btn-danger" onclick="confirmDeleteActivity()">Delete Activity</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const activities = @json($activities);
         const canManage = true; // Admin
@@ -319,7 +335,7 @@
                 if (canManage) {
                     actions = `<div class="event-actions">
                         <button class="btn-mini btn-mini-edit" onclick='editActivity(${JSON.stringify(a)})'>Edit</button>
-                        <button class="btn-mini btn-mini-del" onclick="deleteActivity(${a.id})">Delete</button>
+                        <button class="btn-mini btn-mini-del" onclick='deleteActivity(${a.id}, ${JSON.stringify(a.title)})'>Delete</button>
                     </div>`;
                 }
                 item.innerHTML = `
@@ -375,12 +391,25 @@
             document.getElementById('event-overlay').classList.add('open');
         }
 
-        function deleteActivity(id) {
-            if (!confirm('Delete this activity?')) return;
+        let pendingDeleteId = null;
+        function deleteActivity(id, title) {
+            pendingDeleteId = id;
+            document.getElementById('delete-confirm-title').textContent = title || 'this activity';
+            document.getElementById('delete-confirm-overlay').classList.add('open');
+        }
+        function closeDeleteConfirm() {
+            pendingDeleteId = null;
+            document.getElementById('delete-confirm-overlay').classList.remove('open');
+        }
+        function confirmDeleteActivity() {
+            if (!pendingDeleteId) return;
             const form = document.getElementById('delete-form');
-            form.action = BASE + '/' + id;
+            form.action = BASE + '/' + pendingDeleteId;
             form.submit();
         }
+        document.getElementById('delete-confirm-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteConfirm();
+        });
 
         function closeModal() { document.getElementById('event-overlay').classList.remove('open'); }
         document.getElementById('event-overlay').addEventListener('click', function(e) { if (e.target === this) closeModal(); });

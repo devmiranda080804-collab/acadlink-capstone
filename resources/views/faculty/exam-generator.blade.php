@@ -542,6 +542,9 @@
         .btn-cancel:hover { background: #f5f5f5; }
         .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
         .btn-save:hover { background: #1a3a7a; }
+        .btn-danger { background: #ef4444; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-danger:hover { background: #dc2626; }
+        .modal-error { display: none; background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; font-size: 11.5px; padding: 9px 11px; border-radius: 5px; margin-bottom: 14px; line-height: 1.4; }
         .tos-view-value {
             width: 100%; padding: 8px 10px; border: 1px solid #e4e4e4; border-radius: 5px;
             font-size: 12.5px; color: #333; background: #f7f7f8;
@@ -887,6 +890,7 @@
     <div class="modal-overlay" id="new-exam-overlay">
         <div class="modal">
             <div class="modal-title">New Exam</div>
+            <div class="modal-error" id="new-exam-error"></div>
             <div class="modal-field">
                 <label>Subject <span style="color:#ef4444">*</span></label>
                 <select id="ne-subject">
@@ -929,6 +933,7 @@
     <div class="modal-overlay" id="start-exam-view-overlay">
         <div class="modal">
             <div class="modal-title">Start Exam from TOS</div>
+            <div class="modal-error" id="start-exam-error"></div>
             <div class="modal-field">
                 <label>Subject</label>
                 <div class="tos-view-value" id="sev-subject">—</div>
@@ -1017,6 +1022,20 @@
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeFinalizeConfirm()">Cancel</button>
                 <button type="button" class="btn-save" onclick="confirmFinalize()">Finalize</button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ════════════ DELETE SECTION CONFIRM MODAL ════════════ --}}
+    <div class="modal-overlay" id="delete-section-overlay">
+        <div class="modal" style="width:380px;">
+            <div class="modal-title">Delete Section</div>
+            <div style="font-size:12.5px;color:#444;margin-bottom:18px;">
+                Delete <strong id="delete-section-title"></strong>? Its questions will be removed too. This only takes effect once you Save.
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeDeleteSectionModal()">Cancel</button>
+                <button type="button" class="btn-danger" onclick="confirmDeleteSection()">Delete Section</button>
             </div>
         </div>
     </div>
@@ -1338,19 +1357,25 @@
             openStartExamView();
         }
 
-        function openStartExamView() { document.getElementById('start-exam-view-overlay').classList.add('open'); }
+        function openStartExamView() {
+            document.getElementById('start-exam-error').style.display = 'none';
+            document.getElementById('start-exam-view-overlay').classList.add('open');
+        }
         function closeStartExamView() { document.getElementById('start-exam-view-overlay').classList.remove('open'); }
         document.getElementById('start-exam-view-overlay').addEventListener('click', function(e) { if (e.target === this) closeStartExamView(); });
 
         function confirmStartExamFromTOS() {
             if (!startExamViewData) return;
-            submitCreateExam(startExamViewData, closeStartExamView);
+            submitCreateExam(startExamViewData, closeStartExamView, 'start-exam-error');
         }
 
         // ══════════════════════════════
         // NEW EXAM MODAL
         // ══════════════════════════════
-        function openNewExamModal() { document.getElementById('new-exam-overlay').classList.add('open'); }
+        function openNewExamModal() {
+            document.getElementById('new-exam-error').style.display = 'none';
+            document.getElementById('new-exam-overlay').classList.add('open');
+        }
         function closeNewExamModal() { document.getElementById('new-exam-overlay').classList.remove('open'); }
         document.getElementById('new-exam-overlay').addEventListener('click', function(e) { if (e.target === this) closeNewExamModal(); });
 
@@ -1362,24 +1387,38 @@
                 duration_minutes: document.getElementById('ne-duration').value || null,
                 target_items: document.getElementById('ne-target-items').value || null
             };
-            await submitCreateExam(body, closeNewExamModal);
+            await submitCreateExam(body, closeNewExamModal, 'new-exam-error');
         }
 
-        async function submitCreateExam(body, closeFn) {
-            if (!body.program_assignment_id || !body.title) { alert('Subject and Title are required.'); return; }
+        async function submitCreateExam(body, closeFn, errorElId) {
+            var errorEl = errorElId ? document.getElementById(errorElId) : null;
+            if (errorEl) errorEl.style.display = 'none';
+
+            if (!body.program_assignment_id || !body.title) {
+                if (errorEl) { errorEl.textContent = 'Subject and Title are required.'; errorEl.style.display = 'block'; }
+                else alert('Subject and Title are required.');
+                return;
+            }
 
             try {
                 var exam = await api('/faculty/exam-generator', { method: 'POST', body: body });
                 if (closeFn) closeFn();
-                var opt = document.createElement('option');
-                opt.value = exam.id;
-                opt.textContent = exam.program_assignment.course.code + ' — ' + exam.title + ' (' + exam.grading_period + ')';
-                document.getElementById('eb-exam-select').appendChild(opt);
-                document.getElementById('eb-exam-select').value = exam.id;
+                // The server may return an already-existing draft instead of
+                // creating a new one (same subject + grading period) — only
+                // add a dropdown option if one for this exam isn't there yet.
+                var select = document.getElementById('eb-exam-select');
+                if (!select.querySelector('option[value="' + exam.id + '"]')) {
+                    var opt = document.createElement('option');
+                    opt.value = exam.id;
+                    opt.textContent = exam.program_assignment.course.code + ' — ' + exam.title + ' (' + exam.grading_period + ')';
+                    select.appendChild(opt);
+                }
+                select.value = exam.id;
                 switchTab('exam-builder');
                 await loadExam(exam.id);
             } catch (e) {
-                alert(e.message);
+                if (errorEl) { errorEl.textContent = e.message; errorEl.style.display = 'block'; }
+                else alert(e.message);
             }
         }
 
@@ -1479,11 +1518,26 @@
             currentExam.sections.push({ id: id, title: 'Test ' + num, instructions: '', questions: [] });
             renderEB();
         }
+        var pendingDeleteSectionId = null;
         function deleteSection(secId) {
-            if (!confirm('Delete this section?')) return;
-            currentExam.sections = currentExam.sections.filter(function(s) { return String(s.id) !== String(secId); });
+            var sec = findSection(secId);
+            pendingDeleteSectionId = secId;
+            document.getElementById('delete-section-title').textContent = sec ? sec.title : 'this section';
+            document.getElementById('delete-section-overlay').classList.add('open');
+        }
+        function closeDeleteSectionModal() {
+            pendingDeleteSectionId = null;
+            document.getElementById('delete-section-overlay').classList.remove('open');
+        }
+        function confirmDeleteSection() {
+            if (!pendingDeleteSectionId) return;
+            currentExam.sections = currentExam.sections.filter(function(s) { return String(s.id) !== String(pendingDeleteSectionId); });
+            closeDeleteSectionModal();
             renderEB();
         }
+        document.getElementById('delete-section-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteSectionModal();
+        });
         function updateSectionTitle(secId, val) {
             var sec = findSection(secId);
             if (sec) { sec.title = val; renderSectionsBar(); }

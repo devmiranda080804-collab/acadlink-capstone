@@ -108,6 +108,10 @@
         .btn-cancel:hover { background: #f5f5f5; }
         .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
         .btn-save:hover { background: #1a3a7a; }
+        .btn-danger { background: #ef4444; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-danger:hover { background: #dc2626; }
+        .delete-target { font-size: 13px; color: #555; margin-bottom: 4px; }
+        .delete-target strong { color: #1a1a2e; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -269,13 +273,9 @@
                                 </div>
                                 <div class="file-actions">
                                     <a class="btn-view" href="{{ Storage::url($material->file_path) }}" target="_blank">View</a>
-                                    <form method="POST" action="{{ url('/program-head/course-oversight/materials/' . $material->id) }}" onsubmit="return confirm('Delete this material?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-del" title="Delete">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn-del" title="Delete" onclick="openDeleteMaterialModal({{ $material->id }}, @js($material->title))">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                                    </button>
                                 </div>
                             </div>
                         @empty
@@ -508,7 +508,35 @@
         </div>
     </div>
 
+    {{-- Delete Material Confirmation Modal --}}
+    <div class="modal-overlay" id="delete-material-overlay">
+        <div class="modal" style="width:420px;">
+            <div class="modal-title">Delete Material</div>
+            <div class="delete-target">Delete <strong id="delete-material-title"></strong>? This cannot be undone.</div>
+            <form id="delete-material-form" method="POST">
+                @csrf
+                @method('DELETE')
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeDeleteMaterialModal()">Cancel</button>
+                    <button type="submit" class="btn-danger">Delete Material</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        function openDeleteMaterialModal(id, title) {
+            document.getElementById('delete-material-title').textContent = title;
+            document.getElementById('delete-material-form').action = '{{ url("/program-head/course-oversight/materials") }}/' + id;
+            document.getElementById('delete-material-overlay').classList.add('open');
+        }
+        function closeDeleteMaterialModal() {
+            document.getElementById('delete-material-overlay').classList.remove('open');
+        }
+        document.getElementById('delete-material-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteMaterialModal();
+        });
+
         function openUploadModal() {
             document.getElementById('upload-overlay').classList.add('open');
         }

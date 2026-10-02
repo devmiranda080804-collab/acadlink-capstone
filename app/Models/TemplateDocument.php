@@ -8,7 +8,7 @@ class TemplateDocument extends Model
 {
     protected $fillable = [
         'created_by', 'title', 'type', 'file_path', 'file_name', 'file_type', 'file_size',
-        'google_doc_id', 'forwarded_by', 'forwarded_at',
+        'forwarded_by', 'forwarded_at',
     ];
 
     protected function casts(): array
@@ -31,23 +31,6 @@ class TemplateDocument extends Model
     public function programs()
     {
         return $this->hasMany(TemplateDocumentProgram::class);
-    }
-
-    public function copies()
-    {
-        return $this->hasMany(TemplateCopy::class);
-    }
-
-    public function isGoogleDoc(): bool
-    {
-        return $this->google_doc_id !== null;
-    }
-
-    public function getGoogleViewUrlAttribute(): ?string
-    {
-        return $this->google_doc_id
-            ? "https://docs.google.com/document/d/{$this->google_doc_id}/edit"
-            : null;
     }
 
     public function isForwarded(): bool
