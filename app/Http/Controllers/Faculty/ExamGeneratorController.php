@@ -56,7 +56,18 @@ class ExamGeneratorController extends Controller
             return [$assignment->id => $topics];
         });
 
-        return view('faculty.exam-generator', compact('assignments', 'exams', 'topicsByAssignment'));
+        // Which grading periods already have a persisted TOS, per assignment — lets
+        // the New Exam modal warn upfront (before submit) that a subject + grading
+        // period combo needs its TOS generated first, instead of only failing after
+        // the faculty member clicks Create.
+        $tosByAssignment = $assignments->mapWithKeys(function ($assignment) {
+            $periods = Tos::where('program_assignment_id', $assignment->id)
+                ->pluck('grading_period');
+
+            return [$assignment->id => $periods];
+        });
+
+        return view('faculty.exam-generator', compact('assignments', 'exams', 'topicsByAssignment', 'tosByAssignment'));
     }
 
     public function store(Request $request)

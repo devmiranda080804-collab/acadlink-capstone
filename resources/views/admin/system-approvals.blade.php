@@ -44,23 +44,39 @@
         .btn-create { display: flex; align-items: center; gap: 6px; background: #0f2557; color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
         .btn-create:hover { background: #1a3a7a; }
 
-        .filter-tabs { display: flex; gap: 4px; margin-bottom: 18px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
+        .stat-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stat-icon svg { width: 22px; height: 22px; }
+        .stat-icon.blue { background: #dbeafe; color: #1d4ed8; }
+        .stat-icon.amber { background: #fef3c7; color: #b45309; }
+        .stat-icon.green { background: #d1fae5; color: #059669; }
+        .stat-info .stat-value { font-size: 24px; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
+        .stat-info .stat-label { font-size: 11.5px; color: #888; margin-top: 2px; }
+
+        .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+        .filter-tabs { display: flex; gap: 4px; }
         .filter-tab { padding: 7px 16px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; user-select: none; }
         .filter-tab:hover { border-color: #0f2557; color: #0f2557; }
         .filter-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
 
-        .approval-panel { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; overflow: hidden; }
-        .approval-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-        .approval-table thead tr { background: #fafafa; border-bottom: 1px solid #eee; }
-        .approval-table th { padding: 12px 16px; text-align: left; font-size: 11.5px; font-weight: 700; color: #666; }
-        .approval-table td { padding: 13px 16px; border-bottom: 1px solid #f5f5f5; color: #333; vertical-align: middle; }
-        .approval-table tbody tr:last-child td { border-bottom: none; }
-        .approval-table tbody tr:hover { background: #fafbff; }
-        .approval-table td.empty-row { text-align: center; color: #999; padding: 40px 16px; }
+        .search-box { position: relative; width: 240px; max-width: 100%; }
+        .search-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #999; pointer-events: none; }
+        .search-box input { width: 100%; padding: 8px 10px 8px 30px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; outline: none; font-family: Arial, sans-serif; }
+        .search-box input:focus { border-color: #0f2557; }
 
-        .type-label { color: #0f2557; font-weight: 600; text-transform: capitalize; }
+        .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .tmpl-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; transition: box-shadow 0.15s; }
+        .tmpl-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.07); }
+        .tmpl-card.forwarded { border-left: 4px solid #1e40af; }
+        .tmpl-card.waiting { border-left: 4px solid #f59e0b; }
+        .tmpl-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+        .tmpl-card-icon { font-size: 22px; line-height: 1; }
+        .tmpl-card-title { font-size: 13.5px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+        .tmpl-card-type { font-size: 11px; color: #888; text-transform: capitalize; }
+        .tmpl-card-meta { font-size: 10.5px; color: #aaa; margin: 8px 0 10px; }
 
-        .program-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+        .program-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 14px; }
         .program-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
         .program-tag.distributed { background: #d1fae5; color: #065f46; }
         .program-tag.pending { background: #f3f4f6; color: #888; }
@@ -69,12 +85,14 @@
         .status-waiting { background: #fef9c3; color: #92400e; }
         .status-forwarded { background: #dbeafe; color: #1e40af; }
 
-        .action-buttons { display: flex; gap: 6px; }
-        .btn-del { display: inline-flex; align-items: center; gap: 4px; background: #ef4444; color: #fff; border: none; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
-        .btn-del:hover { background: #dc2626; }
-        .btn-view { display: inline-flex; align-items: center; gap: 4px; background: #fff; color: #444; border: 1px solid #d0d0d0; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 5px; text-decoration: none; }
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #bbb; font-size: 13px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; }
+
+        .action-buttons { display: flex; gap: 6px; margin-top: auto; }
+        .btn-del { display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #fff; color: #ef4444; border: 1px solid #fca5a5; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; cursor: pointer; flex: 1; }
+        .btn-del:hover { background: #fef2f2; }
+        .btn-view { display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #fff; color: #444; border: 1px solid #d0d0d0; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; text-decoration: none; flex: 1; }
         .btn-view:hover { background: #f5f5f5; }
-        .btn-del svg, .btn-view svg { width: 11px; height: 11px; }
+        .btn-del svg, .btn-view svg { width: 12px; height: 12px; }
 
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
@@ -182,66 +200,82 @@
                 <button class="btn-create" type="button" onclick="openCreateModal()">+ New Template</button>
             </div>
 
-            <div class="filter-tabs">
-                <span class="filter-tab active" onclick="filterRows('all', this)">All</span>
-                <span class="filter-tab" onclick="filterRows('waiting', this)">Awaiting Secretary</span>
-                <span class="filter-tab" onclick="filterRows('forwarded', this)">Forwarded</span>
+            @php
+                $waitingCount = $templates->filter(fn($t) => !$t->isForwarded())->count();
+                $forwardedCount = $templates->count() - $waitingCount;
+            @endphp
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $templates->count() }}</div><div class="stat-label">Total Templates</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $waitingCount }}</div><div class="stat-label">Awaiting Secretary</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $forwardedCount }}</div><div class="stat-label">Forwarded</div></div>
+                </div>
             </div>
 
-            <div class="approval-panel">
-                <table class="approval-table">
-                    <thead>
-                        <tr>
-                            <th>Type</th>
-                            <th>Title</th>
-                            <th>Programs</th>
-                            <th>Uploaded By</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="approval-tbody">
-                        @forelse($templates as $template)
-                            <tr data-status="{{ $template->isForwarded() ? 'forwarded' : 'waiting' }}">
-                                <td><span class="type-label">{{ str_replace('_', ' ', $template->type) }}</span></td>
-                                <td>{{ $template->title }}</td>
-                                <td>
-                                    <div class="program-tags">
-                                        @foreach($template->programs as $row)
-                                            <span class="program-tag {{ $row->distributed_at ? 'distributed' : 'pending' }}" title="{{ \App\Support\Programs::label($row->program) }}">{{ $row->program }}</span>
-                                        @endforeach
-                                    </div>
-                                </td>
-                                <td>{{ $template->creator->name }}</td>
-                                <td>{{ $template->created_at->format('Y-m-d') }}</td>
-                                <td>
-                                    @if($template->isForwarded())
-                                        <span class="status-badge status-forwarded">Forwarded</span>
-                                    @else
-                                        <span class="status-badge status-waiting">Awaiting Secretary</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <a class="btn-view" href="{{ Storage::url($template->file_path) }}" target="_blank">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                            View
-                                        </a>
-                                        @unless($template->isForwarded())
-                                            <button type="button" class="btn-del" onclick="openDeleteModal({{ $template->id }}, @js($template->title))">
-                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                                Remove
-                                            </button>
-                                        @endunless
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="7" class="empty-row">No templates uploaded yet.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <div class="toolbar">
+                <div class="filter-tabs">
+                    <span class="filter-tab active" onclick="filterCards('all', this)">All</span>
+                    <span class="filter-tab" onclick="filterCards('waiting', this)">Awaiting Secretary</span>
+                    <span class="filter-tab" onclick="filterCards('forwarded', this)">Forwarded</span>
+                </div>
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="template-search" placeholder="Search by title..." oninput="searchCards(this.value)">
+                </div>
+            </div>
+
+            <div class="template-grid" id="template-grid">
+                @forelse($templates as $template)
+                    @php $isForwarded = $template->isForwarded(); @endphp
+                    <div class="tmpl-card {{ $isForwarded ? 'forwarded' : 'waiting' }}" data-status="{{ $isForwarded ? 'forwarded' : 'waiting' }}" data-title="{{ strtolower($template->title) }}">
+                        <div class="tmpl-card-top">
+                            <span class="tmpl-card-icon">
+                                @if($template->type == 'syllabus') 📘
+                                @elseif($template->type == 'course_guide') 📙
+                                @elseif($template->type == 'module') 📝
+                                @else 📄
+                                @endif
+                            </span>
+                            @if($isForwarded)
+                                <span class="status-badge status-forwarded">Forwarded</span>
+                            @else
+                                <span class="status-badge status-waiting">Awaiting Secretary</span>
+                            @endif
+                        </div>
+                        <div class="tmpl-card-title">{{ $template->title }}</div>
+                        <div class="tmpl-card-type">{{ str_replace('_', ' ', $template->type) }}</div>
+                        <div class="tmpl-card-meta">Uploaded by {{ $template->creator->name }} • {{ $template->created_at->format('Y-m-d') }}</div>
+
+                        <div class="program-tags">
+                            @foreach($template->programs as $row)
+                                <span class="program-tag {{ $row->distributed_at ? 'distributed' : 'pending' }}" title="{{ \App\Support\Programs::label($row->program) }}">{{ $row->program }}</span>
+                            @endforeach
+                        </div>
+
+                        <div class="action-buttons">
+                            <a class="btn-view" href="{{ Storage::url($template->file_path) }}" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                View
+                            </a>
+                            @unless($isForwarded)
+                                <button type="button" class="btn-del" onclick="openDeleteModal({{ $template->id }}, @js($template->title))">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                    Remove
+                                </button>
+                            @endunless
+                        </div>
+                    </div>
+                @empty
+                    <div class="empty-state">No templates uploaded yet.</div>
+                @endforelse
             </div>
 
         </div>
@@ -328,12 +362,26 @@
             if (e.target === this) closeDeleteModal();
         });
 
-        function filterRows(status, el) {
+        var currentFilter = 'all';
+        var currentSearch = '';
+
+        function filterCards(status, el) {
+            currentFilter = status;
             document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
             el.classList.add('active');
-            document.querySelectorAll('#approval-tbody tr').forEach(row => {
-                if (!row.dataset.status) return;
-                row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
+            applyCardFilters();
+        }
+
+        function searchCards(query) {
+            currentSearch = query.trim().toLowerCase();
+            applyCardFilters();
+        }
+
+        function applyCardFilters() {
+            document.querySelectorAll('#template-grid .tmpl-card').forEach(card => {
+                const matchesFilter = currentFilter === 'all' || card.dataset.status === currentFilter;
+                const matchesSearch = !currentSearch || card.dataset.title.includes(currentSearch);
+                card.style.display = (matchesFilter && matchesSearch) ? '' : 'none';
             });
         }
 

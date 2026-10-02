@@ -545,6 +545,7 @@
         .btn-danger { background: #ef4444; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
         .btn-danger:hover { background: #dc2626; }
         .modal-error { display: none; background: #fee2e2; border: 1px solid #fca5a5; color: #b91c1c; font-size: 11.5px; padding: 9px 11px; border-radius: 5px; margin-bottom: 14px; line-height: 1.4; }
+        .modal-warning { display: none; background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; font-size: 11.5px; padding: 9px 11px; border-radius: 5px; margin-bottom: 14px; line-height: 1.4; }
         .tos-view-value {
             width: 100%; padding: 8px 10px; border: 1px solid #e4e4e4; border-radius: 5px;
             font-size: 12.5px; color: #333; background: #f7f7f8;
@@ -891,9 +892,10 @@
         <div class="modal">
             <div class="modal-title">New Exam</div>
             <div class="modal-error" id="new-exam-error"></div>
+            <div class="modal-warning" id="new-exam-tos-warning">⚠ No TOS generated yet for this subject and grading period. Go to the <strong>TOS Generator</strong> tab and generate it first — the exam is built from it.</div>
             <div class="modal-field">
                 <label>Subject <span style="color:#ef4444">*</span></label>
-                <select id="ne-subject">
+                <select id="ne-subject" onchange="checkTosRequirement()">
                     <option value="" disabled selected>Select subject</option>
                     @foreach($assignments as $a)
                         <option value="{{ $a->id }}">{{ $a->course->code }} — {{ $a->course->title }}</option>
@@ -903,7 +905,7 @@
             <div class="modal-row">
                 <div class="modal-field">
                     <label>Grading Period <span style="color:#ef4444">*</span></label>
-                    <select id="ne-period">
+                    <select id="ne-period" onchange="checkTosRequirement()">
                         <option value="Prelim">Prelim</option>
                         <option value="Midterm">Midterm</option>
                         <option value="Final">Final</option>
@@ -924,7 +926,7 @@
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeNewExamModal()">Cancel</button>
-                <button type="button" class="btn-save" onclick="createExam()">Create</button>
+                <button type="button" class="btn-save" id="ne-create-btn" onclick="createExam()">Create</button>
             </div>
         </div>
     </div>
@@ -1068,6 +1070,7 @@
         const CSRF = document.querySelector('meta[name="csrf-token"]').content;
         const QUESTION_TYPES = @json(\App\Support\BloomLevels::TYPES);
         const TOPICS_BY_ASSIGNMENT = @json($topicsByAssignment);
+        const TOS_BY_ASSIGNMENT = @json($tosByAssignment);
         const ASSIGNMENTS = @json($assignments->map(fn($a) => ['id' => $a->id, 'label' => $a->course->code . ' — ' . $a->course->title]));
 
         let currentExam = null;
@@ -1375,9 +1378,28 @@
         function openNewExamModal() {
             document.getElementById('new-exam-error').style.display = 'none';
             document.getElementById('new-exam-overlay').classList.add('open');
+            checkTosRequirement();
         }
         function closeNewExamModal() { document.getElementById('new-exam-overlay').classList.remove('open'); }
         document.getElementById('new-exam-overlay').addEventListener('click', function(e) { if (e.target === this) closeNewExamModal(); });
+
+        // Warns upfront, before submit, when the selected subject + grading period
+        // combo has no TOS generated yet — mirrors the server-side guard in store()
+        // so the faculty member isn't surprised by an error only after clicking Create.
+        function checkTosRequirement() {
+            var subjectId = document.getElementById('ne-subject').value;
+            var period = document.getElementById('ne-period').value;
+            var warning = document.getElementById('new-exam-tos-warning');
+            var createBtn = document.getElementById('ne-create-btn');
+
+            var periodsWithTos = subjectId ? (TOS_BY_ASSIGNMENT[subjectId] || []) : null;
+            var hasTos = !subjectId || periodsWithTos.includes(period);
+
+            warning.style.display = hasTos ? 'none' : 'block';
+            createBtn.disabled = !hasTos;
+            createBtn.style.opacity = hasTos ? '1' : '0.5';
+            createBtn.style.cursor = hasTos ? 'pointer' : 'not-allowed';
+        }
 
         async function createExam() {
             var body = {

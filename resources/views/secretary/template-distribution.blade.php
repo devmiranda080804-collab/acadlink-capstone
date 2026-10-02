@@ -40,37 +40,51 @@
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .page-sub { font-size: 11.5px; color: #888; margin-bottom: 20px; }
 
-        .program-tabs { display: flex; gap: 4px; margin-bottom: 18px; }
-        .program-tab { padding: 7px 16px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; text-decoration: none; }
-        .program-tab:hover { border-color: #0f2557; color: #0f2557; }
-        .program-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
+        .stat-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stat-icon svg { width: 22px; height: 22px; }
+        .stat-icon.blue { background: #dbeafe; color: #1d4ed8; }
+        .stat-icon.amber { background: #fef3c7; color: #b45309; }
+        .stat-icon.green { background: #d1fae5; color: #059669; }
+        .stat-info .stat-value { font-size: 24px; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
+        .stat-info .stat-label { font-size: 11.5px; color: #888; margin-top: 2px; }
 
-        .dist-panel { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; overflow: hidden; }
-        .dist-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-        .dist-table thead tr { background: #fafafa; border-bottom: 1px solid #eee; }
-        .dist-table th { padding: 12px 16px; text-align: left; font-size: 11.5px; font-weight: 700; color: #666; }
-        .dist-table td { padding: 13px 16px; border-bottom: 1px solid #f5f5f5; color: #333; vertical-align: middle; }
-        .dist-table tbody tr:last-child td { border-bottom: none; }
-        .dist-table tbody tr:hover { background: #fafbff; }
-        .dist-table td.empty-row { text-align: center; color: #999; padding: 40px 16px; }
+        .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+        .filter-tabs { display: flex; gap: 4px; }
+        .filter-tab { padding: 7px 16px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; user-select: none; }
+        .filter-tab:hover { border-color: #0f2557; color: #0f2557; }
+        .filter-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
 
-        .tmpl-name { display: flex; align-items: center; gap: 8px; }
-        .tmpl-name .ficon { font-size: 15px; }
-        .type-label { color: #0f2557; font-weight: 600; }
+        .search-box { position: relative; width: 240px; max-width: 100%; }
+        .search-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #999; pointer-events: none; }
+        .search-box input { width: 100%; padding: 8px 10px 8px 30px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; outline: none; font-family: Arial, sans-serif; }
+        .search-box input:focus { border-color: #0f2557; }
+
+        .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .tmpl-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; transition: box-shadow 0.15s; }
+        .tmpl-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.07); }
+        .tmpl-card.forwarded { border-left: 4px solid #16a34a; }
+        .tmpl-card.waiting { border-left: 4px solid #f59e0b; }
+        .tmpl-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; gap: 8px; }
+        .tmpl-card-icon { font-size: 22px; line-height: 1; }
+        .tmpl-card-title { font-size: 13.5px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+        .tmpl-card-type { font-size: 11px; color: #888; text-transform: capitalize; }
+        .tmpl-card-meta { font-size: 10.5px; color: #aaa; margin: 8px 0 10px; }
+
+        .program-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 14px; }
         .program-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f0f4ff; color: #0f2557; }
-        .version-tag { font-size: 11.5px; color: #666; }
 
-        .dist-status { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; }
-        .dist-status.yes { color: #16a34a; }
-        .dist-status.no { color: #999; }
-        .dist-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+        .dist-status { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
+        .dist-status.yes { background: #d1fae5; color: #065f46; }
+        .dist-status.no { background: #fef9c3; color: #92400e; }
 
-        .action-buttons { display: flex; gap: 6px; }
-        .btn-distribute { display: inline-flex; align-items: center; gap: 5px; background: #0f2557; color: #fff; border: none; font-size: 11px; font-weight: 600; padding: 6px 14px; border-radius: 5px; cursor: pointer; }
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #bbb; font-size: 13px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; }
+
+        .action-buttons { display: flex; gap: 6px; margin-top: auto; }
+        .btn-distribute { display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: #0f2557; color: #fff; border: none; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; cursor: pointer; flex: 1; }
         .btn-distribute:hover { background: #1a3a7a; }
-        .btn-recall { display: inline-flex; align-items: center; gap: 5px; background: #fff; color: #b45309; border: 1px solid #fcd34d; font-size: 11px; font-weight: 600; padding: 6px 14px; border-radius: 5px; cursor: pointer; }
-        .btn-recall:hover { background: #fffbeb; }
-        .btn-view { display: inline-flex; align-items: center; gap: 4px; background: #fff; color: #444; border: 1px solid #d0d0d0; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 5px; text-decoration: none; }
+        .btn-view { display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #fff; color: #444; border: 1px solid #d0d0d0; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; text-decoration: none; flex: 1; }
         .btn-view:hover { background: #f5f5f5; }
         .action-buttons svg { width: 12px; height: 12px; }
 
@@ -145,70 +159,114 @@
             <div class="page-title">Template Distribution</div>
             <div class="page-sub">Templates the Admin has uploaded. Forward each one so every Program Head can distribute it to their own faculty.</div>
 
-            <div class="dist-panel">
-                <table class="dist-table">
-                    <thead>
-                        <tr>
-                            <th>Template Name</th>
-                            <th>Type</th>
-                            <th>Programs</th>
-                            <th>Uploaded By</th>
-                            <th>Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($templates as $template)
-                            <tr>
-                                <td>
-                                    <div class="tmpl-name">
-                                        <span class="ficon">@if($template->file_type == 'pdf') 📄 @else 📝 @endif</span>
-                                        {{ $template->title }}
-                                    </div>
-                                </td>
-                                <td><span class="type-label">{{ str_replace('_', ' ', $template->type) }}</span></td>
-                                <td>
-                                    @foreach($template->programs as $row)
-                                        <span class="program-tag" title="{{ \App\Support\Programs::label($row->program) }}">{{ $row->program }}</span>
-                                    @endforeach
-                                </td>
-                                <td>{{ $template->creator->name }}</td>
-                                <td>{{ $template->created_at->format('Y-m-d') }}</td>
-                                <td>
-                                    @if($template->isForwarded())
-                                        <span class="dist-status yes"><span class="dist-dot"></span>Forwarded to Program Heads</span>
-                                    @else
-                                        <span class="dist-status no"><span class="dist-dot"></span>Not yet forwarded</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <a class="btn-view" href="{{ Storage::url($template->file_path) }}" target="_blank">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                            View
-                                        </a>
-                                        @unless($template->isForwarded())
-                                            <form method="POST" action="{{ url('/secretary/template-distribution/' . $template->id . '/forward') }}" style="display:inline;">
-                                                @csrf
-                                                <button type="submit" class="btn-distribute">
-                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                                                    Forward to Program Heads
-                                                </button>
-                                            </form>
-                                        @endunless
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="7" class="empty-row">No templates uploaded yet.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            @php
+                $waitingCount = $templates->filter(fn($t) => !$t->isForwarded())->count();
+                $forwardedCount = $templates->count() - $waitingCount;
+            @endphp
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $templates->count() }}</div><div class="stat-label">Total From Admin</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $waitingCount }}</div><div class="stat-label">Awaiting Forward</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $forwardedCount }}</div><div class="stat-label">Forwarded</div></div>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <div class="filter-tabs">
+                    <span class="filter-tab active" onclick="filterCards('all', this)">All</span>
+                    <span class="filter-tab" onclick="filterCards('waiting', this)">Awaiting Forward</span>
+                    <span class="filter-tab" onclick="filterCards('forwarded', this)">Forwarded</span>
+                </div>
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="template-search" placeholder="Search by title..." oninput="searchCards(this.value)">
+                </div>
+            </div>
+
+            <div class="template-grid" id="template-grid">
+                @forelse($templates as $template)
+                    @php $isForwarded = $template->isForwarded(); @endphp
+                    <div class="tmpl-card {{ $isForwarded ? 'forwarded' : 'waiting' }}" data-status="{{ $isForwarded ? 'forwarded' : 'waiting' }}" data-title="{{ strtolower($template->title) }}">
+                        <div class="tmpl-card-top">
+                            <span class="tmpl-card-icon">
+                                @if($template->type == 'syllabus') 📘
+                                @elseif($template->type == 'course_guide') 📙
+                                @elseif($template->type == 'module') 📝
+                                @else 📄
+                                @endif
+                            </span>
+                            @if($isForwarded)
+                                <span class="dist-status yes">Forwarded</span>
+                            @else
+                                <span class="dist-status no">Not yet forwarded</span>
+                            @endif
+                        </div>
+                        <div class="tmpl-card-title">{{ $template->title }}</div>
+                        <div class="tmpl-card-type">{{ str_replace('_', ' ', $template->type) }}</div>
+                        <div class="tmpl-card-meta">Uploaded by {{ $template->creator->name }} • {{ $template->created_at->format('Y-m-d') }}</div>
+
+                        <div class="program-tags">
+                            @foreach($template->programs as $row)
+                                <span class="program-tag" title="{{ \App\Support\Programs::label($row->program) }}">{{ $row->program }}</span>
+                            @endforeach
+                        </div>
+
+                        <div class="action-buttons">
+                            <a class="btn-view" href="{{ Storage::url($template->file_path) }}" target="_blank">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                View
+                            </a>
+                            @unless($isForwarded)
+                                <form method="POST" action="{{ url('/secretary/template-distribution/' . $template->id . '/forward') }}" style="flex:1;">
+                                    @csrf
+                                    <button type="submit" class="btn-distribute" style="width:100%;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                        Forward
+                                    </button>
+                                </form>
+                            @endunless
+                        </div>
+                    </div>
+                @empty
+                    <div class="empty-state">No templates uploaded yet.</div>
+                @endforelse
             </div>
 
         </div>
     </div>
+
+    <script>
+        var currentFilter = 'all';
+        var currentSearch = '';
+
+        function filterCards(status, el) {
+            currentFilter = status;
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            applyCardFilters();
+        }
+
+        function searchCards(query) {
+            currentSearch = query.trim().toLowerCase();
+            applyCardFilters();
+        }
+
+        function applyCardFilters() {
+            document.querySelectorAll('#template-grid .tmpl-card').forEach(card => {
+                const matchesFilter = currentFilter === 'all' || card.dataset.status === currentFilter;
+                const matchesSearch = !currentSearch || card.dataset.title.includes(currentSearch);
+                card.style.display = (matchesFilter && matchesSearch) ? '' : 'none';
+            });
+        }
+    </script>
 
 </body>
 </html>

@@ -42,57 +42,43 @@
         .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .page-sub { font-size: 11.5px; color: #888; }
-        .btn-create { display: flex; align-items: center; gap: 6px; background: #0f2557; color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; transition: background 0.15s; }
-        .btn-create:hover { background: #1a3a7a; }
 
-        .type-tabs { display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 22px; }
-        .type-tab { padding: 8px 18px; font-size: 13px; color: #666; text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -2px; }
-        .type-tab:hover { color: #0f2557; }
-        .type-tab.active { color: #0f2557; font-weight: 700; border-bottom: 2px solid #0f2557; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
+        .stat-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stat-icon svg { width: 22px; height: 22px; }
+        .stat-icon.blue { background: #dbeafe; color: #1d4ed8; }
+        .stat-info .stat-value { font-size: 24px; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
+        .stat-info .stat-label { font-size: 11.5px; color: #888; margin-top: 2px; }
+
+        .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+        .filter-tabs { display: flex; gap: 4px; }
+        .filter-tab { padding: 7px 16px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; user-select: none; }
+        .filter-tab:hover { border-color: #0f2557; color: #0f2557; }
+        .filter-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
+
+        .search-box { position: relative; width: 240px; max-width: 100%; }
+        .search-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #999; pointer-events: none; }
+        .search-box input { width: 100%; padding: 8px 10px 8px 30px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; outline: none; font-family: Arial, sans-serif; }
+        .search-box input:focus { border-color: #0f2557; }
 
         .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-        .template-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px; transition: box-shadow 0.15s; }
+        .template-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px; transition: box-shadow 0.15s; display: flex; flex-direction: column; }
         .template-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
         .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
         .card-icon { font-size: 22px; }
         .card-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
         .card-meta { font-size: 10.5px; color: #aaa; margin-bottom: 14px; }
-        .card-actions { display: flex; gap: 6px; }
-        .btn-sm { display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 6px 12px; border-radius: 5px; cursor: pointer; border: 1px solid transparent; text-decoration: none; }
-        .btn-edit { background: #0f2557; color: #fff; border: none; }
-        .btn-edit:hover { background: #1a3a7a; }
+        .card-actions { display: flex; gap: 6px; margin-top: auto; }
+        .btn-sm { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; cursor: pointer; border: 1px solid transparent; text-decoration: none; flex: 1; }
         .btn-view-file { background: #fff; color: #333; border: 1px solid #d0d0d0; }
         .btn-view-file:hover { background: #f5f5f5; }
-        .btn-del-sm { background: #fff; color: #999; border: 1px solid #e0e0e0; }
-        .btn-del-sm:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
         .btn-sm svg { width: 12px; height: 12px; }
 
         .status-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; }
-        .status-pending_review   { background: #dbeafe; color: #1e40af; }
-        .status-needs_revision   { background: #fee2e2; color: #991b1b; }
-        .status-pending_approval { background: #fef9c3; color: #92400e; }
-        .status-approved         { background: #d1fae5; color: #065f46; }
-        .status-rejected         { background: #f3f4f6; color: #6b7280; }
+        .status-approved { background: #d1fae5; color: #065f46; }
 
-        .review-note { font-size: 10.5px; color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; border-radius: 5px; padding: 6px 8px; margin-bottom: 12px; line-height: 1.4; }
-
-        .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #bbb; font-size: 13px; }
-
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
-        .modal-overlay.open { display: flex; }
-        .modal { background: #fff; border-radius: 10px; padding: 24px 26px; width: 460px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
-        .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 18px; }
-        .modal-field { margin-bottom: 13px; }
-        .modal-field label { display: block; font-size: 11.5px; font-weight: 700; color: #333; margin-bottom: 4px; }
-        .modal-field input[type=text], .modal-field input[type=date], .modal-field input[type=file], .modal-field select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; color: #333; outline: none; }
-        .modal-field input:focus, .modal-field select:focus { border-color: #0f2557; }
-        .modal-field select { appearance: none; -webkit-appearance: none; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E") no-repeat right 10px center; cursor: pointer; }
-        .modal-hint { font-size: 10.5px; color: #999; margin-top: 4px; }
-        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
-        .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 5px; cursor: pointer; }
-        .btn-cancel:hover { background: #f5f5f5; }
-        .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
-        .btn-save:hover { background: #1a3a7a; }
+        .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #bbb; font-size: 13px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -185,13 +171,37 @@
                 </div>
             </div>
 
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $templates->count() }}</div><div class="stat-label">Available Templates</div></div>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <div class="filter-tabs">
+                    <span class="filter-tab active" onclick="filterCards('all', this)">All</span>
+                    <span class="filter-tab" onclick="filterCards('syllabus', this)">Syllabus</span>
+                    <span class="filter-tab" onclick="filterCards('course_guide', this)">Course Guide</span>
+                    <span class="filter-tab" onclick="filterCards('module', this)">Module</span>
+                </div>
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="template-search" placeholder="Search by title..." oninput="searchCards(this.value)">
+                </div>
+            </div>
+
             {{-- Templates grid --}}
-            <div class="template-grid">
+            <div class="template-grid" id="template-grid">
                 @forelse($templates as $template)
-                    <div class="template-card">
+                    <div class="template-card" data-type="{{ $template->type }}" data-title="{{ strtolower($template->title) }}">
                         <div class="card-top">
                             <span class="card-icon">
-                                @if($template->file_type == 'pdf') 📄 @else 📝 @endif
+                                @if($template->type == 'syllabus') 📘
+                                @elseif($template->type == 'course_guide') 📙
+                                @elseif($template->type == 'module') 📝
+                                @else 📄
+                                @endif
                             </span>
                             <span class="status-badge status-approved">{{ str_replace('_', ' ', $template->type) }}</span>
                         </div>
@@ -215,6 +225,31 @@
 
         </div>
     </div>
+
+    <script>
+        var currentFilter = 'all';
+        var currentSearch = '';
+
+        function filterCards(type, el) {
+            currentFilter = type;
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            applyCardFilters();
+        }
+
+        function searchCards(query) {
+            currentSearch = query.trim().toLowerCase();
+            applyCardFilters();
+        }
+
+        function applyCardFilters() {
+            document.querySelectorAll('#template-grid .template-card').forEach(card => {
+                const matchesFilter = currentFilter === 'all' || card.dataset.type === currentFilter;
+                const matchesSearch = !currentSearch || card.dataset.title.includes(currentSearch);
+                card.style.display = (matchesFilter && matchesSearch) ? '' : 'none';
+            });
+        }
+    </script>
 
 </body>
 </html>
