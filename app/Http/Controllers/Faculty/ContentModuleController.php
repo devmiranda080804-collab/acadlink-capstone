@@ -131,11 +131,60 @@ class ContentModuleController extends Controller
                 $body .= '<hr><p><em>' . e($footerText) . '</em></p>';
             }
 
-            return $body === '' ? null : $body;
+            if ($body === '') {
+                return null;
+            }
+
+            // PhpWord puts the actual formatting — fonts, table borders, heading
+            // sizes/colors, paragraph spacing — in a <style> block of CSS
+            // rules (tags/classes), not inline on each element. Keeping only
+            // the <body> (as before) silently threw all of that away, which is
+            // why tables/headings/spacing looked flattened once uploaded.
+            // Scope it to a wrapper class so these document-wide rules (e.g.
+            // a bare "body {...}") can never leak into whatever page ends up
+            // hosting this saved content later.
+            $style = '';
+            if (preg_match('#<style[^>]*>(.*?)</style>#is', $fullHtml, $styleMatch)) {
+                $style = '<style>' . $this->scopeDocxCss($styleMatch[1], 'docx-content') . '</style>';
+            }
+
+            return $style . '<div class="docx-content">' . $body . '</div>';
         } catch (\Throwable $e) {
             report($e);
             return null;
         }
+    }
+
+    // Rewrites PhpWord's document-wide CSS (written for a full standalone HTML
+    // page — bare "body"/"h1"/"table" selectors) so every rule only applies
+    // inside the given wrapper class.
+    protected function scopeDocxCss(string $css, string $scopeClass): string
+    {
+        // @page is print-layout only, meaningless on screen, and isn't a
+        // normal selector that can be scoped the same way.
+        $css = preg_replace('#@page\b[^{]*\{[^}]*\}#i', '', $css) ?? $css;
+
+        // PhpWord has a known unit-conversion bug on some paragraph styles
+        // (e.g. "List Paragraph") that emits an absurd margin like "360in" —
+        // clamp any inch-based margin so one malformed rule can't blow out
+        // the whole layout.
+        $css = preg_replace_callback(
+            '#(margin(?:-left|-right|-top|-bottom)?\s*:\s*)(\d+(?:\.\d+)?)in#i',
+            fn($m) => $m[1] . min((float) $m[2], 2) . 'in',
+            $css
+        ) ?? $css;
+
+        return preg_replace_callback('#([^{}]+)\{([^{}]*)\}#', function ($m) use ($scopeClass) {
+            $scoped = array_map(function ($selector) use ($scopeClass) {
+                $selector = trim($selector);
+
+                return ($selector === 'body' || $selector === '*')
+                    ? '.' . $scopeClass
+                    : '.' . $scopeClass . ' ' . $selector;
+            }, explode(',', $m[1]));
+
+            return implode(', ', $scoped) . '{' . $m[2] . '}';
+        }, $css) ?? $css;
     }
 
     protected function extractHeaderFooterText(\PhpOffice\PhpWord\PhpWord $phpWord, string $getter): string
