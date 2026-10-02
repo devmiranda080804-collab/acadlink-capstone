@@ -37,9 +37,27 @@
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .page-sub { font-size: 11.5px; color: #888; margin-bottom: 20px; }
 
-        .filters-row { display: flex; gap: 10px; margin-bottom: 18px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 22px; }
+        .stat-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px 20px; display: flex; align-items: center; gap: 14px; }
+        .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .stat-icon svg { width: 22px; height: 22px; }
+        .stat-icon.blue { background: #dbeafe; color: #1d4ed8; }
+        .stat-icon.green { background: #d1fae5; color: #059669; }
+        .stat-info .stat-value { font-size: 24px; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
+        .stat-info .stat-label { font-size: 11.5px; color: #888; margin-top: 2px; }
+
+        .filters-row { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
         .filter-select { height: 36px; padding: 0 32px 0 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 12.5px; color: #333; background: #fff; outline: none; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23666' d='M5 7L0 2h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; cursor: pointer; min-width: 220px; }
         .filter-select:focus { border-color: #0f2557; }
+        .filters-row form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .search-box { position: relative; width: 260px; max-width: 100%; }
+        .search-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #999; pointer-events: none; }
+        .search-box input { width: 100%; height: 36px; padding: 0 10px 0 30px; border: 1px solid #ccc; border-radius: 6px; font-size: 12.5px; outline: none; font-family: Arial, sans-serif; box-sizing: border-box; }
+        .search-box input:focus { border-color: #0f2557; }
+        .btn-filter { height: 36px; padding: 0 18px; background: #0f2557; color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+        .btn-filter:hover { background: #1a3a7a; }
+        .btn-clear-filter { height: 36px; padding: 0 14px; background: #fff; color: #666; border: 1px solid #ccc; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+        .btn-clear-filter:hover { background: #f5f5f5; }
 
         .log-panel { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; overflow: hidden; }
         .log-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
@@ -65,7 +83,15 @@
         .log-user { font-weight: 600; color: #1a1a2e; }
         .log-date { color: #999; font-size: 11.5px; white-space: nowrap; }
 
-        .pagination-row { display: flex; justify-content: center; padding: 16px; }
+        .pagination-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-top: 1px solid #f0f0f0; flex-wrap: wrap; gap: 10px; }
+        .pagination-info { font-size: 11.5px; color: #888; }
+        .pagination-controls { display: flex; align-items: center; gap: 4px; }
+        .page-btn { padding: 6px 12px; font-size: 12px; font-weight: 600; color: #444; background: #fff; border: 1px solid #ddd; border-radius: 6px; text-decoration: none; cursor: pointer; }
+        .page-btn:hover { border-color: #0f2557; color: #0f2557; }
+        .page-btn.disabled { color: #ccc; border-color: #eee; cursor: default; pointer-events: none; }
+        .page-num { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; height: 30px; padding: 0 6px; font-size: 12px; font-weight: 600; color: #444; background: #fff; border: 1px solid #ddd; border-radius: 6px; text-decoration: none; }
+        .page-num:hover { border-color: #0f2557; color: #0f2557; }
+        .page-num.active { background: #0f2557; color: #fff; border-color: #0f2557; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -139,6 +165,17 @@
             <div class="page-title">Audit Logs</div>
             <div class="page-sub">A record of important actions in the system</div>
 
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $totalCount }}</div><div class="stat-label">Total Actions Logged</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $todayCount }}</div><div class="stat-label">Logged Today</div></div>
+                </div>
+            </div>
+
             <div class="filters-row">
                 <form method="GET">
                     <select name="action" class="filter-select" onchange="this.form.submit()">
@@ -147,6 +184,14 @@
                             <option value="{{ $type }}" {{ $action == $type ? 'selected' : '' }}>{{ $type }}</option>
                         @endforeach
                     </select>
+                    <div class="search-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" name="search" placeholder="Search by user or description..." value="{{ $search }}">
+                    </div>
+                    <button type="submit" class="btn-filter">Search</button>
+                    @if($action || $search)
+                        <a href="{{ url('/admin/audit-logs') }}" class="btn-clear-filter">Clear</a>
+                    @endif
                 </form>
             </div>
 
@@ -188,7 +233,24 @@
                 </table>
                 @if($logs->hasPages())
                     <div class="pagination-row">
-                        {{ $logs->links() }}
+                        <div class="pagination-info">Showing {{ $logs->firstItem() }}–{{ $logs->lastItem() }} of {{ $logs->total() }} results</div>
+                        <div class="pagination-controls">
+                            @if($logs->onFirstPage())
+                                <span class="page-btn disabled">‹ Previous</span>
+                            @else
+                                <a href="{{ $logs->previousPageUrl() }}" class="page-btn">‹ Previous</a>
+                            @endif
+
+                            @foreach($logs->getUrlRange(max(1, $logs->currentPage() - 2), min($logs->lastPage(), $logs->currentPage() + 2)) as $page => $url)
+                                <a href="{{ $url }}" class="page-num {{ $page == $logs->currentPage() ? 'active' : '' }}">{{ $page }}</a>
+                            @endforeach
+
+                            @if($logs->hasMorePages())
+                                <a href="{{ $logs->nextPageUrl() }}" class="page-btn">Next ›</a>
+                            @else
+                                <span class="page-btn disabled">Next ›</span>
+                            @endif
+                        </div>
                     </div>
                 @endif
             </div>

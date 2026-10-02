@@ -182,29 +182,37 @@ class CourseCoordinationController extends Controller
         return $result;
     }
 
-    protected function extractDocxText(string $path): string
+    // Fails open — a malformed .docx or a PhpWord parsing error shouldn't 500
+    // the whole upload; the module file itself is still stored either way,
+    // this only skips auto-filling Teaching Notes from it.
+    protected function extractDocxText(string $path): ?string
     {
-        $phpWord = IOFactory::load($path);
-        $text = '';
+        try {
+            $phpWord = IOFactory::load($path);
+            $text = '';
 
-        foreach ($phpWord->getSections() as $section) {
-            foreach ($section->getElements() as $element) {
-                if (method_exists($element, 'getText')) {
-                    $t = $element->getText();
-                    $text .= (is_string($t) ? $t : '') . "\n";
-                } elseif (method_exists($element, 'getElements')) {
-                    foreach ($element->getElements() as $child) {
-                        if (method_exists($child, 'getText')) {
-                            $childText = $child->getText();
-                            $text .= is_string($childText) ? $childText : '';
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    if (method_exists($element, 'getText')) {
+                        $t = $element->getText();
+                        $text .= (is_string($t) ? $t : '') . "\n";
+                    } elseif (method_exists($element, 'getElements')) {
+                        foreach ($element->getElements() as $child) {
+                            if (method_exists($child, 'getText')) {
+                                $childText = $child->getText();
+                                $text .= is_string($childText) ? $childText : '';
+                            }
                         }
+                        $text .= "\n";
                     }
-                    $text .= "\n";
                 }
             }
-        }
 
-        return trim($text);
+            return trim($text);
+        } catch (\Throwable $e) {
+            report($e);
+            return null;
+        }
     }
 
     public function destroyCourseTopic(CourseTopic $courseTopic)

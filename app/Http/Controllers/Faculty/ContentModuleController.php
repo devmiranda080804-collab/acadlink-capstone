@@ -96,37 +96,46 @@ class ContentModuleController extends Controller
     // HTML) instead of flattening to plain text — this keeps the upload
     // looking like itself once opened: bold/italic, tables, etc. survive,
     // not just the bare words.
+    //
+    // Fails open, like extractPdfContentViaAi() — a malformed .docx or an
+    // element PhpWord's HTML writer can't handle should fall back to storing
+    // the upload as a plain file, not 500 the whole request.
     protected function extractDocxContent(string $path): ?string
     {
-        $phpWord = IOFactory::load($path);
-        $htmlWriter = IOFactory::createWriter($phpWord, 'HTML');
+        try {
+            $phpWord = IOFactory::load($path);
+            $htmlWriter = IOFactory::createWriter($phpWord, 'HTML');
 
-        ob_start();
-        $htmlWriter->save('php://output');
-        $fullHtml = ob_get_clean();
+            ob_start();
+            $htmlWriter->save('php://output');
+            $fullHtml = ob_get_clean();
 
-        if (!preg_match('#<body[^>]*>(.*)</body>#is', $fullHtml, $matches)) {
+            if (!preg_match('#<body[^>]*>(.*)</body>#is', $fullHtml, $matches)) {
+                return null;
+            }
+
+            // Drop PhpWord's own page-wrapper <div>s, keep everything inside them
+            $body = trim(preg_replace('#</?div[^>]*>#i', '', $matches[1]));
+
+            // PhpWord's HTML writer silently drops headers/footers — HTML has no
+            // "repeat on every printed page" concept to translate them into. Pull
+            // their text out separately so a letterhead/footer isn't just lost,
+            // placed as plain blocks at the top/bottom instead of being "sticky."
+            $headerText = $this->extractHeaderFooterText($phpWord, 'getHeaders');
+            $footerText = $this->extractHeaderFooterText($phpWord, 'getFooters');
+
+            if ($headerText) {
+                $body = '<p><em>' . e($headerText) . '</em></p><hr>' . $body;
+            }
+            if ($footerText) {
+                $body .= '<hr><p><em>' . e($footerText) . '</em></p>';
+            }
+
+            return $body === '' ? null : $body;
+        } catch (\Throwable $e) {
+            report($e);
             return null;
         }
-
-        // Drop PhpWord's own page-wrapper <div>s, keep everything inside them
-        $body = trim(preg_replace('#</?div[^>]*>#i', '', $matches[1]));
-
-        // PhpWord's HTML writer silently drops headers/footers — HTML has no
-        // "repeat on every printed page" concept to translate them into. Pull
-        // their text out separately so a letterhead/footer isn't just lost,
-        // placed as plain blocks at the top/bottom instead of being "sticky."
-        $headerText = $this->extractHeaderFooterText($phpWord, 'getHeaders');
-        $footerText = $this->extractHeaderFooterText($phpWord, 'getFooters');
-
-        if ($headerText) {
-            $body = '<p><em>' . e($headerText) . '</em></p><hr>' . $body;
-        }
-        if ($footerText) {
-            $body .= '<hr><p><em>' . e($footerText) . '</em></p>';
-        }
-
-        return $body === '' ? null : $body;
     }
 
     protected function extractHeaderFooterText(\PhpOffice\PhpWord\PhpWord $phpWord, string $getter): string
