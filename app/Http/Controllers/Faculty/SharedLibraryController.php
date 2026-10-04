@@ -8,6 +8,7 @@ use App\Models\CourseMaterial;
 use App\Models\SharedResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class SharedLibraryController extends Controller
 {
@@ -151,7 +152,7 @@ class SharedLibraryController extends Controller
     {
         $request->validate([
             'title'       => 'required|string|max:255',
-            'type'        => 'required|in:lecture_slides,case_study,activity_guide,assessment_sample',
+            'type'        => ['required', Rule::in(array_keys(SharedResource::typeOptions()))],
             'description' => 'nullable|string|max:500',
             'file'        => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx|max:20480',
         ]);

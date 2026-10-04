@@ -323,7 +323,7 @@
                 <div class="modal-field">
                     <label>Category <span style="color:#ef4444">*</span></label>
                     <select name="type" required>
-                        @foreach(\App\Models\SharedResource::TYPES as $typeKey => $typeLabel)
+                        @foreach(\App\Models\SharedResource::typeOptions() as $typeKey => $typeLabel)
                             <option value="{{ $typeKey }}">{{ $typeLabel }}</option>
                         @endforeach
                     </select>

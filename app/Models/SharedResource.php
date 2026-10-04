@@ -11,16 +11,25 @@ class SharedResource extends Model
         'file_path', 'file_name', 'file_type', 'file_size',
     ];
 
-    const TYPES = [
+    // The four original categories (kept so already-shared files still label correctly),
+    // plus the same document types used for Admin templates.
+    const LEGACY_TYPES = [
         'lecture_slides'    => 'Lecture Slides',
         'case_study'        => 'Case Study',
         'activity_guide'    => 'Activity Guide',
         'assessment_sample' => 'Assessment Sample',
     ];
 
+    public static function typeOptions(): array
+    {
+        $templateTypes = collect(TemplateDocument::TYPES)->map(fn($meta) => $meta['label'])->all();
+
+        return self::LEGACY_TYPES + $templateTypes;
+    }
+
     public function getTypeLabelAttribute(): string
     {
-        return self::TYPES[$this->type] ?? 'Lecture Slides';
+        return self::typeOptions()[$this->type] ?? 'Lecture Slides';
     }
 
     public function sharer()
