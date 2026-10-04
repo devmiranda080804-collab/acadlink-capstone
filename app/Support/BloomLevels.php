@@ -18,7 +18,7 @@ class BloomLevels
     // sensible fallback for topics/exams that have no TOS target_items to align against.
     const TYPES = [
         'mc-single' => [
-            'label' => 'Multiple Choice (Single)',
+            'label' => 'Multiple Choice',
             'desc'  => 'Single correct answer from multiple options',
             'icon'  => '◎',
             'bloom' => 'Understanding',
@@ -46,7 +46,7 @@ class BloomLevels
             'category' => 'LOTS',
         ],
         'short-answer' => [
-            'label' => 'Short Answer / Essay',
+            'label' => 'Essay',
             'desc'  => 'Longform text answer',
             'icon'  => 'T',
             'bloom' => 'Analyzing',
