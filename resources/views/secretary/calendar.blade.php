@@ -222,10 +222,10 @@
                     <div class="modal-field">
                         <label>Category</label>
                         <select name="category" id="f-category">
-                            <option value="general">All Roles</option>
-                            <option value="exam">Exam Period</option>
-                            <option value="faculty">Faculty Required</option>
-                            <option value="holiday">Holiday</option>
+                            <option value="general">General Activity</option>
+                            <option value="exam">Examination Period</option>
+                            <option value="faculty">Faculty Action Required</option>
+                            <option value="holiday">Holiday / No Class</option>
                         </select>
                     </div>
                 </div>

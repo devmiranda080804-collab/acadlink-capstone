@@ -24,10 +24,10 @@ class CalendarActivity extends Model
     public function getCategoryLabelAttribute(): string
     {
         return match ($this->category) {
-            'exam'    => 'Exam Period',
-            'faculty' => 'Faculty Required',
-            'holiday' => 'Holiday',
-            default   => 'All Roles',
+            'exam'    => 'Examination Period',
+            'faculty' => 'Faculty Action Required',
+            'holiday' => 'Holiday / No Class',
+            default   => 'General Activity',
         };
     }
 }
