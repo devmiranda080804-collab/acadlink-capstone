@@ -21,18 +21,10 @@ class AcademicTerm
         return 'Summer';
     }
 
-    // The current school year plus the two before it — a small, reasonable
-    // set of past terms to pick from in a selector (e.g. Analytics), without
-    // needing a query against historical data just to populate the dropdown.
+    // Analytics only reports on the present school year.
     public static function selectableSchoolYears(): array
     {
-        $startYear = (int) explode('-', self::currentSchoolYear())[0];
-
-        return [
-            ($startYear) . '-' . ($startYear + 1),
-            ($startYear - 1) . '-' . ($startYear),
-            ($startYear - 2) . '-' . ($startYear - 1),
-        ];
+        return [self::currentSchoolYear()];
     }
 
     // Dropdown options for school-year pickers: the current school year and the
