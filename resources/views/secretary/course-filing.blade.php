@@ -132,7 +132,7 @@
 
         <div class="content">
             <div class="page-title">Course Filing</div>
-            <div class="page-sub">Monitor whether each course's documents (Syllabus, TOS, Exam Bank, Materials) are complete</div>
+            <div class="page-sub">Monitor whether each course's documents (Syllabus, TOS, Exam Bank, Materials) and OBE alignment (Course Outcomes mapped to Program Outcomes) are complete</div>
 
             <div class="filters-row">
                 <form method="GET">
@@ -156,6 +156,7 @@
                             <th class="center">TOS</th>
                             <th class="center">Exam Bank</th>
                             <th class="center">Materials</th>
+                            <th class="center">OBE Alignment</th>
                             <th class="center">Completion</th>
                         </tr>
                     </thead>
@@ -191,6 +192,13 @@
                                     <span class="material-count {{ $row['materials'] == 0 ? 'zero' : '' }}">{{ $row['materials'] }}</span>
                                 </td>
                                 <td class="center">
+                                    @if($row['has_obe_alignment'])
+                                        <span class="status-icon status-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+                                    @else
+                                        <span class="status-icon status-no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+                                    @endif
+                                </td>
+                                <td class="center">
                                     <div class="completion-bar" style="justify-content:center;">
                                         <div class="completion-track"><div class="completion-fill" style="width: {{ $pct }}%;"></div></div>
                                         <span class="completion-text">{{ $pct }}%</span>
@@ -198,7 +206,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="empty-row">No courses found.</td></tr>
+                            <tr><td colspan="9" class="empty-row">No courses found.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
