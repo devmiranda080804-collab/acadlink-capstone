@@ -11,91 +11,107 @@ use Illuminate\Support\Facades\Storage;
 
 class SharedLibraryController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
         $myProgram = auth()->user()->program;
-        $filter = $request->get('filter', 'all'); // all, templates, materials, shared
 
         $items = collect();
 
+        // Every item carries a "folder" (group/key/label/icon) so the view can
+        // arrange the library into real folders — Templates grouped by type,
+        // Course Materials grouped by the actual course, Faculty Shared
+        // grouped by category — instead of one long flat, mixed list.
+
         // 1. Templates distributed to this faculty member's program
-        if ($filter === 'all' || $filter === 'templates') {
-            TemplateDocument::with('creator')
-                ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
-                ->get()
-                ->each(function ($t) use (&$items, $myProgram) {
-                    $items->push([
-                        'id'        => $t->id,
-                        'source'    => 'template',
-                        'title'     => $t->title,
-                        'type'      => str_replace('_', ' ', $t->type),
-                        'shared_by' => $t->creator->name ?? 'Unknown',
-                        'desc'      => 'Official distributed template',
-                        'file_type' => $t->file_type,
-                        'file_size' => $t->readable_size,
-                        'file_url'  => url("/faculty/shared-library/file/template/{$t->id}"),
-                        'date'      => $t->programRow($myProgram)->distributed_at,
-                        'can_delete'=> false,
-                    ]);
-                });
-        }
+        TemplateDocument::with('creator')
+            ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
+            ->get()
+            ->each(function ($t) use (&$items, $myProgram) {
+                $items->push([
+                    'id'           => $t->id,
+                    'source'       => 'template',
+                    'title'        => $t->title,
+                    'type'         => str_replace('_', ' ', $t->type),
+                    'shared_by'    => $t->creator->name ?? 'Unknown',
+                    'desc'         => 'Official distributed template',
+                    'file_type'    => $t->file_type,
+                    'file_size'    => $t->readable_size,
+                    'file_url'     => url("/faculty/shared-library/file/template/{$t->id}"),
+                    'date'         => $t->programRow($myProgram)->distributed_at,
+                    'can_delete'   => false,
+                    'folder_group' => 'templates',
+                    'folder_key'   => 'template-' . $t->type,
+                    'folder_label' => str_replace('_', ' ', ucfirst($t->type)) . ' Templates',
+                    'folder_icon'  => $t->type === 'syllabus' ? '📘' : ($t->type === 'course_guide' ? '📙' : '📝'),
+                ]);
+            });
 
-        // 2. Course materials (own program)
-        if ($filter === 'all' || $filter === 'materials') {
-            CourseMaterial::with(['course', 'uploader'])
-                ->whereHas('course', fn($c) => $c->where('program', $myProgram))
-                ->get()
-                ->each(function ($m) use (&$items) {
-                    $items->push([
-                        'id'        => $m->id,
-                        'source'    => 'material',
-                        'title'     => $m->title,
-                        'type'      => 'Course Material',
-                        'shared_by' => $m->uploader->name ?? 'Unknown',
-                        'desc'      => $m->course->code ?? 'Course material',
-                        'file_type' => $m->file_type,
-                        'file_size' => $m->readable_size,
-                        'file_url'  => url("/faculty/shared-library/file/material/{$m->id}"),
-                        'date'      => $m->created_at,
-                        'can_delete'=> false,
-                    ]);
-                });
-        }
+        // 2. Course materials (own program) — one folder per actual course
+        CourseMaterial::with(['course', 'uploader'])
+            ->whereHas('course', fn($c) => $c->where('program', $myProgram))
+            ->get()
+            ->each(function ($m) use (&$items) {
+                $items->push([
+                    'id'           => $m->id,
+                    'source'       => 'material',
+                    'title'        => $m->title,
+                    'type'         => 'Course Material',
+                    'shared_by'    => $m->uploader->name ?? 'Unknown',
+                    'desc'         => $m->course->code ?? 'Course material',
+                    'file_type'    => $m->file_type,
+                    'file_size'    => $m->readable_size,
+                    'file_url'     => url("/faculty/shared-library/file/material/{$m->id}"),
+                    'date'         => $m->created_at,
+                    'can_delete'   => false,
+                    'folder_group' => 'materials',
+                    'folder_key'   => 'course-' . $m->course_id,
+                    'folder_label' => ($m->course->code ?? 'Unknown') . ' — ' . ($m->course->title ?? 'Course'),
+                    'folder_icon'  => '📚',
+                ]);
+            });
 
-        // 3. Faculty-shared resources (own program)
-        if ($filter === 'all' || $filter === 'shared') {
-            SharedResource::with('sharer')
-                ->where('program', $myProgram)
-                ->get()
-                ->each(function ($r) use (&$items) {
-                    $items->push([
-                        'id'        => $r->id,
-                        'source'    => 'shared',
-                        'title'     => $r->title,
-                        'type'      => $r->type_label,
-                        'shared_by' => $r->sharer->name ?? 'Unknown',
-                        'desc'      => $r->description ?? 'Shared by faculty',
-                        'file_type' => $r->file_type,
-                        'file_size' => $r->readable_size,
-                        'file_url'  => url("/faculty/shared-library/file/shared/{$r->id}"),
-                        'date'      => $r->created_at,
-                        'can_delete'=> $r->shared_by === auth()->id(), // own upload only
-                    ]);
-                });
-        }
+        // 3. Faculty-shared resources (own program) — one folder per category
+        SharedResource::with('sharer')
+            ->where('program', $myProgram)
+            ->get()
+            ->each(function ($r) use (&$items) {
+                $items->push([
+                    'id'           => $r->id,
+                    'source'       => 'shared',
+                    'title'        => $r->title,
+                    'type'         => $r->type_label,
+                    'shared_by'    => $r->sharer->name ?? 'Unknown',
+                    'desc'         => $r->description ?? 'Shared by faculty',
+                    'file_type'    => $r->file_type,
+                    'file_size'    => $r->readable_size,
+                    'file_url'     => url("/faculty/shared-library/file/shared/{$r->id}"),
+                    'date'         => $r->created_at,
+                    'can_delete'   => $r->shared_by === auth()->id(), // own upload only
+                    'folder_group' => 'shared',
+                    'folder_key'   => 'shared-' . $r->type,
+                    'folder_label' => $r->type_label,
+                    'folder_icon'  => '🗂️',
+                ]);
+            });
 
         $items = $items->sortByDesc('date')->values();
 
-        // Cheap counts (no eager loading) so the filter tabs can show totals
-        // regardless of which filter is currently active.
-        $counts = [
-            'templates' => TemplateDocument::whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))->count(),
-            'materials' => CourseMaterial::whereHas('course', fn($c) => $c->where('program', $myProgram))->count(),
-            'shared'    => SharedResource::where('program', $myProgram)->count(),
-        ];
-        $counts['all'] = $counts['templates'] + $counts['materials'] + $counts['shared'];
+        // Build the folder list (one row per distinct folder_key), each
+        // carrying its own item count — this is what renders as the
+        // top-level "shelves" the faculty clicks into.
+        $folders = $items->groupBy('folder_key')->map(function ($group) {
+            $first = $group->first();
 
-        return view('faculty.shared-library', compact('items', 'filter', 'myProgram', 'counts'));
+            return [
+                'key'   => $first['folder_key'],
+                'group' => $first['folder_group'],
+                'label' => $first['folder_label'],
+                'icon'  => $first['folder_icon'],
+                'count' => $group->count(),
+            ];
+        })->sortBy('label')->values();
+
+        return view('faculty.shared-library', compact('items', 'folders', 'myProgram'));
     }
 
     // Every file in the library is served through here instead of a raw public

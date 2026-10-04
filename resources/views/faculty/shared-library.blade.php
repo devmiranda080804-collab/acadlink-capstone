@@ -43,18 +43,32 @@
         .btn-share { display: flex; align-items: center; gap: 6px; background: #0f2557; color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; white-space: nowrap; }
         .btn-share:hover { background: #1a3a7a; }
 
-        .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
-        .filter-tabs { display: flex; gap: 4px; }
-        .filter-tab { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; text-decoration: none; }
-        .filter-tab:hover { border-color: #0f2557; color: #0f2557; }
-        .filter-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
-        .filter-count { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: rgba(15,37,87,0.08); color: #0f2557; }
-        .filter-tab.active .filter-count { background: rgba(255,255,255,0.22); color: #fff; }
+        .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
 
-        .search-box { position: relative; width: 240px; max-width: 100%; }
+        .search-box { position: relative; width: 280px; max-width: 100%; }
         .search-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #999; pointer-events: none; }
-        .search-box input { width: 100%; padding: 8px 10px 8px 30px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; outline: none; font-family: Arial, sans-serif; }
+        .search-box input { width: 100%; padding: 9px 10px 9px 30px; border: 1px solid #ddd; border-radius: 6px; font-size: 12.5px; outline: none; font-family: Arial, sans-serif; }
         .search-box input:focus { border-color: #0f2557; }
+
+        {{-- Folder (library-shelf) browsing --}}
+        .folder-section { margin-bottom: 26px; }
+        .folder-section-title { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; }
+        .folder-section-count { font-size: 10.5px; font-weight: 600; color: #999; background: #f0f0f0; padding: 2px 8px; border-radius: 10px; }
+        .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+        .folder-card { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; text-align: left; }
+        .folder-card:hover { box-shadow: 0 6px 18px rgba(15,37,87,0.1); transform: translateY(-2px); border-color: #c7d2e8; }
+        .folder-card-icon { font-size: 30px; line-height: 1; flex-shrink: 0; }
+        .folder-card-label { font-size: 12.5px; font-weight: 700; color: #1a1a2e; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .folder-card-count { font-size: 10.5px; color: #999; margin-top: 3px; }
+
+        .breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+        .btn-back { display: inline-flex; align-items: center; gap: 5px; background: #fff; border: 1px solid #ddd; color: #444; font-size: 12px; font-weight: 600; padding: 7px 13px; border-radius: 6px; cursor: pointer; }
+        .btn-back:hover { border-color: #0f2557; color: #0f2557; }
+        .btn-back svg { width: 13px; height: 13px; }
+        .breadcrumb-label { font-size: 13.5px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 8px; }
+
+        .search-results-label { font-size: 12px; color: #888; margin-bottom: 14px; }
+        .search-results-label strong { color: #1a1a2e; }
 
         .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
         .lib-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; transition: box-shadow 0.15s, transform 0.15s; }
@@ -192,71 +206,104 @@
                 </button>
             </div>
 
-            {{-- Toolbar: filter tabs + search --}}
+            {{-- Search: bypasses folders and searches every file at once --}}
             <div class="toolbar">
-                <div class="filter-tabs">
-                    <a class="filter-tab {{ $filter == 'all' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=all') }}">All <span class="filter-count">{{ $counts['all'] }}</span></a>
-                    <a class="filter-tab {{ $filter == 'templates' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=templates') }}">Templates <span class="filter-count">{{ $counts['templates'] }}</span></a>
-                    <a class="filter-tab {{ $filter == 'materials' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=materials') }}">Course Materials <span class="filter-count">{{ $counts['materials'] }}</span></a>
-                    <a class="filter-tab {{ $filter == 'shared' ? 'active' : '' }}" href="{{ url('/faculty/shared-library?filter=shared') }}">Faculty Shared <span class="filter-count">{{ $counts['shared'] }}</span></a>
-                </div>
                 <div class="search-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="lib-search" placeholder="Search by title..." oninput="filterCards(this.value)">
+                    <input type="text" id="lib-search" placeholder="Search all files by title..." oninput="onSearchInput(this.value)">
                 </div>
             </div>
 
-            {{-- Resource grid --}}
-            <div class="lib-grid" id="lib-grid">
-                @forelse($items as $item)
-                    <div class="lib-card" data-title="{{ strtolower($item['title']) }}">
-                        <div class="lib-card-top">
-                            <span class="lib-icon">@if($item['file_type'] == 'gdoc') 📑 @elseif($item['file_type'] == 'pdf') 📄 @elseif(in_array($item['file_type'], ['xls','xlsx'])) 📊 @elseif(in_array($item['file_type'], ['ppt','pptx'])) 📊 @else 📝 @endif</span>
-                            @if($item['source'] == 'template')
-                                <span class="source-badge source-template">Template</span>
-                            @elseif($item['source'] == 'material')
-                                <span class="source-badge source-material">Material</span>
-                            @else
-                                <span class="source-badge source-shared">Shared</span>
-                            @endif
-                        </div>
-                        <div class="lib-title">{{ $item['title'] }}</div>
-                        <div class="lib-desc">{{ $item['desc'] }}</div>
-                        <div class="lib-meta">
-                            <span>By {{ $item['shared_by'] }}</span>
-                            <span class="dot">·</span>
-                            <span>{{ $item['date']->format('M d, Y') }}</span>
-                            @if(!empty($item['file_size']))
-                                <span class="dot">·</span>
-                                <span>{{ $item['file_size'] }}</span>
-                            @endif
-                        </div>
-                        <div class="lib-actions">
-                            <a class="btn-view" href="{{ $item['file_url'] }}" target="_blank">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                View / Download
-                            </a>
-                            @if($item['can_delete'])
-                                <form method="POST" action="{{ url('/faculty/shared-library/' . $item['id']) }}" onsubmit="return confirm('Remove this resource?')" style="display:inline;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn-del" title="Delete">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    </div>
-                @empty
+            {{-- FOLDER HOME: library "shelves" — Templates by type, Course Materials by subject, Faculty Shared by category --}}
+            <div id="folder-home">
+                @if($items->isEmpty())
                     <div class="empty-state">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-                        <p>No resources yet for this filter.<br>Share a resource to help fellow faculty in <strong>{{ $myProgram }}</strong>!</p>
+                        <p>Nothing in the library yet for <strong>{{ $myProgram }}</strong>.<br>Share a resource to get started!</p>
                     </div>
-                @endforelse
+                @else
+                    @foreach(['templates' => 'Official Templates', 'materials' => 'Course Materials', 'shared' => 'Faculty Shared Resources'] as $group => $sectionLabel)
+                        @php $groupFolders = $folders->where('group', $group); @endphp
+                        @if($groupFolders->isNotEmpty())
+                            <div class="folder-section">
+                                <div class="folder-section-title">
+                                    {{ $sectionLabel }}
+                                    <span class="folder-section-count">{{ $groupFolders->sum('count') }} file{{ $groupFolders->sum('count') == 1 ? '' : 's' }}</span>
+                                </div>
+                                <div class="folder-grid">
+                                    @foreach($groupFolders as $folder)
+                                        <button type="button" class="folder-card" onclick="openFolder('{{ $folder['key'] }}', @js($folder['label']))">
+                                            <span class="folder-card-icon">{{ $folder['icon'] }}</span>
+                                            <div>
+                                                <div class="folder-card-label">{{ $folder['label'] }}</div>
+                                                <div class="folder-card-count">{{ $folder['count'] }} file{{ $folder['count'] == 1 ? '' : 's' }}</div>
+                                            </div>
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    @endforeach
+                @endif
             </div>
-            <div class="empty-state" id="no-search-results" style="display:none;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <p>No resources match your search.</p>
+
+            {{-- FILE VIEW: shown after opening a folder, or while searching --}}
+            <div id="file-view" style="display:none;">
+                <div class="breadcrumb">
+                    <button type="button" class="btn-back" onclick="backToFolders()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                        Back to Library
+                    </button>
+                    <span class="breadcrumb-label" id="file-view-title"></span>
+                </div>
+
+                <div class="lib-grid" id="lib-grid">
+                    @forelse($items as $item)
+                        <div class="lib-card" data-title="{{ strtolower($item['title']) }}" data-folder="{{ $item['folder_key'] }}">
+                            <div class="lib-card-top">
+                                <span class="lib-icon">@if($item['file_type'] == 'gdoc') 📑 @elseif($item['file_type'] == 'pdf') 📄 @elseif(in_array($item['file_type'], ['xls','xlsx'])) 📊 @elseif(in_array($item['file_type'], ['ppt','pptx'])) 📊 @else 📝 @endif</span>
+                                @if($item['source'] == 'template')
+                                    <span class="source-badge source-template">Template</span>
+                                @elseif($item['source'] == 'material')
+                                    <span class="source-badge source-material">Material</span>
+                                @else
+                                    <span class="source-badge source-shared">Shared</span>
+                                @endif
+                            </div>
+                            <div class="lib-title">{{ $item['title'] }}</div>
+                            <div class="lib-desc">{{ $item['desc'] }}</div>
+                            <div class="lib-meta">
+                                <span>By {{ $item['shared_by'] }}</span>
+                                <span class="dot">·</span>
+                                <span>{{ $item['date']->format('M d, Y') }}</span>
+                                @if(!empty($item['file_size']))
+                                    <span class="dot">·</span>
+                                    <span>{{ $item['file_size'] }}</span>
+                                @endif
+                            </div>
+                            <div class="lib-actions">
+                                <a class="btn-view" href="{{ $item['file_url'] }}" target="_blank">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    View / Download
+                                </a>
+                                @if($item['can_delete'])
+                                    <form method="POST" action="{{ url('/faculty/shared-library/' . $item['id']) }}" onsubmit="return confirm('Remove this resource?')" style="display:inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-del" title="Delete">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                    @endforelse
+                </div>
+                <div class="empty-state" id="no-search-results" style="display:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <p>No files match.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -307,18 +354,66 @@
         function closeShareModal() { document.getElementById('share-overlay').classList.remove('open'); }
         document.getElementById('share-overlay').addEventListener('click', function(e) { if (e.target === this) closeShareModal(); });
 
-        function filterCards(query) {
-            query = query.trim().toLowerCase();
+        var currentFolder = null; // null = no folder open (home or global search)
+        var currentFolderLabel = '';
+
+        function openFolder(key, label) {
+            currentFolder = key;
+            currentFolderLabel = label;
+            document.getElementById('lib-search').value = '';
+            document.getElementById('folder-home').style.display = 'none';
+            document.getElementById('file-view').style.display = '';
+            document.getElementById('file-view-title').textContent = label;
+            renderFileView();
+        }
+
+        function backToFolders() {
+            currentFolder = null;
+            currentFolderLabel = '';
+            document.getElementById('lib-search').value = '';
+            document.getElementById('file-view').style.display = 'none';
+            document.getElementById('folder-home').style.display = '';
+        }
+
+        function onSearchInput(query) {
+            query = query.trim();
+            if (query === '') {
+                // Nothing typed: go back to wherever we were (a folder, or home)
+                if (currentFolder) {
+                    document.getElementById('file-view-title').textContent = currentFolderLabel;
+                    renderFileView();
+                } else {
+                    document.getElementById('file-view').style.display = 'none';
+                    document.getElementById('folder-home').style.display = '';
+                }
+                return;
+            }
+
+            // Searching always looks across the whole library, not just the
+            // open folder — the fastest way to find one file without having
+            // to guess which folder it's filed under.
+            document.getElementById('folder-home').style.display = 'none';
+            document.getElementById('file-view').style.display = '';
+            document.getElementById('file-view-title').textContent = 'Search results for "' + query + '"';
+            renderFileView(query);
+        }
+
+        function renderFileView(searchQuery) {
             var cards = document.querySelectorAll('#lib-grid .lib-card');
+            var q = (searchQuery || '').toLowerCase();
             var visibleCount = 0;
+
             cards.forEach(function(card) {
-                var match = card.dataset.title.includes(query);
-                card.style.display = match ? '' : 'none';
-                if (match) visibleCount++;
+                var matchesFolder = searchQuery ? true : (!currentFolder || card.dataset.folder === currentFolder);
+                var matchesSearch = !q || card.dataset.title.includes(q);
+                var visible = matchesFolder && matchesSearch;
+                card.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
             });
+
             var noResults = document.getElementById('no-search-results');
             if (noResults) {
-                noResults.style.display = (query && visibleCount === 0 && cards.length > 0) ? 'flex' : 'none';
+                noResults.style.display = (visibleCount === 0) ? 'flex' : 'none';
                 noResults.style.flexDirection = 'column';
                 noResults.style.alignItems = 'center';
             }
