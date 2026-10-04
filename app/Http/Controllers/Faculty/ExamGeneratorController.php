@@ -405,14 +405,16 @@ class ExamGeneratorController extends Controller
         // as-is (the download's shown filename is set separately below via
         // $filename, so this temp name/extension never surfaces to the user).
         $tempPath = tempnam(sys_get_temp_dir(), 'exam_');
-        \Illuminate\Support\Facades\Log::info('Exam download: before save', ['tempPath' => $tempPath, 'sections' => $exam->sections->count(), 'questions' => $exam->sections->sum(fn($s) => $s->questions->count())]);
+        // Temp debug — forced to error level so it isn't dropped by a
+        // production LOG_LEVEL threshold like the earlier Log::info() calls were.
+        \Illuminate\Support\Facades\Log::error('EXAM_DL_DEBUG before save', ['tempPath' => $tempPath, 'sections' => $exam->sections->count(), 'questions' => $exam->sections->sum(fn($s) => $s->questions->count())]);
         try {
             IOFactory::createWriter($phpWord, 'Word2007')->save($tempPath);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('Exam download: save() threw', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            \Illuminate\Support\Facades\Log::error('EXAM_DL_DEBUG save() threw', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             throw $e;
         }
-        \Illuminate\Support\Facades\Log::info('Exam download: after save', ['exists' => file_exists($tempPath), 'size' => file_exists($tempPath) ? filesize($tempPath) : null]);
+        \Illuminate\Support\Facades\Log::error('EXAM_DL_DEBUG after save', ['exists' => file_exists($tempPath), 'size' => file_exists($tempPath) ? filesize($tempPath) : null]);
 
         return response()->download($tempPath, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
