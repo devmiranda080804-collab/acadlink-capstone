@@ -61,6 +61,28 @@
         .search-box input { width: 100%; padding: 8px 10px 8px 30px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; outline: none; font-family: Arial, sans-serif; }
         .search-box input:focus { border-color: #0f2557; }
 
+        {{-- Needs Attention: pinned, never buried under everything already handled --}}
+        .attention-banner { background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 16px 18px; margin-bottom: 22px; }
+        .attention-banner-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 12px; }
+
+        {{-- Folder (library-shelf) browsing --}}
+        .folder-section { margin-bottom: 26px; }
+        .folder-section-title { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; }
+        .folder-section-count { font-size: 10.5px; font-weight: 600; color: #999; background: #f0f0f0; padding: 2px 8px; border-radius: 10px; }
+        .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+        .folder-card { position: relative; display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; text-align: left; }
+        .folder-card:hover { box-shadow: 0 6px 18px rgba(15,37,87,0.1); transform: translateY(-2px); border-color: #c7d2e8; }
+        .folder-card-icon { font-size: 30px; line-height: 1; flex-shrink: 0; }
+        .folder-card-label { font-size: 12.5px; font-weight: 700; color: #1a1a2e; line-height: 1.3; }
+        .folder-card-count { font-size: 10.5px; color: #999; margin-top: 3px; }
+        .folder-card-pending-badge { position: absolute; top: -7px; right: -7px; background: #f59e0b; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: flex; align-items: center; justify-content: center; }
+
+        .breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+        .btn-back { display: inline-flex; align-items: center; gap: 5px; background: #fff; border: 1px solid #ddd; color: #444; font-size: 12px; font-weight: 600; padding: 7px 13px; border-radius: 6px; cursor: pointer; }
+        .btn-back:hover { border-color: #0f2557; color: #0f2557; }
+        .btn-back svg { width: 13px; height: 13px; }
+        .breadcrumb-label { font-size: 13.5px; font-weight: 700; color: #1a1a2e; }
+
         .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
         .review-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; transition: box-shadow 0.15s; }
         .review-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.07); }
@@ -184,81 +206,146 @@
             </div>
 
             <div class="toolbar">
-                <div class="filter-tabs">
-                    <span class="filter-tab active" onclick="filterCards('all', this)">All</span>
-                    <span class="filter-tab" onclick="filterCards('pending', this)">Awaiting Distribution</span>
-                    <span class="filter-tab" onclick="filterCards('distributed', this)">Distributed</span>
-                </div>
                 <div class="search-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="template-search" placeholder="Search by title..." oninput="searchCards(this.value)">
+                    <input type="text" id="template-search" placeholder="Search all templates by title..." oninput="onSearchInput(this.value)">
                 </div>
             </div>
 
-            <div class="template-grid" id="template-grid">
-                @forelse($rows as $r)
-                    @php $template = $r['template']; $row = $r['row']; $isDistributed = $row && $row->distributed_at; @endphp
-                    <div class="review-card {{ $isDistributed ? 'distributed' : 'pending' }}" data-status="{{ $isDistributed ? 'distributed' : 'pending' }}" data-title="{{ strtolower($template->title) }}">
-                        <div class="review-card-top">
-                            <span class="review-card-icon">
-                                @if($template->type == 'syllabus') 📘
-                                @elseif($template->type == 'course_guide') 📙
-                                @elseif($template->type == 'module') 📝
-                                @else 📄
-                                @endif
-                            </span>
-                            @if($isDistributed)
-                                <span class="status-badge status-approved">Distributed</span>
-                            @else
-                                <span class="status-badge status-pending_approval">Not yet distributed</span>
-                            @endif
-                        </div>
-                        <div class="review-card-title">{{ $template->title }}</div>
-                        <div class="review-card-type">{{ str_replace('_', ' ', $template->type) }}</div>
-                        <div class="review-card-meta">Uploaded by {{ $template->creator->name }} • {{ $template->created_at->format('Y-m-d') }}</div>
+            @php
+                $pendingRows = $rows->filter(fn($r) => !($r['row'] && $r['row']->distributed_at));
+                $typeFolders = $rows->groupBy(fn($r) => $r['template']->type)->map(function ($group, $type) {
+                    return [
+                        'key'     => 'type-' . $type,
+                        'label'   => str_replace('_', ' ', ucfirst($type)) . ' Templates',
+                        'icon'    => $type === 'syllabus' ? '📘' : ($type === 'course_guide' ? '📙' : '📝'),
+                        'count'   => $group->count(),
+                        'pending' => $group->filter(fn($r) => !($r['row'] && $r['row']->distributed_at))->count(),
+                    ];
+                })->sortBy('label')->values();
+            @endphp
 
-                        <div class="card-actions">
-                            <a class="btn-view-file" href="{{ Storage::url($template->file_path) }}" target="_blank">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                View
-                            </a>
-                            @if(!$isDistributed)
-                                <form method="POST" action="{{ url('/program-head/template-review/' . $template->id . '/distribute') }}" style="flex:1;">
-                                    @csrf
-                                    <button type="submit" class="btn-approve" style="width:100%;">Distribute</button>
-                                </form>
-                            @endif
-                        </div>
+            {{-- Needs Attention: pinned so nothing awaiting distribution gets buried once there are many already-distributed templates --}}
+            @if($pendingRows->isNotEmpty())
+                <div class="attention-banner">
+                    <div class="attention-banner-title">
+                        <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        Needs Attention — Awaiting Distribution ({{ $pendingRows->count() }})
                     </div>
-                @empty
-                    <div class="empty-state">No templates have been forwarded to your program yet.</div>
-                @endforelse
+                    <div class="template-grid">
+                        @foreach($pendingRows as $r)
+                            @include('program-head.partials.template-card', ['r' => $r])
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- FOLDER HOME: templates arranged by type, like library shelves --}}
+            <div id="folder-home">
+                <div class="folder-section">
+                    <div class="folder-section-title">
+                        All Templates
+                        <span class="folder-section-count">{{ $rows->count() }} file{{ $rows->count() == 1 ? '' : 's' }}</span>
+                    </div>
+                    @if($typeFolders->isEmpty())
+                        <div class="empty-state">No templates have been forwarded to your program yet.</div>
+                    @else
+                        <div class="folder-grid">
+                            @foreach($typeFolders as $folder)
+                                <button type="button" class="folder-card" onclick="openFolder('{{ $folder['key'] }}', @js($folder['label']))">
+                                    @if($folder['pending'] > 0)
+                                        <span class="folder-card-pending-badge" title="{{ $folder['pending'] }} awaiting distribution">{{ $folder['pending'] }}</span>
+                                    @endif
+                                    <span class="folder-card-icon">{{ $folder['icon'] }}</span>
+                                    <div>
+                                        <div class="folder-card-label">{{ $folder['label'] }}</div>
+                                        <div class="folder-card-count">{{ $folder['count'] }} file{{ $folder['count'] == 1 ? '' : 's' }}</div>
+                                    </div>
+                                </button>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- FILE VIEW: shown after opening a folder, or while searching --}}
+            <div id="file-view" style="display:none;">
+                <div class="breadcrumb">
+                    <button type="button" class="btn-back" onclick="backToFolders()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                        Back to Library
+                    </button>
+                    <span class="breadcrumb-label" id="file-view-title"></span>
+                </div>
+
+                <div class="template-grid" id="template-grid">
+                    @foreach($rows as $r)
+                        @include('program-head.partials.template-card', ['r' => $r, 'folderKey' => 'type-' . $r['template']->type])
+                    @endforeach
+                </div>
+                <div class="empty-state" id="no-search-results" style="display:none;">No templates match.</div>
             </div>
         </div>
     </div>
 
     <script>
-        var currentFilter = 'all';
-        var currentSearch = '';
+        var currentFolder = null;
+        var currentFolderLabel = '';
 
-        function filterCards(status, el) {
-            currentFilter = status;
-            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            applyCardFilters();
+        function openFolder(key, label) {
+            currentFolder = key;
+            currentFolderLabel = label;
+            document.getElementById('template-search').value = '';
+            document.getElementById('folder-home').style.display = 'none';
+            document.getElementById('file-view').style.display = '';
+            document.getElementById('file-view-title').textContent = label;
+            renderFileView();
         }
 
-        function searchCards(query) {
-            currentSearch = query.trim().toLowerCase();
-            applyCardFilters();
+        function backToFolders() {
+            currentFolder = null;
+            currentFolderLabel = '';
+            document.getElementById('template-search').value = '';
+            document.getElementById('file-view').style.display = 'none';
+            document.getElementById('folder-home').style.display = '';
         }
 
-        function applyCardFilters() {
-            document.querySelectorAll('#template-grid .review-card').forEach(card => {
-                const matchesFilter = currentFilter === 'all' || card.dataset.status === currentFilter;
-                const matchesSearch = !currentSearch || card.dataset.title.includes(currentSearch);
-                card.style.display = (matchesFilter && matchesSearch) ? '' : 'none';
+        function onSearchInput(query) {
+            query = query.trim();
+            if (query === '') {
+                if (currentFolder) {
+                    document.getElementById('file-view-title').textContent = currentFolderLabel;
+                    renderFileView();
+                } else {
+                    document.getElementById('file-view').style.display = 'none';
+                    document.getElementById('folder-home').style.display = '';
+                }
+                return;
+            }
+
+            document.getElementById('folder-home').style.display = 'none';
+            document.getElementById('file-view').style.display = '';
+            document.getElementById('file-view-title').textContent = 'Search results for "' + query + '"';
+            renderFileView(query);
+        }
+
+        function renderFileView(searchQuery) {
+            var cards = document.querySelectorAll('#template-grid .review-card');
+            var q = (searchQuery || '').toLowerCase();
+            var visibleCount = 0;
+
+            cards.forEach(function(card) {
+                var matchesFolder = searchQuery ? true : (!currentFolder || card.dataset.folder === currentFolder);
+                var matchesSearch = !q || card.dataset.title.includes(q);
+                var visible = matchesFolder && matchesSearch;
+                card.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
             });
+
+            var noResults = document.getElementById('no-search-results');
+            if (noResults) {
+                noResults.style.display = (visibleCount === 0) ? 'block' : 'none';
+            }
         }
     </script>
 
