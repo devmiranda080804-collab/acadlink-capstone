@@ -71,6 +71,7 @@ Route::post('/change-password', [ChangePasswordController::class, 'update']);
 Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::get('/dashboard', [FacultyDashboardController::class, 'index']);
     Route::get('/my-template', [TemplateController::class, 'index']);
+    Route::post('/my-template/{template}/view', [TemplateController::class, 'markViewed']);
     Route::get('/exam-generator', [ExamGeneratorController::class, 'index']);
     Route::post('/exam-generator', [ExamGeneratorController::class, 'store']);
     // Literal routes must come before the {exam} wildcard below so they aren't swallowed by it

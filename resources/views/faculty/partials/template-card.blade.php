@@ -5,6 +5,7 @@
     </div>
 
     <div class="card-title">
+        @if($template->is_new ?? false) <span class="new-tag">NEW</span> @endif
         {{ $template->title }}
         @if($template->version > 1) <span class="version-tag">v{{ $template->version }}</span> @endif
     </div>
@@ -13,7 +14,7 @@
     </div>
 
     <div class="card-actions">
-        <a class="btn-sm btn-view-file" href="{{ Storage::url($template->file_path) }}" target="_blank">
+        <a class="btn-sm btn-view-file" href="{{ Storage::url($template->file_path) }}" target="_blank" onclick="markTemplateViewed({{ $template->id }}, this)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             View / Download
         </a>

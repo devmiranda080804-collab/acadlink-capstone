@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Announcement;
 use App\Models\SubmissionRequirement;
+use App\Models\TemplateDocument;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,10 +38,13 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('navPermissions', $permissions);
                 $view->with('unreadAnnouncementsCount', Announcement::unreadCountFor(Auth::user()));
 
-                // Only faculty submit against requirements — Program Head/Admin
-                // create them, so this count wouldn't mean anything for those roles.
+                // Only faculty submit against requirements, and only faculty
+                // receive distributed templates — Program Head/Admin/Secretary
+                // handle those from the upload/forward/distribute side, so
+                // these counts wouldn't mean anything for those roles.
                 if ($role === 'faculty') {
                     $view->with('urgentSubmissionsCount', SubmissionRequirement::urgentCountFor(Auth::user()));
+                    $view->with('newTemplatesCount', TemplateDocument::newCountFor(Auth::user()));
                 }
             }
         });

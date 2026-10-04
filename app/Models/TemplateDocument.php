@@ -125,4 +125,25 @@ class TemplateDocument extends Model
         if ($bytes >= 1024) return round($bytes / 1024, 1) . ' KB';
         return $bytes . ' B';
     }
+
+    public function views()
+    {
+        return $this->hasMany(TemplateDocumentView::class);
+    }
+
+    // Every template currently distributed to a faculty member's program,
+    // scoped to the ones THEY haven't opened yet — what the "NEW" badge (card
+    // + folder + sidebar nav count) is based on. Viewing is recorded by
+    // Faculty\TemplateController::markViewed(), fired when they click View/Download.
+    public static function newForFaculty(\App\Models\User $user)
+    {
+        return self::whereNull('superseded_at')
+            ->whereHas('programs', fn($p) => $p->where('program', $user->program)->whereNotNull('distributed_at'))
+            ->whereDoesntHave('views', fn($v) => $v->where('user_id', $user->id));
+    }
+
+    public static function newCountFor(\App\Models\User $user): int
+    {
+        return self::newForFaculty($user)->count();
+    }
 }

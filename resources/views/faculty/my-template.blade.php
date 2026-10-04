@@ -48,6 +48,7 @@
         .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .stat-icon svg { width: 22px; height: 22px; }
         .stat-icon.blue { background: #dbeafe; color: #1d4ed8; }
+        .stat-icon.amber { background: #fef3c7; color: #b45309; }
         .stat-info .stat-value { font-size: 24px; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
         .stat-info .stat-label { font-size: 11.5px; color: #888; margin-top: 2px; }
 
@@ -63,11 +64,12 @@
         .folder-section-title { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; }
         .folder-section-count { font-size: 10.5px; font-weight: 600; color: #999; background: #f0f0f0; padding: 2px 8px; border-radius: 10px; }
         .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
-        .folder-card { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; text-align: left; }
+        .folder-card { position: relative; display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; text-align: left; }
         .folder-card:hover { box-shadow: 0 6px 18px rgba(15,37,87,0.1); transform: translateY(-2px); border-color: #c7d2e8; }
         .folder-card-icon { font-size: 30px; line-height: 1; flex-shrink: 0; }
         .folder-card-label { font-size: 12.5px; font-weight: 700; color: #1a1a2e; line-height: 1.3; }
         .folder-card-count { font-size: 10.5px; color: #999; margin-top: 3px; }
+        .folder-card-new-badge { position: absolute; top: -7px; right: -7px; background: #f59e0b; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; display: flex; align-items: center; justify-content: center; }
 
         .breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
         .btn-back { display: inline-flex; align-items: center; gap: 5px; background: #fff; border: 1px solid #ddd; color: #444; font-size: 12px; font-weight: 600; padding: 7px 13px; border-radius: 6px; cursor: pointer; }
@@ -76,6 +78,7 @@
         .breadcrumb-label { font-size: 13.5px; font-weight: 700; color: #1a1a2e; }
 
         .version-tag { display: inline-block; font-size: 10px; font-weight: 700; color: #6d28d9; background: #ede9fe; padding: 1px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
+        .new-tag { display: inline-block; font-size: 9.5px; font-weight: 700; color: #fff; background: #f59e0b; padding: 1px 7px; border-radius: 10px; margin-right: 5px; vertical-align: middle; }
 
         .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
         .template-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px; transition: box-shadow 0.15s; display: flex; flex-direction: column; }
@@ -111,7 +114,11 @@
             <li class="{{ request()->is('faculty/dashboard') ? 'active' : '' }}"><a href="{{ url('/faculty/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
             @endif
             @if($navPermissions['my-template'] ?? true)
-            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates</a></li>
+            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates
+                @if(($newTemplatesCount ?? 0) > 0)
+                    <span class="nav-badge">{{ $newTemplatesCount }}</span>
+                @endif
+            </a></li>
             @endif
             @if($navPermissions['exam-generator'] ?? true)
             <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}"><a href="{{ url('/faculty/exam-generator') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Assessment Generator</a></li>
@@ -186,10 +193,15 @@
                 </div>
             </div>
 
+            @php $newCount = $templates->filter(fn($t) => $t->is_new)->count(); @endphp
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <div class="stat-info"><div class="stat-value">{{ $templates->count() }}</div><div class="stat-label">Available Templates</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $newCount }}</div><div class="stat-label">New Since Last Visit</div></div>
                 </div>
             </div>
 
@@ -207,6 +219,7 @@
                         'label' => \App\Models\TemplateDocument::typeLabel($type),
                         'icon'  => \App\Models\TemplateDocument::typeIcon($type),
                         'count' => $group->count(),
+                        'new'   => $group->filter(fn($t) => $t->is_new)->count(),
                     ];
                 })->sortBy('label')->values();
             @endphp
@@ -224,6 +237,9 @@
                         <div class="folder-grid">
                             @foreach($typeFolders as $folder)
                                 <button type="button" class="folder-card" onclick="openFolder('{{ $folder['key'] }}', @js($folder['label']))">
+                                    @if($folder['new'] > 0)
+                                        <span class="folder-card-new-badge" title="{{ $folder['new'] }} new">{{ $folder['new'] }}</span>
+                                    @endif
                                     <span class="folder-card-icon">{{ $folder['icon'] }}</span>
                                     <div>
                                         <div class="folder-card-label">{{ $folder['label'] }}</div>
@@ -315,6 +331,21 @@
             if (noResults) {
                 noResults.style.display = (visibleCount === 0) ? 'block' : 'none';
             }
+        }
+
+        // Fire-and-forget — the anchor's own href still opens the file normally
+        // and immediately, this just records that it's been seen so it drops
+        // out of "NEW" on the next visit. The badge on THIS card is cleared
+        // right away too, for instant feedback without waiting on the request.
+        function markTemplateViewed(id, linkEl) {
+            var tag = linkEl.closest('.template-card')?.querySelector('.new-tag');
+            if (tag) tag.remove();
+
+            var csrf = document.querySelector('meta[name="csrf-token"]').content;
+            fetch('/faculty/my-template/' + id + '/view', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            }).catch(function () {});
         }
     </script>
 
