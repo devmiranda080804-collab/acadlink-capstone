@@ -306,10 +306,10 @@
                                 <span class="outcome-code">{{ $po->code }}</span>
                                 <div class="file-name" style="font-weight:400;">{{ $po->description }}</div>
                             </div>
-                            <form method="POST" action="{{ url('/program-head/course-oversight/program-outcomes/' . $po->id) }}" onsubmit="return confirm('Remove this Program Outcome?')">
+                            <form method="POST" action="{{ url('/program-head/course-oversight/program-outcomes/' . $po->id) }}">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn-del" title="Delete">
+                                <button type="button" class="btn-del" title="Delete" onclick="openDeleteOutcomeModal(this, 'Program Outcome', @js($po->code))">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                                 </button>
                             </form>
@@ -342,10 +342,10 @@
                                         <span class="outcome-code">{{ $co->code }}</span>
                                         <span class="file-name" style="font-weight:400;">{{ $co->description }}</span>
                                     </div>
-                                    <form method="POST" action="{{ url('/program-head/course-oversight/course-outcomes/' . $co->id) }}" onsubmit="return confirm('Remove this Course Outcome?')">
+                                    <form method="POST" action="{{ url('/program-head/course-oversight/course-outcomes/' . $co->id) }}">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn-del" title="Delete">
+                                        <button type="button" class="btn-del" title="Delete" onclick="openDeleteOutcomeModal(this, 'Course Outcome', @js($co->code))">
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                                         </button>
                                     </form>
@@ -508,6 +508,19 @@
         </div>
     </div>
 
+    {{-- Delete Outcome Confirmation Modal (Program Outcomes and Course Outcomes) --}}
+    <div class="modal-overlay" id="delete-outcome-overlay">
+        <div class="modal" style="width:420px;">
+            <div class="modal-title" id="delete-outcome-heading">Delete Outcome</div>
+            <div class="delete-target">Delete <strong id="delete-outcome-code"></strong>? This cannot be undone.</div>
+            <div style="font-size:12.5px;color:#666;margin-top:8px;line-height:1.5;">Its mappings to other outcomes will be removed as well.</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeDeleteOutcomeModal()">Cancel</button>
+                <button type="button" class="btn-danger" onclick="submitDeleteOutcome()">Delete</button>
+            </div>
+        </div>
+    </div>
+
     {{-- Delete Material Confirmation Modal --}}
     <div class="modal-overlay" id="delete-material-overlay">
         <div class="modal" style="width:420px;">
@@ -530,6 +543,24 @@
             document.getElementById('delete-material-form').action = '{{ url("/program-head/course-oversight/materials") }}/' + id;
             document.getElementById('delete-material-overlay').classList.add('open');
         }
+        var pendingOutcomeForm = null;
+        function openDeleteOutcomeModal(btn, kind, code) {
+            pendingOutcomeForm = btn.closest('form');
+            document.getElementById('delete-outcome-heading').textContent = 'Delete ' + kind;
+            document.getElementById('delete-outcome-code').textContent = code;
+            document.getElementById('delete-outcome-overlay').classList.add('open');
+        }
+        function closeDeleteOutcomeModal() {
+            pendingOutcomeForm = null;
+            document.getElementById('delete-outcome-overlay').classList.remove('open');
+        }
+        function submitDeleteOutcome() {
+            if (pendingOutcomeForm) pendingOutcomeForm.submit();
+        }
+        document.getElementById('delete-outcome-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteOutcomeModal();
+        });
+
         function closeDeleteMaterialModal() {
             document.getElementById('delete-material-overlay').classList.remove('open');
         }
