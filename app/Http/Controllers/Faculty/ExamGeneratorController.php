@@ -10,6 +10,7 @@ use App\Models\ExamSection;
 use App\Models\ProgramAssignment;
 use App\Models\Tos;
 use App\Models\TosTopic;
+use App\Services\ExamDocumentBuilder;
 use App\Services\QuestionGeneratorService;
 use App\Services\TosDocumentBuilder;
 use App\Support\AcademicTerm;
@@ -378,7 +379,28 @@ class ExamGeneratorController extends Controller
             'finalized_at' => now(),
         ]);
 
-        return back()->with('success', 'Exam finalized. You can now export and print it for signing.');
+        return back()->with('success', 'Exam finalized. You can now download it for printing.');
+    }
+
+    // Generated fresh on every request (not a stored file) so an edit made after
+    // finalizing — finalized exams stay fully editable — is always reflected,
+    // instead of serving a stale export from whenever it was first finalized.
+    public function download(Exam $exam)
+    {
+        abort_unless($exam->faculty_id === auth()->id(), 403);
+        abort_unless($exam->isFinalized(), 422, 'Finalize this exam first before downloading it.');
+
+        $exam->load(['programAssignment.course', 'sections.questions.children']);
+
+        $phpWord = (new ExamDocumentBuilder())->build($exam);
+
+        $filename = $exam->programAssignment->course->code . '-' . $exam->grading_period . '-Exam.docx';
+
+        return response()->streamDownload(function () use ($phpWord) {
+            IOFactory::createWriter($phpWord, 'Word2007')->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ]);
     }
 
     public function destroy(Exam $exam)

@@ -839,6 +839,8 @@
                         <button class="btn-eb-save" onclick="saveExam()" id="btn-save-exam" disabled>💾 Save</button>
                         <button class="btn-eb-preview" onclick="previewExam()" id="btn-preview-exam" disabled>👁 Preview</button>
                         <button class="btn-eb-preview" onclick="finalizeExam()" id="btn-finalize-exam" disabled>🔒 Finalize</button>
+                        <a class="btn-eb-preview" href="#" id="btn-download-exam" disabled style="display:none;pointer-events:none;opacity:0.5;">⬇ Download</a>
+                        <button class="btn-eb-preview" onclick="openDeleteExamModal()" id="btn-delete-exam" disabled style="color:#ef4444;border-color:#fca5a5;">🗑 Delete</button>
                     </div>
                 </div>
 
@@ -1055,6 +1057,21 @@
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeDeleteSectionModal()">Cancel</button>
                 <button type="button" class="btn-danger" onclick="confirmDeleteSection()">Delete Section</button>
+            </div>
+        </div>
+    </div>
+
+    {{-- ════════════ DELETE EXAM MODAL ════════════ --}}
+    <div class="modal-overlay" id="delete-exam-overlay">
+        <div class="modal" style="width:400px;">
+            <div class="modal-title">Delete Exam</div>
+            <div style="font-size:12.5px;color:#444;margin-bottom:18px;">
+                Delete <strong id="delete-exam-title"></strong> and all its sections/questions? This cannot be undone. Finalized exams cannot be deleted.
+            </div>
+            <div class="modal-error" id="delete-exam-error"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeDeleteExamModal()">Cancel</button>
+                <button type="button" class="btn-danger" onclick="confirmDeleteExam()">Delete Exam</button>
             </div>
         </div>
     </div>
@@ -1495,6 +1512,15 @@
             document.getElementById('btn-add-section').disabled = false;
             document.getElementById('eb-no-exam-notice').style.display = 'none';
 
+            var downloadBtn = document.getElementById('btn-download-exam');
+            downloadBtn.style.display = finalized ? '' : 'none';
+            downloadBtn.style.pointerEvents = finalized ? 'auto' : 'none';
+            downloadBtn.style.opacity = finalized ? '1' : '0.5';
+            downloadBtn.href = finalized ? '/faculty/exam-generator/' + currentExam.id + '/download' : '#';
+
+            var deleteBtn = document.getElementById('btn-delete-exam');
+            deleteBtn.disabled = finalized; // backend also blocks this; disabled here just avoids a round trip
+
             await loadExamTosTarget();
             renderEB();
             await refreshTosProgress();
@@ -1531,9 +1557,58 @@
             document.getElementById('btn-finalize-exam').disabled = true;
             document.getElementById('btn-add-section').disabled = true;
             document.getElementById('eb-no-exam-notice').style.display = '';
+            var downloadBtn = document.getElementById('btn-download-exam');
+            downloadBtn.style.display = 'none';
+            downloadBtn.style.pointerEvents = 'none';
+            document.getElementById('btn-delete-exam').disabled = true;
             document.getElementById('eb-sections-content').innerHTML = '';
             document.getElementById('eb-section-links').innerHTML = '';
             document.getElementById('eb-tos-progress').innerHTML = '';
+        }
+
+        function openDeleteExamModal() {
+            if (!currentExam) return;
+            document.getElementById('delete-exam-error').style.display = 'none';
+            document.getElementById('delete-exam-title').textContent = currentExam.title;
+            document.getElementById('delete-exam-overlay').classList.add('open');
+        }
+        function closeDeleteExamModal() {
+            document.getElementById('delete-exam-overlay').classList.remove('open');
+        }
+        document.getElementById('delete-exam-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeDeleteExamModal();
+        });
+
+        async function confirmDeleteExam() {
+            if (!currentExam) return;
+            var errorEl = document.getElementById('delete-exam-error');
+            errorEl.style.display = 'none';
+            var examId = currentExam.id;
+
+            try {
+                // Plain fetch (not the api() JSON helper) — destroy() returns a redirect
+                // on success like finalize() does, not a JSON body, so .json() is only
+                // safe to call on the error path.
+                var res = await fetch('/faculty/exam-generator/' + examId, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
+                });
+                if (!res.ok) {
+                    var err = await res.json().catch(function () { return {}; });
+                    throw new Error(err.message || ('Request failed (' + res.status + ')'));
+                }
+            } catch (e) {
+                errorEl.textContent = e.message;
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            closeDeleteExamModal();
+            var select = document.getElementById('eb-exam-select');
+            var opt = select.querySelector('option[value="' + examId + '"]');
+            if (opt) opt.remove();
+            select.value = '';
+            clearExamBuilder();
         }
 
         function findSection(secId) {
