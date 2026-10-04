@@ -843,6 +843,7 @@
                         <button class="btn-eb-preview" onclick="previewExam()" id="btn-preview-exam" disabled>👁 Preview</button>
                         <button class="btn-eb-preview" onclick="finalizeExam()" id="btn-finalize-exam" disabled>🔒 Finalize</button>
                         <a class="btn-eb-preview" href="#" id="btn-download-exam" disabled style="display:none;pointer-events:none;opacity:0.5;">⬇ Download</a>
+                        <a class="btn-eb-preview" href="#" id="btn-download-answer-key" disabled style="display:none;pointer-events:none;opacity:0.5;">🔑 Answer Key</a>
                         <button class="btn-eb-preview" onclick="openDeleteExamModal()" id="btn-delete-exam" disabled style="color:#ef4444;border-color:#fca5a5;">🗑 Delete</button>
                     </div>
                 </div>
@@ -1522,6 +1523,12 @@
             downloadBtn.style.opacity = finalized ? '1' : '0.5';
             downloadBtn.href = finalized ? '/faculty/exam-generator/' + currentExam.id + '/download' : '#';
 
+            var answerKeyBtn = document.getElementById('btn-download-answer-key');
+            answerKeyBtn.style.display = finalized ? '' : 'none';
+            answerKeyBtn.style.pointerEvents = finalized ? 'auto' : 'none';
+            answerKeyBtn.style.opacity = finalized ? '1' : '0.5';
+            answerKeyBtn.href = finalized ? '/faculty/exam-generator/' + currentExam.id + '/answer-key' : '#';
+
             var deleteBtn = document.getElementById('btn-delete-exam');
             deleteBtn.disabled = finalized; // backend also blocks this; disabled here just avoids a round trip
 
@@ -1564,6 +1571,9 @@
             var downloadBtn = document.getElementById('btn-download-exam');
             downloadBtn.style.display = 'none';
             downloadBtn.style.pointerEvents = 'none';
+            var answerKeyBtn = document.getElementById('btn-download-answer-key');
+            answerKeyBtn.style.display = 'none';
+            answerKeyBtn.style.pointerEvents = 'none';
             document.getElementById('btn-delete-exam').disabled = true;
             document.getElementById('eb-sections-content').innerHTML = '';
             document.getElementById('eb-section-links').innerHTML = '';
@@ -1803,13 +1813,18 @@
             }
             assignDisplayBloomLevels();
 
+            // Item numbers run continuously across the whole exam (Test 1 ending at
+            // 30 means Test 2 starts at 31), not restarting per section — this
+            // counter is declared outside the sections loop so it never resets.
+            var globalNum = 1;
+
             currentExam.sections.forEach(function(sec) {
                 var div = document.createElement('div');
                 div.className = 'section-panel';
                 div.id = 'sec-' + sec.id;
 
                 var qHTML = '';
-                (sec.questions || []).forEach(function(q, qi) { qHTML += buildQuestionHTML(sec.id, qi, q); });
+                (sec.questions || []).forEach(function(q, qi) { qHTML += buildQuestionHTML(sec.id, qi, q, null, globalNum++); });
 
                 div.innerHTML =
                     '<div class="section-header">' +
@@ -1930,10 +1945,10 @@
             return '';
         }
 
-        function buildQuestionHTML(secId, qi, q, ci) {
+        function buildQuestionHTML(secId, qi, q, ci, displayNum) {
             ci = (ci === undefined) ? null : ci;
             var ct = QUESTION_TYPES[q.type] || {};
-            var num = ci === null ? (qi + 1) : (qi + 1) + String.fromCharCode(97 + ci);
+            var num = ci === null ? displayNum : displayNum + String.fromCharCode(97 + ci);
             var idAttr = 'q-' + secId + '-' + qi + (ci !== null ? '-' + ci : '');
             var indent = ci !== null ? 'margin-left:24px;border-left:3px solid #e0e7ff;' : '';
             var ciArg = ci === null ? 'null' : ci;
@@ -1984,7 +1999,7 @@
 
             if (q.type === 'case-analysis') {
                 body += '<div style="margin-top:8px;">';
-                (q.children || []).forEach(function(child, cidx) { body += buildQuestionHTML(secId, qi, child, cidx); });
+                (q.children || []).forEach(function(child, cidx) { body += buildQuestionHTML(secId, qi, child, cidx, displayNum); });
                 body += '</div>';
                 body += '<button class="btn-add-question" style="margin-top:6px;" onclick="openQTypeModal(\'' + secId + '\',' + qi + ')">+ Add Sub-question</button>';
             }
@@ -2256,12 +2271,17 @@
                     '<div style="font-size:11px;color:#888;">Name: _______________________  Score: _______</div>' +
                 '</div>';
 
+            // Numbers must run continuously across sections (Test 1 ending at 30 means
+            // Test 2 starts at 31) — each section's <ol> starts at this running count
+            // instead of letting the browser restart it at 1 per list.
+            var previewGlobalNum = 1;
             currentExam.sections.forEach(function(sec, si) {
                 html += '<div style="margin-bottom:20px;">' +
                     '<div style="font-weight:700;font-size:13.5px;margin-bottom:4px;">Test ' + toRoman(si + 1) + ' — ' + escapeHtml(sec.title) + '</div>' +
                     (sec.instructions ? '<div style="font-style:italic;font-size:11.5px;color:#666;margin-bottom:8px;">' + escapeHtml(sec.instructions) + '</div>' : '') +
-                    '<ol style="font-size:12.5px;padding-left:20px;">';
+                    '<ol start="' + previewGlobalNum + '" style="font-size:12.5px;padding-left:20px;">';
                 (sec.questions || []).forEach(function(q) {
+                    previewGlobalNum++;
                     html += '<li style="margin-bottom:8px;">' + escapeHtml(q.question_text || '(no question text)') +
                         previewOptionsHtml(q) +
                         (q.children && q.children.length ? '<ol type="a" style="margin-top:6px;">' + q.children.map(function(c) {

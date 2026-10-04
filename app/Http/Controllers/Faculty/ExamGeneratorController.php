@@ -418,6 +418,27 @@ class ExamGeneratorController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
+    // Separate file from download() on purpose — a faculty member should be able to hand
+    // out the student copy without ever risking the answers riding along on a trailing page.
+    public function answerKey(Exam $exam)
+    {
+        abort_unless($exam->faculty_id === auth()->id(), 403);
+        abort_unless($exam->isFinalized(), 422, 'Finalize this exam first before downloading its answer key.');
+
+        $exam->load(['programAssignment.course', 'sections.questions.children']);
+
+        $phpWord = (new ExamDocumentBuilder())->buildAnswerKey($exam);
+
+        $filename = $exam->programAssignment->course->code . '-' . $exam->grading_period . '-AnswerKey.docx';
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'examkey_');
+        IOFactory::createWriter($phpWord, 'Word2007')->save($tempPath);
+
+        return response()->download($tempPath, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ])->deleteFileAfterSend(true);
+    }
+
     public function destroy(Exam $exam)
     {
         abort_unless($exam->faculty_id === auth()->id(), 403);

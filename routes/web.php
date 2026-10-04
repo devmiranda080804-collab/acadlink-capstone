@@ -85,6 +85,7 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::get('/exam-generator/{exam}/tos', [ExamGeneratorController::class, 'tos']);
     Route::post('/exam-generator/{exam}/finalize', [ExamGeneratorController::class, 'finalize']);
     Route::get('/exam-generator/{exam}/download', [ExamGeneratorController::class, 'download']);
+    Route::get('/exam-generator/{exam}/answer-key', [ExamGeneratorController::class, 'answerKey']);
     Route::delete('/exam-generator/{exam}', [ExamGeneratorController::class, 'destroy']);
     Route::get('/shared-library', [SharedLibraryController::class, 'index']);
     Route::get('/shared-library/file/{source}/{id}', [SharedLibraryController::class, 'file']);

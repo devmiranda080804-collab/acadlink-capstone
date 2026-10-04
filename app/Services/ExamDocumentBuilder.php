@@ -8,9 +8,11 @@ use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\SimpleType\Jc;
 use PhpOffice\PhpWord\Style\Font;
 
-// Builds a downloadable, printable .docx for a finalized exam — the student-facing
-// paper (no answers revealed) followed by an Answer Key page for the faculty member's
-// own grading/reference. Mirrors TosDocumentBuilder's institutional letterhead format.
+// Builds the downloadable, printable .docx for a finalized exam — the student-facing
+// paper, with no answers revealed anywhere in it. The Answer Key is a SEPARATE document
+// (buildAnswerKey() below) so a faculty member who prints/shares this file directly with
+// students never risks handing out the answers on a trailing page. Mirrors
+// TosDocumentBuilder's institutional letterhead format.
 class ExamDocumentBuilder
 {
     protected const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -41,7 +43,6 @@ class ExamDocumentBuilder
         $section->addTextBreak(1);
 
         $questionNumber = 0;
-        $answerKey = [];
 
         foreach ($exam->sections as $si => $examSection) {
             $roman = self::ROMAN[$si + 1] ?? (string) ($si + 1);
@@ -53,26 +54,56 @@ class ExamDocumentBuilder
 
             foreach ($examSection->questions as $question) {
                 $questionNumber++;
-                $this->addQuestion($section, $question, $questionNumber, $answerKey);
+                $this->addQuestion($section, $question, $questionNumber);
             }
 
             $section->addTextBreak(1);
-        }
-
-        if (!empty($answerKey)) {
-            $section->addPageBreak();
-            $section->addText('ANSWER KEY', ['bold' => true, 'size' => 13], $center);
-            $section->addText('(For faculty reference only — not included in the student copy above)', ['italic' => true, 'size' => 8, 'color' => '888888'], $center);
-            $section->addTextBreak(1);
-            foreach ($answerKey as $entry) {
-                $section->addText($entry['number'] . '. ' . $entry['answer'], ['size' => 9.5]);
-            }
         }
 
         return $phpWord;
     }
 
-    protected function addQuestion(\PhpOffice\PhpWord\Element\Section $section, $question, int $number, array &$answerKey): void
+    // A standalone document — same letterhead, same continuous numbering as the student
+    // copy above — listing only the correct answers. Kept out of build() on purpose: it's
+    // downloaded separately (ExamGeneratorController::answerKey()) so printing the exam
+    // for students never includes it.
+    public function buildAnswerKey(Exam $exam): PhpWord
+    {
+        $phpWord = new PhpWord();
+        $phpWord->setDefaultFontName('Arial');
+        $phpWord->setDefaultFontSize(10);
+
+        $section = $phpWord->addSection(['marginLeft' => 1000, 'marginRight' => 1000]);
+        $center = ['alignment' => Jc::CENTER];
+        $course = $exam->programAssignment->course;
+
+        $section->addText('URDANETA CITY UNIVERSITY', ['bold' => true, 'size' => 13], $center);
+        $section->addText('College of Business Management and Accountancy', ['size' => 10], $center);
+        $section->addTextBreak(1);
+        $section->addText(strtoupper($exam->title) . ' — ANSWER KEY', ['bold' => true, 'size' => 13], $center);
+        $section->addText($course->code . ' — ' . $course->title, ['size' => 10], $center);
+        $section->addText('For faculty reference only — do not distribute to students.', ['italic' => true, 'size' => 9, 'color' => '888888'], $center);
+        $section->addTextBreak(1);
+
+        $questionNumber = 0;
+
+        foreach ($exam->sections as $si => $examSection) {
+            $roman = self::ROMAN[$si + 1] ?? (string) ($si + 1);
+            $section->addText('Test ' . $roman . ' — ' . $examSection->title, ['bold' => true, 'size' => 11]);
+            $section->addTextBreak(1);
+
+            foreach ($examSection->questions as $question) {
+                $questionNumber++;
+                $section->addText($questionNumber . '. ' . $this->answerFor($question), ['size' => 10]);
+            }
+
+            $section->addTextBreak(1);
+        }
+
+        return $phpWord;
+    }
+
+    protected function addQuestion(\PhpOffice\PhpWord\Element\Section $section, $question, int $number): void
     {
         $points = $question->points ? ' (' . $question->points . ' pt' . ($question->points == 1 ? '' : 's') . ')' : '';
         $section->addText($number . '. ' . $question->question_text . $points, ['size' => 10.5]);
@@ -84,19 +115,14 @@ class ExamDocumentBuilder
                 foreach (($options['choices'] ?? []) as $i => $choice) {
                     $section->addText('    ' . chr(97 + $i) . '. ' . $choice, ['size' => 10]);
                 }
-                $correctIndex = $options['correct'] ?? null;
-                $correctText = is_int($correctIndex) ? (chr(97 + $correctIndex) . '. ' . ($options['choices'][$correctIndex] ?? '')) : '—';
-                $answerKey[] = ['number' => $number, 'answer' => $correctText];
                 break;
 
             case 'true-false':
                 $section->addText('    Answer: ________ (True / False)', ['size' => 10]);
-                $answerKey[] = ['number' => $number, 'answer' => !empty($options['answer']) ? 'True' : 'False'];
                 break;
 
             case 'identification':
                 $section->addText('    Answer: _______________________________', ['size' => 10]);
-                $answerKey[] = ['number' => $number, 'answer' => $options['answer'] ?? '—'];
                 break;
 
             case 'enumeration':
@@ -104,7 +130,6 @@ class ExamDocumentBuilder
                 for ($i = 0; $i < max($count, 1); $i++) {
                     $section->addText('    ' . ($i + 1) . '. _______________________________', ['size' => 10]);
                 }
-                $answerKey[] = ['number' => $number, 'answer' => implode(', ', array_filter($options['answers'] ?? []))];
                 break;
 
             case 'problem-solving':
@@ -112,21 +137,18 @@ class ExamDocumentBuilder
                 for ($i = 0; $i < 4; $i++) {
                     $section->addText('    _______________________________________________', ['size' => 10]);
                 }
-                $answerKey[] = ['number' => $number, 'answer' => ($options['answer'] ?? '—') . (($options['solution_steps'] ?? '') ? ' — ' . $options['solution_steps'] : '')];
                 break;
 
             case 'short-answer': // labeled "Essay" in the UI — open-ended, graded against a rubric
                 for ($i = 0; $i < 6; $i++) {
                     $section->addText('    _______________________________________________', ['size' => 10]);
                 }
-                $answerKey[] = ['number' => $number, 'answer' => 'Grading rubric — ' . ($options['rubric'] ?? 'none provided')];
                 break;
 
             default:
                 // Unreachable via the current "Choose Question Type" modal (kept only so an
                 // older exam with a since-removed type still exports instead of erroring).
                 $section->addText('    _______________________________________________', ['size' => 10]);
-                $answerKey[] = ['number' => $number, 'answer' => '—'];
         }
 
         // Legacy sub-questions (e.g. a since-removed Case Analysis scenario format) —
@@ -137,5 +159,34 @@ class ExamDocumentBuilder
         }
 
         $section->addTextBreak(1);
+    }
+
+    protected function answerFor($question): string
+    {
+        $options = $question->options ?? [];
+
+        switch ($question->type) {
+            case 'mc-single':
+                $correctIndex = $options['correct'] ?? null;
+                return is_int($correctIndex) ? (chr(97 + $correctIndex) . '. ' . ($options['choices'][$correctIndex] ?? '')) : '—';
+
+            case 'true-false':
+                return !empty($options['answer']) ? 'True' : 'False';
+
+            case 'identification':
+                return $options['answer'] ?? '—';
+
+            case 'enumeration':
+                return implode(', ', array_filter($options['answers'] ?? []));
+
+            case 'problem-solving':
+                return ($options['answer'] ?? '—') . (($options['solution_steps'] ?? '') ? ' — ' . $options['solution_steps'] : '');
+
+            case 'short-answer':
+                return 'Grading rubric — ' . ($options['rubric'] ?? 'none provided');
+
+            default:
+                return '—';
+        }
     }
 }
