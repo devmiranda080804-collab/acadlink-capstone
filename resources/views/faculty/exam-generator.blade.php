@@ -1035,11 +1035,12 @@
 
     {{-- ════════════ FINALIZE CONFIRM MODAL ════════════ --}}
     <div class="modal-overlay" id="finalize-confirm-overlay">
-        <div class="modal" style="width:380px;">
+        <div class="modal" style="width:420px;">
             <div class="modal-title">Finalize this exam?</div>
             <div style="font-size:12.5px;color:#444;margin-bottom:18px;">
                 This marks the exam as finalized for printing/export. You can still edit it afterward if needed.
             </div>
+            <div class="modal-error" id="finalize-error" style="white-space:pre-line;"></div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeFinalizeConfirm()">Cancel</button>
                 <button type="button" class="btn-save" onclick="confirmFinalize()">Finalize</button>
@@ -2272,23 +2273,34 @@
 
         function finalizeExam() {
             if (!currentExam) return;
+            document.getElementById('finalize-error').style.display = 'none';
             document.getElementById('finalize-confirm-overlay').classList.add('open');
         }
         function closeFinalizeConfirm() { document.getElementById('finalize-confirm-overlay').classList.remove('open'); }
         document.getElementById('finalize-confirm-overlay').addEventListener('click', function(e) { if (e.target === this) closeFinalizeConfirm(); });
 
         async function confirmFinalize() {
-            closeFinalizeConfirm();
             if (!currentExam) return;
+            var errorEl = document.getElementById('finalize-error');
+            errorEl.style.display = 'none';
+
             try {
-                await fetch('/faculty/exam-generator/' + currentExam.id + '/finalize', {
+                var res = await fetch('/faculty/exam-generator/' + currentExam.id + '/finalize', {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
                 });
-                await loadExam(currentExam.id);
+                if (!res.ok) {
+                    var err = await res.json().catch(function () { return {}; });
+                    throw new Error(err.message || ('Request failed (' + res.status + ')'));
+                }
             } catch (e) {
-                openSaveResult(false, e.message);
+                errorEl.textContent = e.message;
+                errorEl.style.display = 'block';
+                return;
             }
+
+            closeFinalizeConfirm();
+            await loadExam(currentExam.id);
         }
 
         // ══════════════════════════════
