@@ -63,7 +63,7 @@
         .ann-item-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
         .ann-title { font-size: 13.5px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
         .ann-meta { font-size: 10.5px; color: #aaa; }
-        .ann-body { font-size: 12px; color: #555; line-height: 1.6; margin-top: 6px; }
+        .ann-body { font-size: 12px; color: #555; line-height: 2; margin-top: 6px; white-space: pre-line; }
         .program-badges { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
         .program-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #eef2ff; color: #0f2557; }
         .expiry-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #fef3c7; color: #92400e; }
@@ -137,7 +137,7 @@
             @endif
         </ul>
         <div class="sidebar-logout">
-            <a href="#" onclick="document.getElementById('logout-form').submit()">
+            <a href="#" onclick="openLogoutModal()">
                 <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                 Log out
             </a>
@@ -303,5 +303,21 @@
             document.addEventListener('DOMContentLoaded', function() { document.getElementById('modal-overlay').classList.add('open'); });
         @endif
     </script>
+
+    <div id="logout-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:10px;padding:24px 26px;width:360px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,0.25);font-family:Arial,sans-serif;">
+            <div style="font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:8px;">Log out?</div>
+            <div style="font-size:13px;color:#555;margin-bottom:20px;">Are you sure you want to log out of your account?</div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <button type="button" onclick="document.getElementById('logout-confirm-overlay').style.display='none';" style="background:#fff;border:1px solid #ccc;color:#444;font-size:12.5px;font-weight:600;padding:8px 18px;border-radius:5px;cursor:pointer;font-family:Arial,sans-serif;">Cancel</button>
+            <button type="button" onclick="document.getElementById('logout-form').submit();" style="background:#ef4444;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:8px 18px;border-radius:5px;cursor:pointer;font-family:Arial,sans-serif;">Log Out</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function openLogoutModal() { document.getElementById('logout-confirm-overlay').style.display = 'flex'; }
+        document.getElementById('logout-confirm-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+    </script>
+
 </body>
 </html>
