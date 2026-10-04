@@ -213,13 +213,15 @@
                                     <div class="ann-meta">Posted by <strong>{{ $ann->user->name }}</strong> · {{ $ann->created_at->diffForHumans() }}</div>
                                 </div>
                                 <div class="ann-actions">
-                                    <form method="POST" action="{{ url('/admin/announcements/' . $ann->id) }}" style="display:inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-del" title="Delete">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
-                                        </button>
-                                    </form>
+                                    @if($ann->user_id === auth()->id())
+                                        <form method="POST" action="{{ url('/admin/announcements/' . $ann->id) }}" style="display:inline;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button" class="btn-del" title="Delete" onclick="confirmDeleteAnnouncement(this)">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </div>
                             <div class="ann-body">{{ $ann->body }}</div>
@@ -302,6 +304,32 @@
         @if($errors->any())
             document.addEventListener('DOMContentLoaded', function() { document.getElementById('modal-overlay').classList.add('open'); });
         @endif
+    </script>
+
+    <div class="modal-overlay" id="delete-ann-overlay">
+        <div class="modal" style="width:380px;">
+            <div class="modal-title">Delete this announcement?</div>
+            <div style="font-size:13px;color:#555;">This can't be undone. It will be removed for everyone who can see it.</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeDeleteAnnouncement()">Cancel</button>
+                <button type="button" onclick="submitDeleteAnnouncement()" style="background:#ef4444;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:8px 18px;border-radius:5px;cursor:pointer;">Delete</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        var pendingDeleteForm = null;
+        function confirmDeleteAnnouncement(btn) {
+            pendingDeleteForm = btn.closest('form');
+            document.getElementById('delete-ann-overlay').classList.add('open');
+        }
+        function closeDeleteAnnouncement() {
+            pendingDeleteForm = null;
+            document.getElementById('delete-ann-overlay').classList.remove('open');
+        }
+        function submitDeleteAnnouncement() {
+            if (pendingDeleteForm) pendingDeleteForm.submit();
+        }
+        document.getElementById('delete-ann-overlay').addEventListener('click', function(e) { if (e.target === this) closeDeleteAnnouncement(); });
     </script>
 
     <div id="logout-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">

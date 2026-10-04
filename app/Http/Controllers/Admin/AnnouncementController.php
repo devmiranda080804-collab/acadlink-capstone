@@ -48,6 +48,8 @@ class AnnouncementController extends Controller
 
     public function destroy(Announcement $announcement)
     {
+        abort_unless($announcement->user_id === auth()->id(), 403);
+
         $announcement->delete(); // programs are cascaded
         return back()->with('success', 'Announcement deleted.');
     }
