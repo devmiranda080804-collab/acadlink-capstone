@@ -46,39 +46,51 @@
         .repo-layout { display: grid; grid-template-columns: 260px 1fr; gap: 20px; align-items: start; }
 
         /* Folder tree */
-        .folder-panel { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px; }
+        .folder-panel { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 18px; position: sticky; top: 0; }
         .folder-panel-title { font-size: 13px; font-weight: 700; color: #1a1a2e; margin-bottom: 14px; }
+        .folder-all { display: flex; align-items: center; justify-content: space-between; gap: 7px; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: #1a1a2e; margin-bottom: 8px; border: 1px solid #e4e4e4; }
+        .folder-all:hover { background: #f0f4ff; }
+        .folder-all.active { background: #eef2ff; border-color: #c7d2fe; color: #0f2557; }
         .folder-year { margin-bottom: 6px; }
         .folder-year-head { display: flex; align-items: center; gap: 7px; padding: 7px 8px; border-radius: 6px; cursor: pointer; font-size: 12.5px; font-weight: 600; color: #1a1a2e; user-select: none; }
         .folder-year-head:hover { background: #f0f4ff; }
         .folder-year-head svg { width: 14px; height: 14px; color: #d97706; flex-shrink: 0; }
         .folder-year-head .caret { width: 10px; height: 10px; color: #999; transition: transform 0.15s; }
         .folder-year.open .caret { transform: rotate(90deg); }
+        .folder-year-head .count { margin-left: auto; font-size: 10.5px; font-weight: 600; color: #888; }
         .folder-sems { display: none; padding-left: 22px; margin-top: 2px; }
         .folder-year.open .folder-sems { display: block; }
         .folder-sem { display: flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 12px; color: #555; user-select: none; }
         .folder-sem:hover { background: #f0f4ff; color: #0f2557; }
         .folder-sem.active { background: #eef2ff; color: #0f2557; font-weight: 600; }
         .folder-sem svg { width: 13px; height: 13px; color: #d97706; flex-shrink: 0; }
-        .folder-empty { color: #bbb; font-size: 12px; text-align: center; padding: 20px 0; }
+        .folder-sem .count { margin-left: auto; font-size: 11px; color: #888; }
+        .folder-sem.is-empty { color: #aaa; }
+        .folder-sem.is-empty .count { color: #bbb; }
 
-        /* File table */
+        /* File list */
         .files-panel { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; overflow: hidden; }
         .files-breadcrumb { display: flex; align-items: center; gap: 8px; padding: 13px 18px; border-bottom: 1px solid #f0f0f0; background: #fafafa; font-size: 12.5px; color: #666; }
         .files-breadcrumb svg { width: 14px; height: 14px; color: #d97706; }
         .files-breadcrumb .sep { color: #ccc; }
         .files-breadcrumb .crumb-current { font-weight: 700; color: #1a1a2e; }
 
+        .repo-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 12px 18px; border-bottom: 1px solid #f0f0f0; }
+        .repo-search { flex: 1; min-width: 180px; padding: 7px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; outline: none; }
+        .repo-search:focus { border-color: #0f2557; }
+        .repo-filter { padding: 7px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; color: #333; background: #fff; outline: none; }
+        .repo-filter:focus { border-color: #0f2557; }
+
         .files-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
         .files-table thead tr { background: #fff; border-bottom: 1px solid #eee; }
         .files-table th { padding: 11px 18px; text-align: left; font-size: 11.5px; font-weight: 700; color: #666; }
         .files-table td { padding: 12px 18px; border-bottom: 1px solid #f5f5f5; color: #333; vertical-align: middle; }
-        .files-table tbody tr:last-child td { border-bottom: none; }
         .files-table tbody tr:hover { background: #fafbff; }
 
         .doc-name { display: flex; align-items: center; gap: 8px; }
         .doc-name .ficon { font-size: 15px; }
         .doc-name .dtitle { font-weight: 600; color: #1a1a2e; }
+        .folder-tag { display: inline-block; font-size: 11px; color: #555; background: #f5f6fa; border: 1px solid #e4e4e4; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
         .source-badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 10px; }
         .source-template { background: #dbeafe; color: #1e40af; }
         .source-material { background: #d1fae5; color: #065f46; }
@@ -93,6 +105,12 @@
         .action-buttons svg { width: 12px; height: 12px; }
 
         .files-empty { text-align: center; padding: 50px 20px; color: #bbb; font-size: 12.5px; }
+
+        .repo-pager { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid #f0f0f0; font-size: 12px; color: #666; flex-wrap: wrap; }
+        .repo-pager-btns { display: flex; gap: 8px; align-items: center; }
+        .repo-pager button { background: #fff; border: 1px solid #d0d0d0; color: #444; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 5px; cursor: pointer; }
+        .repo-pager button:disabled { opacity: 0.45; cursor: default; }
+        .repo-pager button:not(:disabled):hover { background: #f5f5f5; }
 
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
@@ -192,25 +210,35 @@
                 </button>
             </div>
 
-            @if(count($tree) === 0)
+            @if($totalCount === 0)
                 <div class="files-panel"><div class="files-empty">📁 No documents in the repository yet. Upload a file or approve templates for them to appear here.</div></div>
             @else
                 <div class="repo-layout">
                     {{-- Folder tree --}}
                     <div class="folder-panel">
-                        <div class="folder-panel-title">Folder Structure</div>
+                        <div class="folder-panel-title">Folders</div>
+                        <div class="folder-all active" data-folder="all" onclick="selectFolder(this)">
+                            <span>All Documents</span>
+                            <span class="count">{{ $totalCount }}</span>
+                        </div>
                         @foreach($tree as $sy => $sems)
+                            @php $yearTotal = collect($sems)->sum(fn($files) => count($files)); @endphp
                             <div class="folder-year {{ $loop->first ? 'open' : '' }}">
                                 <div class="folder-year-head" onclick="toggleYear(this)">
                                     <svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>
                                     <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
                                     {{ $sy }}
+                                    <span class="count">{{ $yearTotal }}</span>
                                 </div>
                                 <div class="folder-sems">
                                     @foreach($sems as $sem => $files)
-                                        <div class="folder-sem" data-target="{{ Str::slug($sy . '-' . $sem) }}" onclick="selectFolder(this, '{{ $sy }}', '{{ $sem }}')">
+                                        <div class="folder-sem {{ count($files) === 0 ? 'is-empty' : '' }}"
+                                             data-folder="{{ Str::slug($sy . '-' . $sem) }}"
+                                             data-label="{{ $sy }} · {{ $sem }}"
+                                             onclick="selectFolder(this)">
                                             <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
-                                            {{ $sem }} ({{ count($files) }})
+                                            {{ $sem }}
+                                            <span class="count">{{ count($files) }}</span>
                                         </div>
                                     @endforeach
                                 </div>
@@ -222,75 +250,101 @@
                     <div class="files-panel">
                         <div class="files-breadcrumb">
                             <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
-                            <span id="crumb-year">—</span>
-                            <span class="sep">▸</span>
-                            <span class="crumb-current" id="crumb-sem">Select a folder</span>
+                            <span class="crumb-current" id="crumb-label">All Documents</span>
                         </div>
 
-                        @foreach($tree as $sy => $sems)
-                            @foreach($sems as $sem => $files)
-                                <div class="folder-content" id="content-{{ Str::slug($sy . '-' . $sem) }}" style="display:none;">
-                                    <table class="files-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Name</th>
-                                                <th>Source</th>
-                                                <th>Type</th>
-                                                <th>Program</th>
-                                                <th>Uploaded By</th>
-                                                <th>Date</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($files as $doc)
-                                                <tr>
-                                                    <td>
-                                                        <div class="doc-name">
-                                                            <span class="ficon">@if($doc['file_type'] == 'pdf') 📄 @elseif(in_array($doc['file_type'], ['xls','xlsx'])) 📊 @else 📝 @endif</span>
-                                                            <span class="dtitle">{{ $doc['title'] }}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        @if($doc['source'] == 'template')
-                                                            <span class="source-badge source-template">Template</span>
-                                                        @elseif($doc['source'] == 'material')
-                                                            <span class="source-badge source-material">Material</span>
-                                                        @else
-                                                            <span class="source-badge source-upload">Uploaded</span>
-                                                        @endif
-                                                    </td>
-                                                    <td>{{ $doc['type'] }}</td>
-                                                    <td><span class="program-tag" title="{{ \App\Support\Programs::label($doc['program']) }}">{{ $doc['program'] }}</span></td>
-                                                    <td>{{ $doc['uploader'] }}</td>
-                                                    <td>{{ $doc['date']->format('M d, Y') }}</td>
-                                                    <td>
-                                                        <div class="action-buttons">
-                                                            <a class="btn-view" href="{{ $doc['file_url'] }}" target="_blank">
-                                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                                                View
-                                                            </a>
-                                                            @if($doc['can_delete'])
-                                                                <form method="POST" action="{{ url('/secretary/document-repository/' . $doc['id']) }}" onsubmit="return confirm('Remove this document?')" style="display:inline;">
-                                                                    @csrf
-                                                                    @method('DELETE')
-                                                                    <button type="submit" class="btn-del" title="Delete">
-                                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                                                    </button>
-                                                                </form>
-                                                            @endif
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            @endforeach
-                        @endforeach
+                        <div class="repo-toolbar">
+                            <input type="text" class="repo-search" id="repo-search" placeholder="Search by title, type, or uploader..." oninput="renderRepo(true)">
+                            <select class="repo-filter" id="repo-source" onchange="renderRepo(true)">
+                                <option value="">All sources</option>
+                                <option value="template">Template</option>
+                                <option value="material">Material</option>
+                                <option value="upload">Uploaded</option>
+                            </select>
+                            <select class="repo-filter" id="repo-program" onchange="renderRepo(true)">
+                                <option value="">All programs</option>
+                                <option value="General">General</option>
+                                @foreach(\App\Support\Programs::options() as $code => $label)
+                                    <option value="{{ $code }}">{{ $code }}</option>
+                                @endforeach
+                            </select>
+                        </div>
 
-                        <div class="folder-content" id="content-none">
-                            <div class="files-empty">📂 Select a folder (semester) on the left to view its files.</div>
+                        <table class="files-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Folder</th>
+                                    <th>Source</th>
+                                    <th>Type</th>
+                                    <th>Program</th>
+                                    <th>Uploaded By</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="repo-rows">
+                                @foreach($tree as $sy => $sems)
+                                    @foreach($sems as $sem => $files)
+                                        @foreach($files as $doc)
+                                            <tr class="doc-row"
+                                                data-folder="{{ Str::slug($sy . '-' . $sem) }}"
+                                                data-search="{{ strtolower($doc['title'] . ' ' . $doc['type'] . ' ' . $doc['uploader']) }}"
+                                                data-program="{{ $doc['program'] }}"
+                                                data-source="{{ $doc['source'] }}">
+                                                <td>
+                                                    <div class="doc-name">
+                                                        <span class="ficon">@if($doc['file_type'] == 'pdf') 📄 @elseif(in_array($doc['file_type'], ['xls','xlsx'])) 📊 @else 📝 @endif</span>
+                                                        <span class="dtitle">{{ $doc['title'] }}</span>
+                                                    </div>
+                                                </td>
+                                                <td><span class="folder-tag">{{ $sy }} · {{ $sem }}</span></td>
+                                                <td>
+                                                    @if($doc['source'] == 'template')
+                                                        <span class="source-badge source-template">Template</span>
+                                                    @elseif($doc['source'] == 'material')
+                                                        <span class="source-badge source-material">Material</span>
+                                                    @else
+                                                        <span class="source-badge source-upload">Uploaded</span>
+                                                    @endif
+                                                </td>
+                                                <td>{{ $doc['type'] }}</td>
+                                                <td><span class="program-tag" title="{{ \App\Support\Programs::label($doc['program']) }}">{{ $doc['program'] }}</span></td>
+                                                <td>{{ $doc['uploader'] }}</td>
+                                                <td>{{ $doc['date']->format('M d, Y') }}</td>
+                                                <td>
+                                                    <div class="action-buttons">
+                                                        <a class="btn-view" href="{{ $doc['file_url'] }}" target="_blank">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                                            View
+                                                        </a>
+                                                        @if($doc['can_delete'])
+                                                            <form method="POST" action="{{ url('/secretary/document-repository/' . $doc['id']) }}" onsubmit="return confirm('Remove this document?')" style="display:inline;">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="btn-del" title="Delete">
+                                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                                                </button>
+                                                            </form>
+                                                        @endif
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @endforeach
+                                @endforeach
+                            </tbody>
+                        </table>
+
+                        <div class="files-empty" id="repo-empty" style="display:none;">📂 No documents match this folder or search.</div>
+
+                        <div class="repo-pager">
+                            <span id="repo-count"></span>
+                            <div class="repo-pager-btns">
+                                <button type="button" id="repo-prev" onclick="changePage(-1)">← Prev</button>
+                                <span id="repo-page-label"></span>
+                                <button type="button" id="repo-next" onclick="changePage(1)">Next →</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -342,37 +396,64 @@
     </div>
 
     <script>
+        var repo = { folder: 'all', page: 1, perPage: 10 };
+
         function toggleYear(el) {
             el.parentElement.classList.toggle('open');
         }
 
-        function selectFolder(el, year, sem) {
-            // Highlight the selected folder
-            document.querySelectorAll('.folder-sem').forEach(f => f.classList.remove('active'));
+        function selectFolder(el) {
+            document.querySelectorAll('.folder-all, .folder-sem').forEach(f => f.classList.remove('active'));
             el.classList.add('active');
+            repo.folder = el.dataset.folder;
+            document.getElementById('crumb-label').textContent = el.dataset.label || 'All Documents';
+            renderRepo(true);
+        }
 
-            // Update the breadcrumb
-            document.getElementById('crumb-year').textContent = year;
-            document.getElementById('crumb-sem').textContent = sem;
+        function changePage(delta) {
+            repo.page += delta;
+            renderRepo(false);
+        }
 
-            // Show the correct content
-            document.querySelectorAll('.folder-content').forEach(c => c.style.display = 'none');
-            const target = document.getElementById('content-' + el.dataset.target);
-            if (target) target.style.display = 'block';
+        function renderRepo(resetPage) {
+            if (resetPage) repo.page = 1;
+
+            const q = document.getElementById('repo-search').value.trim().toLowerCase();
+            const source = document.getElementById('repo-source').value;
+            const program = document.getElementById('repo-program').value;
+
+            const rows = Array.from(document.querySelectorAll('#repo-rows tr.doc-row'));
+            const matched = rows.filter(r =>
+                (repo.folder === 'all' || r.dataset.folder === repo.folder) &&
+                (!q || r.dataset.search.includes(q)) &&
+                (!source || r.dataset.source === source) &&
+                (!program || r.dataset.program === program)
+            );
+
+            const pages = Math.max(1, Math.ceil(matched.length / repo.perPage));
+            if (repo.page > pages) repo.page = pages;
+            if (repo.page < 1) repo.page = 1;
+
+            const start = (repo.page - 1) * repo.perPage;
+            const visible = new Set(matched.slice(start, start + repo.perPage));
+
+            rows.forEach(r => { r.style.display = visible.has(r) ? '' : 'none'; });
+
+            document.getElementById('repo-empty').style.display = matched.length ? 'none' : 'block';
+            document.getElementById('repo-count').textContent = matched.length
+                ? 'Showing ' + (start + 1) + '–' + (start + visible.size) + ' of ' + matched.length
+                : '0 documents';
+            document.getElementById('repo-page-label').textContent = 'Page ' + repo.page + ' of ' + pages;
+            document.getElementById('repo-prev').disabled = repo.page <= 1;
+            document.getElementById('repo-next').disabled = repo.page >= pages;
         }
 
         function openUploadModal() { document.getElementById('upload-overlay').classList.add('open'); }
         function closeUploadModal() { document.getElementById('upload-overlay').classList.remove('open'); }
         document.getElementById('upload-overlay').addEventListener('click', function(e) { if (e.target === this) closeUploadModal(); });
 
-        // Auto-select the first folder on load
         document.addEventListener('DOMContentLoaded', function() {
-            const firstSem = document.querySelector('.folder-sem');
-            if (firstSem) firstSem.click();
-            else {
-                const none = document.getElementById('content-none');
-                if (none) none.style.display = 'block';
-            }
+            if (document.getElementById('repo-rows')) renderRepo(true);
         });
     </script>
 

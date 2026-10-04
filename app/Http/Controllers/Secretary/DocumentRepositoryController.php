@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TemplateDocument;
 use App\Models\CourseMaterial;
 use App\Models\RepositoryDocument;
+use App\Support\AcademicTerm;
 use App\Support\Programs;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -98,34 +99,30 @@ class DocumentRepositoryController extends Controller
             ]);
         });
 
-        // Group by school year → semester
-        $tree = [];
+        // Group by school year → semester. Every school year shows all three
+        // semesters (even empty ones) and the current school year always appears,
+        // so a missing term reads as "nothing uploaded yet," not as a missing folder.
+        $tree = [AcademicTerm::currentSchoolYear() => []];
         foreach ($documents as $doc) {
-            $sy  = $this->schoolYear($doc['date']);
-            $sem = $this->semester($doc['date']);
-            $tree[$sy][$sem][] = $doc;
+            $tree[$this->schoolYear($doc['date'])][$this->semester($doc['date'])][] = $doc;
         }
 
-        // Sort the years, newest first
         krsort($tree);
 
-        // Arrange the semester order within each year, and sort each
-        // semester's own documents newest-first — grouping alone left them
-        // in whatever order the three sources (templates/materials/uploads)
-        // happened to be queried in, not by date.
         $semOrder = ['First Semester', 'Second Semester', 'Summer'];
         foreach ($tree as $sy => $sems) {
             $ordered = [];
             foreach ($semOrder as $s) {
-                if (isset($sems[$s])) {
-                    usort($sems[$s], fn($a, $b) => $b['date'] <=> $a['date']);
-                    $ordered[$s] = $sems[$s];
-                }
+                $files = $sems[$s] ?? [];
+                usort($files, fn($a, $b) => $b['date'] <=> $a['date']);
+                $ordered[$s] = $files;
             }
             $tree[$sy] = $ordered;
         }
 
-        return view('secretary.document-repository', compact('tree'));
+        $totalCount = $documents->count();
+
+        return view('secretary.document-repository', compact('tree', 'totalCount'));
     }
 
     public function store(Request $request)
