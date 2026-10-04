@@ -2238,7 +2238,12 @@
 
         function previewExam() {
             if (!currentExam || currentExam.sections.length === 0) {
-                alert('No sections to preview. Add sections and questions first.');
+                document.getElementById('preview-body').innerHTML =
+                    '<div style="text-align:center;padding:40px 20px;color:#999;font-family:Arial, sans-serif;">' +
+                        '<div style="font-size:28px;margin-bottom:10px;">📄</div>' +
+                        '<div style="font-size:13px;">No sections to preview yet.<br>Add sections and questions first.</div>' +
+                    '</div>';
+                document.getElementById('preview-overlay').classList.add('open');
                 return;
             }
             var html = '<div style="max-width:700px;margin:0 auto;font-family:Arial, sans-serif;">' +
