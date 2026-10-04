@@ -396,11 +396,17 @@ class ExamGeneratorController extends Controller
 
         $filename = $exam->programAssignment->course->code . '-' . $exam->grading_period . '-Exam.docx';
 
-        return response()->streamDownload(function () use ($phpWord) {
-            IOFactory::createWriter($phpWord, 'Word2007')->save('php://output');
-        }, $filename, [
+        // Written to a real temp file and served with a known Content-Length,
+        // instead of response()->streamDownload()'s callback-based streaming —
+        // some local server setups (output buffering/compression interacting
+        // with a streamed binary response) were truncating/corrupting the
+        // .docx in transit even though the generated content itself was valid.
+        $tempPath = tempnam(sys_get_temp_dir(), 'exam_') . '.docx';
+        IOFactory::createWriter($phpWord, 'Word2007')->save($tempPath);
+
+        return response()->download($tempPath, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ]);
+        ])->deleteFileAfterSend(true);
     }
 
     public function destroy(Exam $exam)
