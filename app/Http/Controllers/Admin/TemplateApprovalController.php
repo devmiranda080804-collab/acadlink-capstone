@@ -138,15 +138,26 @@ class TemplateApprovalController extends Controller
         return $document;
     }
 
+    // Removing a forwarded template also takes it out of the Secretary's repository,
+    // each program's distribution, and the faculty libraries — those views read from
+    // this row, and the program/view/copy rows cascade with it.
     public function destroy(TemplateDocument $template)
     {
-        abort_if($template->isForwarded(), 403, 'This template has already been forwarded and can no longer be removed here.');
+        $wasForwarded = $template->isForwarded();
+        $programs = $template->programs->pluck('program')->implode(', ');
 
         if ($template->file_path) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($template->file_path);
         }
 
+        $title = $template->title;
         $template->delete();
+
+        AuditLog::record(
+            'Template Removed',
+            "{$title} removed by " . auth()->user()->name
+                . ($wasForwarded ? " (was forwarded to: " . ($programs ?: 'no programs') . ")" : '')
+        );
 
         return back()->with('success', 'Template removed.');
     }

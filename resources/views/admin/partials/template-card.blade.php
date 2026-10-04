@@ -32,11 +32,9 @@
         <button type="button" class="btn-icon-sm" title="Version history" onclick="openHistoryModal({{ $template->id }}, @js($template->title))">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </button>
-        @unless($isForwarded)
-            <button type="button" class="btn-del" onclick="openDeleteModal({{ $template->id }}, @js($template->title))">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                Remove
-            </button>
-        @endunless
+        <button type="button" class="btn-del" onclick="openDeleteModal({{ $template->id }}, @js($template->title), {{ $isForwarded ? 'true' : 'false' }})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            Remove
+        </button>
     </div>
 </div>

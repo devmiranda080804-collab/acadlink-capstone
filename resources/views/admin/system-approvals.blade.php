@@ -395,6 +395,9 @@
         <div class="modal" style="width:420px;">
             <div class="modal-title">Remove Template</div>
             <div class="delete-target">Remove <strong id="delete-target-title"></strong>? This cannot be undone.</div>
+            <div id="delete-forwarded-warning" style="display:none;margin-top:12px;background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:12.5px;padding:10px 12px;border-radius:6px;line-height:1.5;">
+                <strong>This template has already been forwarded.</strong> Removing it also removes it from the Secretary's Document Repository, from each Program Head's distribution, and from the Faculty Template Library. Faculty who already downloaded a copy keep their own file.
+            </div>
             <form id="delete-form" method="POST">
                 @csrf
                 @method('DELETE')
@@ -442,8 +445,9 @@
     </div>
 
     <script>
-        function openDeleteModal(id, title) {
+        function openDeleteModal(id, title, forwarded) {
             document.getElementById('delete-target-title').textContent = title;
+            document.getElementById('delete-forwarded-warning').style.display = forwarded ? 'block' : 'none';
             document.getElementById('delete-form').action = '{{ url("/admin/template-approvals") }}/' + id;
             document.getElementById('delete-overlay').classList.add('open');
         }
