@@ -22,8 +22,9 @@ class SharedLibraryController extends Controller
         // Course Materials grouped by the actual course, Faculty Shared
         // grouped by category — instead of one long flat, mixed list.
 
-        // 1. Templates distributed to this faculty member's program
+        // 1. Templates distributed to this faculty member's program (current versions only)
         TemplateDocument::with('creator')
+            ->whereNull('superseded_at')
             ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
             ->get()
             ->each(function ($t) use (&$items, $myProgram) {
@@ -31,7 +32,7 @@ class SharedLibraryController extends Controller
                     'id'           => $t->id,
                     'source'       => 'template',
                     'title'        => $t->title,
-                    'type'         => str_replace('_', ' ', $t->type),
+                    'type'         => TemplateDocument::typeLabel($t->type),
                     'shared_by'    => $t->creator->name ?? 'Unknown',
                     'desc'         => 'Official distributed template',
                     'file_type'    => $t->file_type,
@@ -41,8 +42,8 @@ class SharedLibraryController extends Controller
                     'can_delete'   => false,
                     'folder_group' => 'templates',
                     'folder_key'   => 'template-' . $t->type,
-                    'folder_label' => str_replace('_', ' ', ucfirst($t->type)) . ' Templates',
-                    'folder_icon'  => $t->type === 'syllabus' ? '📘' : ($t->type === 'course_guide' ? '📙' : '📝'),
+                    'folder_label' => TemplateDocument::typeLabel($t->type) . ' Templates',
+                    'folder_icon'  => TemplateDocument::typeIcon($t->type),
                 ]);
             });
 

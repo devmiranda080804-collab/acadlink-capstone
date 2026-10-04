@@ -115,6 +115,18 @@
         .btn-view { display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #fff; color: #444; border: 1px solid #d0d0d0; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; text-decoration: none; flex: 1; }
         .btn-view:hover { background: #f5f5f5; }
         .btn-del svg, .btn-view svg { width: 12px; height: 12px; }
+        .btn-icon-sm { display: inline-flex; align-items: center; justify-content: center; background: #fff; color: #666; border: 1px solid #d0d0d0; padding: 8px 10px; border-radius: 5px; cursor: pointer; flex-shrink: 0; }
+        .btn-icon-sm:hover { background: #f5f5f5; color: #0f2557; }
+        .btn-icon-sm svg { width: 12px; height: 12px; }
+        .version-tag { display: inline-block; font-size: 10px; font-weight: 700; color: #6d28d9; background: #ede9fe; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+
+        .history-list { max-height: 320px; overflow-y: auto; }
+        .history-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+        .history-row:last-child { border-bottom: none; }
+        .history-row-label { font-size: 12.5px; color: #333; }
+        .history-row-label strong { color: #1a1a2e; }
+        .history-row-meta { font-size: 10.5px; color: #999; margin-top: 2px; }
+        .history-current-tag { font-size: 9.5px; font-weight: 700; color: #065f46; background: #d1fae5; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
 
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
@@ -254,8 +266,8 @@
                 $typeFolders = $templates->groupBy('type')->map(function ($group, $type) {
                     return [
                         'key'     => 'type-' . $type,
-                        'label'   => str_replace('_', ' ', ucfirst($type)) . ' Templates',
-                        'icon'    => $type === 'syllabus' ? '📘' : ($type === 'course_guide' ? '📙' : '📝'),
+                        'label'   => \App\Models\TemplateDocument::typeLabel($type) . ' Templates',
+                        'icon'    => \App\Models\TemplateDocument::typeIcon($type),
                         'count'   => $group->count(),
                         'pending' => $group->filter(fn($t) => !$t->isForwarded())->count(),
                     ];
@@ -342,9 +354,9 @@
                 <div class="modal-field">
                     <label>Template Type <span style="color:#ef4444">*</span></label>
                     <select name="type">
-                        <option value="syllabus">Syllabus</option>
-                        <option value="course_guide">Course Guide</option>
-                        <option value="module">Module</option>
+                        @foreach(\App\Models\TemplateDocument::TYPES as $typeKey => $t)
+                            <option value="{{ $typeKey }}">{{ $t['label'] }}</option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -394,6 +406,41 @@
         </div>
     </div>
 
+    {{-- Upload New Version Modal --}}
+    <div class="modal-overlay" id="new-version-overlay">
+        <div class="modal">
+            <form id="new-version-form" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-title">New Version — <span id="nv-target-title"></span></div>
+                <div class="modal-error" id="nv-error"></div>
+                <div class="modal-field">
+                    <label>New Title <span style="font-size:10px;color:#999;">(optional — leave blank to keep the same title)</span></label>
+                    <input type="text" name="title" placeholder="Leave blank to keep current title">
+                </div>
+                <div class="modal-field">
+                    <label>File <span style="color:#ef4444">*</span></label>
+                    <input type="file" name="file" accept=".pdf,.doc,.docx" required>
+                    <div class="modal-hint">The current version is kept as history — this starts a fresh Secretary → Program Head → Faculty cycle for the new file.</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeNewVersionModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Upload New Version</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Version History Modal --}}
+    <div class="modal-overlay" id="history-overlay">
+        <div class="modal">
+            <div class="modal-title">Version History — <span id="history-target-title"></span></div>
+            <div class="history-list" id="history-list"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeHistoryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function openDeleteModal(id, title) {
             document.getElementById('delete-target-title').textContent = title;
@@ -405,6 +452,48 @@
         }
         document.getElementById('delete-overlay').addEventListener('click', function(e) {
             if (e.target === this) closeDeleteModal();
+        });
+
+        function openNewVersionModal(id, title) {
+            document.getElementById('nv-target-title').textContent = title;
+            document.getElementById('nv-error').style.display = 'none';
+            document.getElementById('new-version-form').action = '{{ url("/admin/template-approvals") }}/' + id + '/new-version';
+            document.getElementById('new-version-overlay').classList.add('open');
+        }
+        function closeNewVersionModal() {
+            document.getElementById('new-version-overlay').classList.remove('open');
+        }
+        document.getElementById('new-version-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeNewVersionModal();
+        });
+
+        async function openHistoryModal(id, title) {
+            document.getElementById('history-target-title').textContent = title;
+            var list = document.getElementById('history-list');
+            list.innerHTML = '<div style="padding:16px 0;color:#999;font-size:12.5px;">Loading…</div>';
+            document.getElementById('history-overlay').classList.add('open');
+
+            try {
+                var res = await fetch('{{ url("/admin/template-approvals") }}/' + id + '/versions');
+                var versions = await res.json();
+                list.innerHTML = versions.map(function(v) {
+                    return '<div class="history-row">' +
+                        '<div>' +
+                            '<div class="history-row-label"><strong>v' + v.version + '</strong>' + (v.is_current ? '<span class="history-current-tag">Current</span>' : '') + '</div>' +
+                            '<div class="history-row-meta">' + v.created_by + ' • ' + v.created_at + ' • ' + (v.is_forwarded ? 'Forwarded' : 'Not forwarded') + '</div>' +
+                        '</div>' +
+                        '<a class="btn-view" style="flex:none;" href="' + v.file_url + '" target="_blank">View</a>' +
+                    '</div>';
+                }).join('');
+            } catch (e) {
+                list.innerHTML = '<div style="padding:16px 0;color:#ef4444;font-size:12.5px;">Could not load version history.</div>';
+            }
+        }
+        function closeHistoryModal() {
+            document.getElementById('history-overlay').classList.remove('open');
+        }
+        document.getElementById('history-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeHistoryModal();
         });
 
         var currentFolder = null; // null = no folder open (home or global search)

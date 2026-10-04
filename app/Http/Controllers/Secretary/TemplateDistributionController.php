@@ -11,8 +11,11 @@ class TemplateDistributionController extends Controller
 {
     public function index()
     {
-        // Secretary sees everything Admin has provided — pending and already-forwarded
+        // Secretary sees everything Admin has provided — pending and already-forwarded.
+        // Superseded versions (replaced by a newer upload) stay out of the working
+        // queue — they're history now, visible only via Admin's Version History.
         $templates = TemplateDocument::with(['creator', 'forwarder', 'programs'])
+            ->whereNull('superseded_at')
             ->latest()
             ->get();
 

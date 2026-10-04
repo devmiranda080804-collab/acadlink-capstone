@@ -181,9 +181,9 @@
             <div class="toolbar">
                 <div class="filter-tabs">
                     <span class="filter-tab active" onclick="filterCards('all', this)">All</span>
-                    <span class="filter-tab" onclick="filterCards('syllabus', this)">Syllabus</span>
-                    <span class="filter-tab" onclick="filterCards('course_guide', this)">Course Guide</span>
-                    <span class="filter-tab" onclick="filterCards('module', this)">Module</span>
+                    @foreach($templates->pluck('type')->unique()->sort() as $type)
+                        <span class="filter-tab" onclick="filterCards('{{ $type }}', this)">{{ \App\Models\TemplateDocument::typeLabel($type) }}</span>
+                    @endforeach
                 </div>
                 <div class="search-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -196,17 +196,14 @@
                 @forelse($templates as $template)
                     <div class="template-card" data-type="{{ $template->type }}" data-title="{{ strtolower($template->title) }}">
                         <div class="card-top">
-                            <span class="card-icon">
-                                @if($template->type == 'syllabus') 📘
-                                @elseif($template->type == 'course_guide') 📙
-                                @elseif($template->type == 'module') 📝
-                                @else 📄
-                                @endif
-                            </span>
-                            <span class="status-badge status-approved">{{ str_replace('_', ' ', $template->type) }}</span>
+                            <span class="card-icon">{{ \App\Models\TemplateDocument::typeIcon($template->type) }}</span>
+                            <span class="status-badge status-approved">{{ \App\Models\TemplateDocument::typeLabel($template->type) }}</span>
                         </div>
 
-                        <div class="card-title">{{ $template->title }}</div>
+                        <div class="card-title">
+                            {{ $template->title }}
+                            @if($template->version > 1) <span style="font-size:10px;font-weight:700;color:#6d28d9;background:#ede9fe;padding:1px 7px;border-radius:10px;margin-left:4px;vertical-align:middle;">v{{ $template->version }}</span> @endif
+                        </div>
                         <div class="card-meta">
                             {{ strtoupper($template->file_type) }} • {{ $template->readable_size }} • Provided by {{ $template->creator->name }}
                         </div>

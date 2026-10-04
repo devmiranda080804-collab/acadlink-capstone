@@ -13,9 +13,11 @@ class TemplateReviewController extends Controller
     {
         $myProgram = auth()->user()->program;
 
-        // Only templates the Secretary has already relayed, and that target my program
+        // Only templates the Secretary has already relayed, that target my program,
+        // and that are still the current version (superseded ones are history only).
         $templates = TemplateDocument::with(['creator', 'programs'])
             ->whereNotNull('forwarded_at')
+            ->whereNull('superseded_at')
             ->whereHas('programs', fn($p) => $p->where('program', $myProgram))
             ->latest()
             ->get();

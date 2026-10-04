@@ -1,13 +1,7 @@
 @php $isForwarded = $template->isForwarded(); @endphp
 <div class="tmpl-card {{ $isForwarded ? 'forwarded' : 'waiting' }}" data-status="{{ $isForwarded ? 'forwarded' : 'waiting' }}" data-title="{{ strtolower($template->title) }}" @isset($folderKey) data-folder="{{ $folderKey }}" @endisset>
     <div class="tmpl-card-top">
-        <span class="tmpl-card-icon">
-            @if($template->type == 'syllabus') 📘
-            @elseif($template->type == 'course_guide') 📙
-            @elseif($template->type == 'module') 📝
-            @else 📄
-            @endif
-        </span>
+        <span class="tmpl-card-icon">{{ \App\Models\TemplateDocument::typeIcon($template->type) }}</span>
         @if($isForwarded)
             <span class="dist-status yes">Forwarded</span>
         @else
@@ -15,7 +9,10 @@
         @endif
     </div>
     <div class="tmpl-card-title">{{ $template->title }}</div>
-    <div class="tmpl-card-type">{{ str_replace('_', ' ', $template->type) }}</div>
+    <div class="tmpl-card-type">
+        {{ \App\Models\TemplateDocument::typeLabel($template->type) }}
+        @if($template->version > 1) <span style="font-size:10px;font-weight:700;color:#6d28d9;background:#ede9fe;padding:1px 7px;border-radius:10px;margin-left:6px;">v{{ $template->version }}</span> @endif
+    </div>
     <div class="tmpl-card-meta">Uploaded by {{ $template->creator->name }} • {{ $template->created_at->format('Y-m-d') }}</div>
 
     <div class="program-tags">

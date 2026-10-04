@@ -7,6 +7,7 @@ use App\Models\Course;
 use App\Models\CourseMaterial;
 use App\Models\CourseTopic;
 use App\Models\ProgramAssignment;
+use App\Models\TemplateDocument;
 use App\Services\AcademicDocumentValidator;
 use App\Support\AcademicTerm;
 use Illuminate\Http\Request;
@@ -35,6 +36,11 @@ class CourseCoordinationController extends Controller
         $materials = collect();
         $courseOutcomes = collect();
         $courseTopics = collect();
+        // The official, currently-distributed Course Guide format for this
+        // faculty's own program — a real link from Course Coordination into
+        // the Template Library, so uploading an OBTL doesn't mean hunting
+        // through a separate page for the required format first.
+        $officialCourseGuide = TemplateDocument::currentForProgramAndType(auth()->user()->program, 'course_guide');
 
         if ($request->filled('course_id')) {
             $selectedCourse = Course::where('id', $request->course_id)
@@ -48,7 +54,7 @@ class CourseCoordinationController extends Controller
             }
         }
 
-        return view('faculty.course-coordination', compact('courses', 'selectedCourse', 'materials', 'courseOutcomes', 'courseTopics'));
+        return view('faculty.course-coordination', compact('courses', 'selectedCourse', 'materials', 'courseOutcomes', 'courseTopics', 'officialCourseGuide'));
     }
 
     // ─── Topics & Hours (OBTL) ──────────────────────────────────────

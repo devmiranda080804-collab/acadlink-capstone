@@ -1,13 +1,7 @@
 @php $template = $r['template']; $row = $r['row']; $isDistributed = $row && $row->distributed_at; @endphp
 <div class="review-card {{ $isDistributed ? 'distributed' : 'pending' }}" data-status="{{ $isDistributed ? 'distributed' : 'pending' }}" data-title="{{ strtolower($template->title) }}" @isset($folderKey) data-folder="{{ $folderKey }}" @endisset>
     <div class="review-card-top">
-        <span class="review-card-icon">
-            @if($template->type == 'syllabus') 📘
-            @elseif($template->type == 'course_guide') 📙
-            @elseif($template->type == 'module') 📝
-            @else 📄
-            @endif
-        </span>
+        <span class="review-card-icon">{{ \App\Models\TemplateDocument::typeIcon($template->type) }}</span>
         @if($isDistributed)
             <span class="status-badge status-approved">Distributed</span>
         @else
@@ -15,7 +9,10 @@
         @endif
     </div>
     <div class="review-card-title">{{ $template->title }}</div>
-    <div class="review-card-type">{{ str_replace('_', ' ', $template->type) }}</div>
+    <div class="review-card-type">
+        {{ \App\Models\TemplateDocument::typeLabel($template->type) }}
+        @if($template->version > 1) <span style="font-size:10px;font-weight:700;color:#6d28d9;background:#ede9fe;padding:1px 7px;border-radius:10px;margin-left:6px;">v{{ $template->version }}</span> @endif
+    </div>
     <div class="review-card-meta">Uploaded by {{ $template->creator->name }} • {{ $template->created_at->format('Y-m-d') }}</div>
 
     <div class="card-actions">

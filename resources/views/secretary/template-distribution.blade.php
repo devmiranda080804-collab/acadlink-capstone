@@ -213,8 +213,8 @@
                 $typeFolders = $templates->groupBy('type')->map(function ($group, $type) {
                     return [
                         'key'     => 'type-' . $type,
-                        'label'   => str_replace('_', ' ', ucfirst($type)) . ' Templates',
-                        'icon'    => $type === 'syllabus' ? '📘' : ($type === 'course_guide' ? '📙' : '📝'),
+                        'label'   => \App\Models\TemplateDocument::typeLabel($type) . ' Templates',
+                        'icon'    => \App\Models\TemplateDocument::typeIcon($type),
                         'count'   => $group->count(),
                         'pending' => $group->filter(fn($t) => !$t->isForwarded())->count(),
                     ];

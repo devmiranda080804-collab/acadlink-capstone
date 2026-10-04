@@ -14,6 +14,7 @@ class TemplateController extends Controller
         $myProgram = auth()->user()->program;
 
         $templates = TemplateDocument::with('creator')
+            ->whereNull('superseded_at')
             ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
             ->latest()
             ->get();

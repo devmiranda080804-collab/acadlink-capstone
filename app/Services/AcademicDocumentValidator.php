@@ -29,6 +29,12 @@ class AcademicDocumentValidator
         'obtl'        => "an Outcomes-Based Teaching and Learning plan (OBTL) — normally lists the course's topics together with the number of weeks/hours allocated to each, aligned to course/program learning outcomes",
         'course_guide' => "a Course Guide — normally includes course objectives, an overview of the subject matter, required readings/materials, and how the course is structured across the term",
         'module'      => "an instructional Module / Learning Module — normally contains lesson content meant to teach students: explanations, examples, and activities or exercises for a specific topic",
+        'research_template' => "a Research Template — a standardized outline/format for a research or capstone-style paper (e.g. sections for title, background, methodology, references)",
+        'memorandum'  => "an official Memorandum — a formal internal communication with a header (To/From/Date/Subject) and a body conveying an announcement, directive, or information",
+        'request_letter' => "a formal Request Letter — addressed to a specific recipient, stating a clear request/purpose and closing with a signature",
+        'consultation_form' => "a Consultation Form — a structured form for recording a consultation session (names, date, concern/topic discussed, notes or action items)",
+        'activity_proposal' => "an Activity Proposal — proposes an event or activity, normally including objectives, schedule, and budget/resources",
+        'monitoring_sheet' => "a Monitoring Sheet — a tabular form for tracking the status or progress of tasks, submissions, or activities over time",
     ];
 
     public function __construct()

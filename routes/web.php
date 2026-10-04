@@ -137,6 +137,8 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
     // Template Approvals (dating System Approvals)
     Route::get('/template-approvals', [TemplateApprovalController::class, 'index']);
     Route::post('/template-approvals', [TemplateApprovalController::class, 'store']);
+    Route::post('/template-approvals/{template}/new-version', [TemplateApprovalController::class, 'newVersion']);
+    Route::get('/template-approvals/{template}/versions', [TemplateApprovalController::class, 'versions']);
     Route::delete('/template-approvals/{template}', [TemplateApprovalController::class, 'destroy']);
 
     Route::get('/audit-logs', [AuditLogController::class, 'index']);

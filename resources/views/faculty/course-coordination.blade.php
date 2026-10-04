@@ -512,6 +512,11 @@
                 @csrf
                 <input type="hidden" name="course_id" value="{{ $selectedCourse->id ?? '' }}">
                 <div class="modal-title">Upload OBTL Document</div>
+                @if($officialCourseGuide)
+                    <div class="modal-hint" style="margin-top:0;margin-bottom:13px;">
+                        📙 Need the official format first? <a href="{{ url('/faculty/shared-library/file/template/' . $officialCourseGuide->id) }}" target="_blank">View the Course Guide template</a>
+                    </div>
+                @endif
                 <div class="modal-field">
                     <label>Title</label>
                     <input type="text" name="title" required>
