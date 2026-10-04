@@ -867,14 +867,31 @@
 
             {{-- Item Bank Tab --}}
             <div class="tab-content" id="tab-item-bank">
-                <div class="form-group" style="max-width:360px;margin-bottom:16px;">
-                    <label>Filter by Subject</label>
-                    <select id="bank-course-select" onchange="loadItemBank()">
-                        <option value="" disabled selected>Select subject</option>
-                        @foreach($assignments->unique('course_id') as $a)
-                            <option value="{{ $a->course_id }}">{{ $a->course->code }} — {{ $a->course->title }}</option>
-                        @endforeach
-                    </select>
+                <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+                    <div class="form-group" style="max-width:360px;">
+                        <label>Filter by Subject</label>
+                        <select id="bank-course-select" onchange="loadItemBank()">
+                            <option value="" disabled selected>Select subject</option>
+                            @foreach($assignments->unique('course_id') as $a)
+                                <option value="{{ $a->course_id }}">{{ $a->course->code }} — {{ $a->course->title }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group" style="max-width:260px;">
+                        <label>Filter by Topic</label>
+                        <select id="bank-topic-select" onchange="renderBankItems()" disabled>
+                            <option value="">All Topics</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="max-width:220px;">
+                        <label>Filter by Cognitive Level</label>
+                        <select id="bank-bloom-select" onchange="renderBankItems()" disabled>
+                            <option value="">All Levels</option>
+                            @foreach(\App\Support\BloomLevels::LEVELS as $level)
+                                <option value="{{ $level }}">{{ $level }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
                 <div id="bank-items-container">
                     <div class="tab-empty">
@@ -2250,32 +2267,69 @@
         // ══════════════════════════════
         // ITEM BANK
         // ══════════════════════════════
+        var allBankItems = [];
+
         async function loadItemBank() {
             var courseId = document.getElementById('bank-course-select').value;
             var container = document.getElementById('bank-items-container');
+            var topicSelect = document.getElementById('bank-topic-select');
+            var bloomSelect = document.getElementById('bank-bloom-select');
             if (!courseId) return;
 
             container.innerHTML = '<div class="tab-empty">Loading…</div>';
-            var items;
+            topicSelect.disabled = true;
+            bloomSelect.disabled = true;
+            bloomSelect.value = '';
+
             try {
-                items = await api('/faculty/exam-generator/item-bank?course_id=' + courseId);
+                allBankItems = await api('/faculty/exam-generator/item-bank?course_id=' + courseId);
             } catch (e) {
                 container.innerHTML = '<div class="tab-empty" style="color:#ef4444;">' + escapeHtml(e.message) + '</div>';
                 return;
             }
 
-            if (items.length === 0) {
+            // Topic options depend on what's actually in this subject's items —
+            // rebuilt every time the subject changes instead of listing every
+            // topic across every subject.
+            var topics = Array.from(new Set(allBankItems.map(function(i) { return i.topic; }).filter(Boolean))).sort();
+            topicSelect.innerHTML = '<option value="">All Topics</option>' +
+                topics.map(function(t) { return '<option value="' + escapeAttr(t) + '">' + escapeHtml(t) + '</option>'; }).join('');
+            topicSelect.value = '';
+            topicSelect.disabled = allBankItems.length === 0;
+            bloomSelect.disabled = allBankItems.length === 0;
+
+            renderBankItems();
+        }
+
+        function renderBankItems() {
+            var container = document.getElementById('bank-items-container');
+            var topicFilter = document.getElementById('bank-topic-select').value;
+            var bloomFilter = document.getElementById('bank-bloom-select').value;
+
+            if (allBankItems.length === 0) {
                 container.innerHTML = '<div class="tab-empty"><div class="empty-icon">🗃️</div>No reusable items yet for this subject. Add questions in the Exam Builder first.</div>';
+                return;
+            }
+
+            var items = allBankItems.filter(function(item) {
+                var matchesTopic = !topicFilter || item.topic === topicFilter;
+                var matchesBloom = !bloomFilter || item.bloom_level === bloomFilter;
+                return matchesTopic && matchesBloom;
+            });
+
+            if (items.length === 0) {
+                container.innerHTML = '<div class="tab-empty">No items match this filter.</div>';
                 return;
             }
 
             container.innerHTML = items.map(function(item) {
                 var ct = QUESTION_TYPES[item.type] || {};
+                var bloomLabel = item.bloom_level || ct.bloom;
                 return '<div class="question-card" style="margin-bottom:10px;">' +
                     '<div class="q-header"><div class="q-num" style="flex:1;">' + escapeHtml(item.question_text || '(Case Analysis scenario)') + '</div>' +
                     '<button class="btn-q-action" onclick="reuseBankItem(' + item.id + ')" title="Add to current exam" ' + (currentExam ? '' : 'disabled') + '>+ Add</button></div>' +
                     '<div class="q-footer"><span class="q-type-label">' + (ct.label || item.type) + '</span>' +
-                    (ct.bloom ? '<span class="q-blooms-badge">' + ct.bloom + '</span>' : '') +
+                    (bloomLabel ? '<span class="q-blooms-badge">' + bloomLabel + '</span>' : '') +
                     (item.topic ? '<span class="q-type-label">' + escapeHtml(item.topic) + '</span>' : '') + '</div>' +
                 '</div>';
             }).join('');
