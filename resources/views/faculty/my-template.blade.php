@@ -52,15 +52,30 @@
         .stat-info .stat-label { font-size: 11.5px; color: #888; margin-top: 2px; }
 
         .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
-        .filter-tabs { display: flex; gap: 4px; }
-        .filter-tab { padding: 7px 16px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; user-select: none; }
-        .filter-tab:hover { border-color: #0f2557; color: #0f2557; }
-        .filter-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
 
-        .search-box { position: relative; width: 240px; max-width: 100%; }
+        .search-box { position: relative; width: 280px; max-width: 100%; }
         .search-box svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #999; pointer-events: none; }
-        .search-box input { width: 100%; padding: 8px 10px 8px 30px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; outline: none; font-family: Arial, sans-serif; }
+        .search-box input { width: 100%; padding: 9px 10px 9px 30px; border: 1px solid #ddd; border-radius: 6px; font-size: 12.5px; outline: none; font-family: Arial, sans-serif; }
         .search-box input:focus { border-color: #0f2557; }
+
+        {{-- Folder (library-shelf) browsing --}}
+        .folder-section { margin-bottom: 26px; }
+        .folder-section-title { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: #1a1a2e; margin-bottom: 12px; }
+        .folder-section-count { font-size: 10.5px; font-weight: 600; color: #999; background: #f0f0f0; padding: 2px 8px; border-radius: 10px; }
+        .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+        .folder-card { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 14px 16px; cursor: pointer; transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s; text-align: left; }
+        .folder-card:hover { box-shadow: 0 6px 18px rgba(15,37,87,0.1); transform: translateY(-2px); border-color: #c7d2e8; }
+        .folder-card-icon { font-size: 30px; line-height: 1; flex-shrink: 0; }
+        .folder-card-label { font-size: 12.5px; font-weight: 700; color: #1a1a2e; line-height: 1.3; }
+        .folder-card-count { font-size: 10.5px; color: #999; margin-top: 3px; }
+
+        .breadcrumb { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+        .btn-back { display: inline-flex; align-items: center; gap: 5px; background: #fff; border: 1px solid #ddd; color: #444; font-size: 12px; font-weight: 600; padding: 7px 13px; border-radius: 6px; cursor: pointer; }
+        .btn-back:hover { border-color: #0f2557; color: #0f2557; }
+        .btn-back svg { width: 13px; height: 13px; }
+        .breadcrumb-label { font-size: 13.5px; font-weight: 700; color: #1a1a2e; }
+
+        .version-tag { display: inline-block; font-size: 10px; font-weight: 700; color: #6d28d9; background: #ede9fe; padding: 1px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
 
         .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
         .template-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px; transition: box-shadow 0.15s; display: flex; flex-direction: column; }
@@ -179,72 +194,127 @@
             </div>
 
             <div class="toolbar">
-                <div class="filter-tabs">
-                    <span class="filter-tab active" onclick="filterCards('all', this)">All</span>
-                    @foreach($templates->pluck('type')->unique()->sort() as $type)
-                        <span class="filter-tab" onclick="filterCards('{{ $type }}', this)">{{ \App\Models\TemplateDocument::typeLabel($type) }}</span>
-                    @endforeach
-                </div>
                 <div class="search-box">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" id="template-search" placeholder="Search by title..." oninput="searchCards(this.value)">
+                    <input type="text" id="template-search" placeholder="Search all templates by title..." oninput="onSearchInput(this.value)">
                 </div>
             </div>
 
-            {{-- Templates grid --}}
-            <div class="template-grid" id="template-grid">
-                @forelse($templates as $template)
-                    <div class="template-card" data-type="{{ $template->type }}" data-title="{{ strtolower($template->title) }}">
-                        <div class="card-top">
-                            <span class="card-icon">{{ \App\Models\TemplateDocument::typeIcon($template->type) }}</span>
-                            <span class="status-badge status-approved">{{ \App\Models\TemplateDocument::typeLabel($template->type) }}</span>
-                        </div>
+            @php
+                $typeFolders = $templates->groupBy('type')->map(function ($group, $type) {
+                    return [
+                        'key'   => 'type-' . $type,
+                        'label' => \App\Models\TemplateDocument::typeLabel($type),
+                        'icon'  => \App\Models\TemplateDocument::typeIcon($type),
+                        'count' => $group->count(),
+                    ];
+                })->sortBy('label')->values();
+            @endphp
 
-                        <div class="card-title">
-                            {{ $template->title }}
-                            @if($template->version > 1) <span style="font-size:10px;font-weight:700;color:#6d28d9;background:#ede9fe;padding:1px 7px;border-radius:10px;margin-left:4px;vertical-align:middle;">v{{ $template->version }}</span> @endif
-                        </div>
-                        <div class="card-meta">
-                            {{ strtoupper($template->file_type) }} • {{ $template->readable_size }} • Provided by {{ $template->creator->name }}
-                        </div>
-
-                        <div class="card-actions">
-                            <a class="btn-sm btn-view-file" href="{{ Storage::url($template->file_path) }}" target="_blank">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                View / Download
-                            </a>
-                        </div>
+            {{-- FOLDER HOME: templates arranged by type, like library shelves --}}
+            <div id="folder-home">
+                <div class="folder-section">
+                    <div class="folder-section-title">
+                        All Templates
+                        <span class="folder-section-count">{{ $templates->count() }} file{{ $templates->count() == 1 ? '' : 's' }}</span>
                     </div>
-                @empty
-                    <div class="empty-state">No templates have been distributed to your program yet.</div>
-                @endforelse
+                    @if($typeFolders->isEmpty())
+                        <div class="empty-state">No templates have been distributed to your program yet.</div>
+                    @else
+                        <div class="folder-grid">
+                            @foreach($typeFolders as $folder)
+                                <button type="button" class="folder-card" onclick="openFolder('{{ $folder['key'] }}', @js($folder['label']))">
+                                    <span class="folder-card-icon">{{ $folder['icon'] }}</span>
+                                    <div>
+                                        <div class="folder-card-label">{{ $folder['label'] }}</div>
+                                        <div class="folder-card-count">{{ $folder['count'] }} file{{ $folder['count'] == 1 ? '' : 's' }}</div>
+                                    </div>
+                                </button>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- FILE VIEW: shown after opening a folder, or while searching --}}
+            <div id="file-view" style="display:none;">
+                <div class="breadcrumb">
+                    <button type="button" class="btn-back" onclick="backToFolders()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                        Back to Library
+                    </button>
+                    <span class="breadcrumb-label" id="file-view-title"></span>
+                </div>
+
+                <div class="template-grid" id="template-grid">
+                    @foreach($templates as $template)
+                        @include('faculty.partials.template-card', ['template' => $template, 'folderKey' => 'type-' . $template->type])
+                    @endforeach
+                </div>
+                <div class="empty-state" id="no-search-results" style="display:none;">No templates match.</div>
             </div>
 
         </div>
     </div>
 
     <script>
-        var currentFilter = 'all';
-        var currentSearch = '';
+        var currentFolder = null;
+        var currentFolderLabel = '';
 
-        function filterCards(type, el) {
-            currentFilter = type;
-            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            applyCardFilters();
+        function openFolder(key, label) {
+            currentFolder = key;
+            currentFolderLabel = label;
+            document.getElementById('template-search').value = '';
+            document.getElementById('folder-home').style.display = 'none';
+            document.getElementById('file-view').style.display = '';
+            document.getElementById('file-view-title').textContent = label;
+            renderFileView();
         }
 
-        function searchCards(query) {
-            currentSearch = query.trim().toLowerCase();
-            applyCardFilters();
+        function backToFolders() {
+            currentFolder = null;
+            currentFolderLabel = '';
+            document.getElementById('template-search').value = '';
+            document.getElementById('file-view').style.display = 'none';
+            document.getElementById('folder-home').style.display = '';
         }
 
-        function applyCardFilters() {
-            document.querySelectorAll('#template-grid .template-card').forEach(card => {
-                const matchesFilter = currentFilter === 'all' || card.dataset.type === currentFilter;
-                const matchesSearch = !currentSearch || card.dataset.title.includes(currentSearch);
-                card.style.display = (matchesFilter && matchesSearch) ? '' : 'none';
+        function onSearchInput(query) {
+            query = query.trim();
+            if (query === '') {
+                if (currentFolder) {
+                    document.getElementById('file-view-title').textContent = currentFolderLabel;
+                    renderFileView();
+                } else {
+                    document.getElementById('file-view').style.display = 'none';
+                    document.getElementById('folder-home').style.display = '';
+                }
+                return;
+            }
+
+            document.getElementById('folder-home').style.display = 'none';
+            document.getElementById('file-view').style.display = '';
+            document.getElementById('file-view-title').textContent = 'Search results for "' + query + '"';
+            renderFileView(query);
+        }
+
+        function renderFileView(searchQuery) {
+            var cards = document.querySelectorAll('#template-grid .template-card');
+            var q = (searchQuery || '').toLowerCase();
+            var visibleCount = 0;
+
+            cards.forEach(function(card) {
+                var matchesFolder = searchQuery ? true : (!currentFolder || card.dataset.folder === currentFolder);
+                var matchesSearch = !q || card.dataset.title.includes(q);
+                var visible = matchesFolder && matchesSearch;
+                card.style.display = visible ? '' : 'none';
+                if (visible) visibleCount++;
             });
+
+            var noResults = document.getElementById('no-search-results');
+            if (noResults) {
+                noResults.style.display = (visibleCount === 0) ? 'block' : 'none';
+            }
         }
     </script>
 
