@@ -296,7 +296,10 @@
                                             <div class="file-meta">{{ strtoupper($material->file_type) }} • {{ $material->version }} • {{ $material->readable_size }} • Updated {{ $material->created_at->format('M d, Y') }}</div>
                                         </div>
                                     </div>
-                                    <a class="btn-view" href="{{ Storage::url($material->file_path) }}" target="_blank">View</a>
+                                    <div class="file-actions">
+                                        <a class="btn-view" href="{{ Storage::url($material->file_path) }}" target="_blank">View</a>
+                                        <a class="btn-view" href="{{ Storage::url($material->file_path) }}" download="{{ $material->title }}.{{ $material->file_type }}">Download</a>
+                                    </div>
                                 </div>
                             @empty
                                 <div class="folder-empty">Nothing uploaded yet.</div>
