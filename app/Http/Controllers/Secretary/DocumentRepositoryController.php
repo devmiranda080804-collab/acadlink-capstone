@@ -53,7 +53,7 @@ class DocumentRepositoryController extends Controller
                         'id'        => $t->id,
                         'source'    => 'template',
                         'title'     => $t->title,
-                        'type'      => ucwords(str_replace('_', ' ', $t->type)),
+                        'type'      => TemplateDocument::typeLabel($t->type),
                         'program'   => $p->program,
                         'uploader'  => $t->creator->name ?? 'Unknown',
                         'file_type' => $t->file_type,
@@ -88,7 +88,7 @@ class DocumentRepositoryController extends Controller
                 'id'        => $d->id,
                 'source'    => 'upload',
                 'title'     => $d->title,
-                'type'      => ucwords(str_replace('_', ' ', $d->doc_type)),
+                'type'      => TemplateDocument::typeLabel($d->doc_type),
                 'program'   => $d->program ?? 'General',
                 'uploader'  => $d->uploader->name ?? 'Unknown',
                 'file_type' => $d->file_type,
@@ -130,7 +130,7 @@ class DocumentRepositoryController extends Controller
         $request->validate([
             'title'    => 'required|string|max:255',
             'program'  => 'nullable|in:' . implode(',', Programs::codes()),
-            'doc_type' => 'required|string|max:50',
+            'doc_type' => 'required|in:' . implode(',', array_merge(array_keys(TemplateDocument::TYPES), ['other'])),
             'file'     => 'required|file|mimes:pdf,doc,docx,xls,xlsx|max:20480',
         ]);
 

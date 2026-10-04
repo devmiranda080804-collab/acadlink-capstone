@@ -375,9 +375,9 @@
                     <div class="modal-field">
                         <label>Type <span style="color:#ef4444">*</span></label>
                         <select name="doc_type" required>
-                            <option value="memo">Memo</option>
-                            <option value="form">Form</option>
-                            <option value="syllabus">Syllabus</option>
+                            @foreach(\App\Models\TemplateDocument::TYPES as $key => $meta)
+                                <option value="{{ $key }}">{{ $meta['label'] }}</option>
+                            @endforeach
                             <option value="other">Other</option>
                         </select>
                     </div>
