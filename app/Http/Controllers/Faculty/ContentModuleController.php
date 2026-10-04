@@ -8,6 +8,7 @@ use App\Models\ContentModule;
 use App\Services\GoogleDocsService;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
 use PhpOffice\PhpWord\IOFactory;
 
@@ -92,39 +93,23 @@ class ContentModuleController extends Controller
         return null;
     }
 
-    // Uses PhpWord's own HTML writer (load the .docx, write it back out as
-    // HTML) instead of flattening to plain text — this keeps the upload
-    // looking like itself once opened: bold/italic, tables, etc. survive,
-    // not just the bare words.
+    // Body content comes from mammoth.js (scripts/docx-to-html.js) — it reads the
+    // .docx's real structure (headings, bold/italic, lists, tables, images) and
+    // emits clean semantic HTML. Headers/footers aren't part of that body, so
+    // their text is pulled separately via PhpWord and placed as plain blocks.
     //
-    // Fails open, like extractPdfContentViaAi() — a malformed .docx or an
-    // element PhpWord's HTML writer can't handle should fall back to storing
-    // the upload as a plain file, not 500 the whole request.
+    // Fails open, like extractPdfContentViaAi() — a malformed .docx or a missing
+    // Node runtime should fall back to storing the upload as a plain file,
+    // not 500 the whole request.
     protected function extractDocxContent(string $path): ?string
     {
         try {
-            $phpWord = IOFactory::load($path);
-            $htmlWriter = IOFactory::createWriter($phpWord, 'HTML');
-
-            ob_start();
-            $htmlWriter->save('php://output');
-            $fullHtml = ob_get_clean();
-
-            if (!preg_match('#<body[^>]*>(.*)</body>#is', $fullHtml, $matches)) {
+            $body = $this->convertDocxBodyViaMammoth($path);
+            if ($body === null) {
                 return null;
             }
 
-            // Drop PhpWord's own page-wrapper <div>s, keep everything inside them
-            $body = trim(preg_replace('#</?div[^>]*>#i', '', $matches[1]));
-
-            // PhpWord's HTML writer silently drops headers/footers — HTML has no
-            // "repeat on every printed page" concept to translate them into. Pull
-            // their text out separately so a letterhead/footer isn't just lost,
-            // placed as plain blocks at the top/bottom instead of being "sticky."
-            // A letterhead's logo images and side-by-side column layout still
-            // won't survive this (text only) — that's an honest limit of a
-            // text-only fallback, not something worth chasing for content that's
-            // really just teaching material, not a laid-out official form.
+            $phpWord = IOFactory::load($path);
             $headerBlocks = $this->extractHeaderFooterText($phpWord, 'getHeaders');
             $footerBlocks = $this->extractHeaderFooterText($phpWord, 'getFooters');
 
@@ -135,60 +120,25 @@ class ContentModuleController extends Controller
                 $body .= '<hr><div>' . implode('', array_map(fn($b) => '<p><em>' . e($b) . '</em></p>', $footerBlocks)) . '</div>';
             }
 
-            if ($body === '') {
-                return null;
-            }
-
-            // PhpWord puts the actual formatting — fonts, table borders, heading
-            // sizes/colors, paragraph spacing — in a <style> block of CSS
-            // rules (tags/classes), not inline on each element. Keeping only
-            // the <body> (as before) silently threw all of that away, which is
-            // why tables/headings/spacing looked flattened once uploaded.
-            // Scope it to a wrapper class so these document-wide rules (e.g.
-            // a bare "body {...}") can never leak into whatever page ends up
-            // hosting this saved content later.
-            $style = '';
-            if (preg_match('#<style[^>]*>(.*?)</style>#is', $fullHtml, $styleMatch)) {
-                $style = '<style>' . $this->scopeDocxCss($styleMatch[1], 'docx-content') . '</style>';
-            }
-
-            return $style . '<div class="docx-content">' . $body . '</div>';
+            return '<div class="docx-content">' . $body . '</div>';
         } catch (\Throwable $e) {
             report($e);
             return null;
         }
     }
 
-    // Rewrites PhpWord's document-wide CSS (written for a full standalone HTML
-    // page — bare "body"/"h1"/"table" selectors) so every rule only applies
-    // inside the given wrapper class.
-    protected function scopeDocxCss(string $css, string $scopeClass): string
+    protected function convertDocxBodyViaMammoth(string $path): ?string
     {
-        // @page is print-layout only, meaningless on screen, and isn't a
-        // normal selector that can be scoped the same way.
-        $css = preg_replace('#@page\b[^{]*\{[^}]*\}#i', '', $css) ?? $css;
+        $result = Process::timeout(60)->run(['node', base_path('scripts/docx-to-html.js'), $path]);
 
-        // PhpWord has a known unit-conversion bug on some paragraph styles
-        // (e.g. "List Paragraph") that emits an absurd margin like "360in" —
-        // clamp any inch-based margin so one malformed rule can't blow out
-        // the whole layout.
-        $css = preg_replace_callback(
-            '#(margin(?:-left|-right|-top|-bottom)?\s*:\s*)(\d+(?:\.\d+)?)in#i',
-            fn($m) => $m[1] . min((float) $m[2], 2) . 'in',
-            $css
-        ) ?? $css;
+        if (!$result->successful()) {
+            report(new \RuntimeException('docx-to-html failed: ' . $result->errorOutput()));
+            return null;
+        }
 
-        return preg_replace_callback('#([^{}]+)\{([^{}]*)\}#', function ($m) use ($scopeClass) {
-            $scoped = array_map(function ($selector) use ($scopeClass) {
-                $selector = trim($selector);
+        $html = trim($result->output());
 
-                return ($selector === 'body' || $selector === '*')
-                    ? '.' . $scopeClass
-                    : '.' . $scopeClass . ' ' . $selector;
-            }, explode(',', $m[1]));
-
-            return implode(', ', $scoped) . '{' . $m[2] . '}';
-        }, $css) ?? $css;
+        return $html === '' ? null : $html;
     }
 
     // Returns one text block per top-level header/footer element (each

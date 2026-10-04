@@ -459,6 +459,7 @@
             height: 320,
             branding: false,
             promotion: false,
+            content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; } table { border-collapse: collapse; width: 100%; } td, th { border: 1px solid #999; padding: 6px 8px; vertical-align: top; } img { max-width: 100%; height: auto; }',
         };
 
         function toggleMode() {
