@@ -20,4 +20,20 @@ class AcademicTerm
         if ($month >= 1 && $month <= 5)  return 'Second Semester';
         return 'Summer';
     }
+
+    // The current school year plus the two before it — a small, reasonable
+    // set of past terms to pick from in a selector (e.g. Analytics), without
+    // needing a query against historical data just to populate the dropdown.
+    public static function selectableSchoolYears(): array
+    {
+        $startYear = (int) explode('-', self::currentSchoolYear())[0];
+
+        return [
+            ($startYear) . '-' . ($startYear + 1),
+            ($startYear - 1) . '-' . ($startYear),
+            ($startYear - 2) . '-' . ($startYear - 1),
+        ];
+    }
+
+    const SEMESTERS = ['First Semester', 'Second Semester', 'Summer'];
 }

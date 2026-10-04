@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Services\AnalyticsService;
+use App\Support\AcademicTerm;
 use Illuminate\Http\Request;
 
 class AnalyticsController extends Controller
@@ -13,14 +14,20 @@ class AnalyticsController extends Controller
     {
         $program = $request->query('program') ?: null;
         $programs = Course::query()->select('program')->distinct()->orderBy('program')->pluck('program');
+        $schoolYear = $request->query('school_year') ?: AcademicTerm::currentSchoolYear();
+        $semester = $request->query('semester') ?: AcademicTerm::currentSemester();
 
         return view('admin.analytics', [
             'programs'     => $programs,
             'selectedProgram' => $program,
+            'schoolYear'  => $schoolYear,
+            'semester'    => $semester,
+            'schoolYears' => AcademicTerm::selectableSchoolYears(),
+            'semesters'   => AcademicTerm::SEMESTERS,
             'compliance'   => $analytics->complianceReport($program),
             'coverage'     => $analytics->assessmentCoverageReport($program),
-            'activity'     => $analytics->facultyActivitySummary($program),
-            'coordination' => $analytics->courseCoordinationStatusReport($program),
+            'activity'     => $analytics->facultyActivitySummary($program, null, $schoolYear, $semester),
+            'coordination' => $analytics->courseCoordinationStatusReport($program, $schoolYear, $semester),
         ]);
     }
 }

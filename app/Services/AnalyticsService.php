@@ -130,11 +130,12 @@ class AnalyticsService
         ];
     }
 
-    // (3) Faculty Activity Summary — per-faculty counts of real activity this term.
-    public function facultyActivitySummary(?string $program = null, ?int $facultyId = null): array
+    // (3) Faculty Activity Summary — per-faculty counts of real activity for a term
+    // (defaults to the current one when not given, so existing callers are unaffected).
+    public function facultyActivitySummary(?string $program = null, ?int $facultyId = null, ?string $schoolYear = null, ?string $semester = null): array
     {
-        $schoolYear = AcademicTerm::currentSchoolYear();
-        $semester = AcademicTerm::currentSemester();
+        $schoolYear ??= AcademicTerm::currentSchoolYear();
+        $semester ??= AcademicTerm::currentSemester();
 
         $facultyQuery = User::where('role', 'faculty')->whereNull('archived_at')
             ->when($program, fn($q) => $q->where('program', $program))
@@ -161,12 +162,13 @@ class AnalyticsService
         return ['school_year' => $schoolYear, 'semester' => $semester, 'faculty' => $rows];
     }
 
-    // (4) Course Coordination Status Report — courses with 2+ faculty assigned this term
+    // (4) Course Coordination Status Report — courses with 2+ faculty assigned in a term
     // (multi-section), and whether each assigned faculty has finalized their exam per period.
-    public function courseCoordinationStatusReport(?string $program = null): array
+    // Defaults to the current term when not given, so existing callers are unaffected.
+    public function courseCoordinationStatusReport(?string $program = null, ?string $schoolYear = null, ?string $semester = null): array
     {
-        $schoolYear = AcademicTerm::currentSchoolYear();
-        $semester = AcademicTerm::currentSemester();
+        $schoolYear ??= AcademicTerm::currentSchoolYear();
+        $semester ??= AcademicTerm::currentSemester();
 
         $byCourse = ProgramAssignment::where('school_year', $schoolYear)
             ->where('semester', $semester)

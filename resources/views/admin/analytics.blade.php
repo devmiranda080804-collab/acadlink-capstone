@@ -143,11 +143,21 @@
                     <div class="page-title">Analytics</div>
                     <div class="page-sub">Institution-wide instructional reports — {{ $activity['school_year'] }}, {{ $activity['semester'] }}</div>
                 </div>
-                <form method="GET">
+                <form method="GET" style="display:flex;gap:10px;">
                     <select name="program" class="filter-select" onchange="this.form.submit()">
                         <option value="">All Programs</option>
                         @foreach($programs as $code)
                             <option value="{{ $code }}" {{ $selectedProgram == $code ? 'selected' : '' }}>{{ $code }} — {{ \App\Support\Programs::label($code) }}</option>
+                        @endforeach
+                    </select>
+                    <select name="school_year" class="filter-select" style="min-width:140px;" onchange="this.form.submit()">
+                        @foreach($schoolYears as $sy)
+                            <option value="{{ $sy }}" {{ $schoolYear == $sy ? 'selected' : '' }}>{{ $sy }}</option>
+                        @endforeach
+                    </select>
+                    <select name="semester" class="filter-select" style="min-width:160px;" onchange="this.form.submit()">
+                        @foreach($semesters as $s)
+                            <option value="{{ $s }}" {{ $semester == $s ? 'selected' : '' }}>{{ $s }}</option>
                         @endforeach
                     </select>
                 </form>
@@ -180,7 +190,7 @@
             {{-- 1. Instructional Compliance Report --}}
             <div class="report-panel">
                 <div class="report-title">Instructional Compliance Report</div>
-                <div class="report-sub">Faculty submission status against active Submissions &amp; Deadline requirements, by type</div>
+                <div class="report-sub">Faculty submission status against active Submissions &amp; Deadline requirements, by type (all-time — not affected by the term filter above)</div>
                 <table class="report-table">
                     <thead><tr><th>Requirement Type</th><th>Expected</th><th>Submitted</th><th>On Time</th></tr></thead>
                     <tbody>
@@ -221,7 +231,7 @@
             {{-- 2. Assessment Coverage Report --}}
             <div class="chart-panel-full">
                 <div class="chart-title">Assessment Coverage Report — Bloom's Taxonomy (Actual vs. TOS Target)</div>
-                <div class="report-sub">Item counts from finalized exams vs. each course's Table of Specifications target, {{ $coverage['exams_analyzed'] }} exam(s) analyzed</div>
+                <div class="report-sub">Item counts from finalized exams vs. each course's Table of Specifications target, {{ $coverage['exams_analyzed'] }} exam(s) analyzed (all-time — not affected by the term filter above)</div>
                 <div class="chart-wrap"><canvas id="bloomChart" height="100"></canvas></div>
             </div>
 
@@ -246,7 +256,7 @@
             {{-- 3. Faculty Activity Summary --}}
             <div class="report-panel">
                 <div class="report-title">Faculty Activity Summary</div>
-                <div class="report-sub">Recorded activity per faculty this term</div>
+                <div class="report-sub">Recorded activity per faculty — {{ $activity['school_year'] }}, {{ $activity['semester'] }}</div>
                 <table class="report-table">
                     <thead><tr><th>Faculty</th><th>Exams Created</th><th>Exams Finalized</th><th>Topics Filed</th><th>Content Modules</th><th>Shared Resources</th><th>Submissions Filed</th></tr></thead>
                     <tbody>
@@ -270,7 +280,7 @@
             {{-- 4. Course Coordination Status Report --}}
             <div class="report-panel">
                 <div class="report-title">Course Coordination Status Report</div>
-                <div class="report-sub">Multi-section courses — exam finalization alignment across co-faculty</div>
+                <div class="report-sub">Multi-section courses — exam finalization alignment across co-faculty — {{ $coordination['school_year'] }}, {{ $coordination['semester'] }}</div>
                 <table class="report-table">
                     <thead><tr><th>Course</th><th>Faculty</th><th>Prelim</th><th>Midterm</th><th>Final</th></tr></thead>
                     <tbody>
