@@ -314,6 +314,15 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
                                     Edit
                                 </button>
+                            @elseif($module->isEditableDocx())
+                                <button type="button" class="btn-sm btn-edit-sm" onclick="openDocxEditor({{ $module->id }}, {{ json_encode($module->title) }})">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                                    Open & Edit
+                                </button>
+                                <button type="button" class="btn-sm btn-edit-sm" onclick="openEditModal({{ $module->id }}, {{ json_encode($module->title) }}, {{ json_encode($module->description) }})">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
+                                    Edit
+                                </button>
                             @else
                                 <a class="btn-sm btn-view-file" href="{{ Storage::url($module->file_path) }}" target="_blank">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -445,6 +454,157 @@
             </form>
         </div>
     </div>
+
+    {{-- Uploaded Word file editor: shows the original file exactly as-is on the left,
+         and lets only the wording of each paragraph change on the right. --}}
+    <style>
+        .docx-editor-modal { max-width: 1200px; width: 96vw; }
+        .docx-editor-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+        .docx-editor-preview { height: 62vh; overflow: auto; background: #f1f3f7; border: 1px solid #dde1ea; border-radius: 6px; padding: 10px; }
+        .docx-editor-text { height: 62vh; overflow: auto; padding-right: 4px; }
+        .docx-para-input { width: 100%; box-sizing: border-box; border: 1px solid #d5dbe6; border-radius: 4px; padding: 6px 8px; font: 13px Arial, sans-serif; margin-bottom: 6px; resize: none; overflow: hidden; }
+        .docx-editor-status { font-size: 12.5px; color: #666; padding: 10px; }
+        .docx-editor-error { display: none; font-size: 12.5px; color: #b91c1c; margin-top: 8px; }
+        @media (max-width: 800px) {
+            .docx-editor-cols { grid-template-columns: 1fr; }
+            .docx-editor-preview, .docx-editor-text { height: auto; max-height: 50vh; }
+        }
+    </style>
+
+    <div class="modal-overlay" id="docx-editor-overlay">
+        <div class="modal docx-editor-modal">
+            <div class="modal-title" id="docx-editor-title">Edit Document</div>
+            <div class="modal-hint">Ang layout, logo, at formatting ay mananatili gaya ng orihinal. Wording lang ng bawat paragraph ang puwedeng baguhin.</div>
+            <div class="docx-editor-cols">
+                <div class="docx-editor-preview" id="docx-preview-pane"></div>
+                <div class="docx-editor-text" id="docx-text-list"></div>
+            </div>
+            <div class="docx-editor-error" id="docx-editor-error"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeDocxEditor()">Close</button>
+                <button type="button" class="btn-save" id="docx-save-btn" onclick="saveDocxText()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.4.1/dist/docx-preview.min.js"></script>
+    <script>
+        var docxEditingId = null;
+        var docxOriginal = {};
+
+        function openDocxEditor(id, title) {
+            docxEditingId = id;
+            document.getElementById('docx-editor-title').textContent = title;
+            document.getElementById('docx-editor-overlay').classList.add('open');
+            loadDocxEditor();
+        }
+        function closeDocxEditor() {
+            document.getElementById('docx-editor-overlay').classList.remove('open');
+        }
+        document.getElementById('docx-editor-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeDocxEditor();
+        });
+
+        function showDocxError(message) {
+            var el = document.getElementById('docx-editor-error');
+            el.textContent = message;
+            el.style.display = message ? 'block' : 'none';
+        }
+
+        async function loadDocxEditor() {
+            var pane = document.getElementById('docx-preview-pane');
+            var list = document.getElementById('docx-text-list');
+            showDocxError('');
+            pane.innerHTML = '<div class="docx-editor-status">Loading document...</div>';
+            list.innerHTML = '';
+
+            try {
+                var base = '/faculty/cms/' + docxEditingId;
+                var responses = await Promise.all([
+                    fetch(base + '/docx-file', { credentials: 'same-origin' }),
+                    fetch(base + '/docx-text', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
+                ]);
+                if (!responses[0].ok || !responses[1].ok) {
+                    throw new Error('Hindi ma-load ang document.');
+                }
+
+                var blob = await responses[0].blob();
+                pane.innerHTML = '';
+                await docx.renderAsync(blob, pane);
+
+                var data = await responses[1].json();
+                docxOriginal = data.paragraphs;
+                renderDocxTextList(data.paragraphs);
+            } catch (err) {
+                pane.innerHTML = '';
+                showDocxError(err.message);
+            }
+        }
+
+        function renderDocxTextList(paragraphs) {
+            var list = document.getElementById('docx-text-list');
+            var indexes = Object.keys(paragraphs);
+
+            if (indexes.length === 0) {
+                list.innerHTML = '<div class="docx-editor-status">Walang text na puwedeng i-edit sa document na ito.</div>';
+                return;
+            }
+
+            indexes.forEach(function(index) {
+                var ta = document.createElement('textarea');
+                ta.className = 'docx-para-input';
+                ta.dataset.index = index;
+                ta.value = paragraphs[index];
+                ta.rows = 1;
+                ta.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = this.scrollHeight + 'px';
+                });
+                list.appendChild(ta);
+                ta.style.height = ta.scrollHeight + 'px';
+            });
+        }
+
+        async function saveDocxText() {
+            var changed = {};
+            document.querySelectorAll('#docx-text-list textarea').forEach(function(ta) {
+                var index = ta.dataset.index;
+                if (ta.value !== (docxOriginal[index] || '')) {
+                    changed[index] = ta.value;
+                }
+            });
+
+            if (Object.keys(changed).length === 0) {
+                closeDocxEditor();
+                return;
+            }
+
+            var btn = document.getElementById('docx-save-btn');
+            btn.disabled = true;
+            showDocxError('');
+
+            try {
+                var res = await fetch('/faculty/cms/' + docxEditingId + '/docx-text', {
+                    method: 'PUT',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ paragraphs: changed })
+                });
+                if (!res.ok) {
+                    throw new Error('Hindi na-save ang mga pagbabago (' + res.status + ').');
+                }
+                await loadDocxEditor();
+            } catch (err) {
+                showDocxError(err.message);
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js"></script>
     <script>

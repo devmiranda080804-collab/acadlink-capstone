@@ -105,6 +105,9 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::get('/cms', [ContentModuleController::class, 'index']);
     Route::post('/cms', [ContentModuleController::class, 'store']);
     Route::put('/cms/{module}', [ContentModuleController::class, 'update']);
+    Route::get('/cms/{module}/docx-file', [ContentModuleController::class, 'docxFile']);
+    Route::get('/cms/{module}/docx-text', [ContentModuleController::class, 'docxText']);
+    Route::put('/cms/{module}/docx-text', [ContentModuleController::class, 'updateDocxText']);
     Route::delete('/cms/{module}', [ContentModuleController::class, 'destroy']);
 
     // Collaboration API (Google Docs-backed)

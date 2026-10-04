@@ -29,6 +29,13 @@ class ContentModule extends Model
         return $this->google_doc_id === null && $this->file_path === null;
     }
 
+    // An uploaded Word file kept as-is — rendered and edited paragraph-by-paragraph
+    // without rebuilding its layout (see DocxTextEditor).
+    public function isEditableDocx(): bool
+    {
+        return $this->google_doc_id === null && $this->file_path !== null && $this->file_type === 'docx';
+    }
+
     public function getGoogleEditUrlAttribute(): ?string
     {
         return $this->google_doc_id

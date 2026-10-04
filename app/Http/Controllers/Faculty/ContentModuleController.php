@@ -5,12 +5,11 @@ namespace App\Http\Controllers\Faculty;
 use Anthropic\Client;
 use App\Http\Controllers\Controller;
 use App\Models\ContentModule;
+use App\Services\DocxTextEditor;
 use App\Services\GoogleDocsService;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Storage;
-use PhpOffice\PhpWord\IOFactory;
 
 class ContentModuleController extends Controller
 {
@@ -74,131 +73,16 @@ class ContentModuleController extends Controller
         return back()->with('success', 'Module created.');
     }
 
-    // Tries to turn an uploaded file's real content into editable HTML.
-    // Returns null (never throws) when extraction isn't possible or fails —
-    // the caller treats that as "store it as a plain file instead."
+    // Only PDFs get turned into editable HTML here. A .docx is kept as the original
+    // file (see DocxTextEditor), and legacy .doc isn't reliably readable — both
+    // return null, which the caller stores as a plain file.
     protected function extractContentFromUpload(UploadedFile $file): ?string
     {
-        $extension = strtolower($file->getClientOriginalExtension());
-
-        if ($extension === 'docx') {
-            return $this->extractDocxContent($file->getRealPath());
-        }
-
-        if ($extension === 'pdf') {
+        if (strtolower($file->getClientOriginalExtension()) === 'pdf') {
             return $this->extractPdfContentViaAi($file->getRealPath());
         }
 
-        // Legacy .doc (binary format) isn't reliably readable here.
         return null;
-    }
-
-    // Body content comes from mammoth.js (scripts/docx-to-html.js) — it reads the
-    // .docx's real structure (headings, bold/italic, lists, tables, images) and
-    // emits clean semantic HTML. Headers/footers aren't part of that body, so
-    // their text is pulled separately via PhpWord and placed as plain blocks.
-    //
-    // Fails open, like extractPdfContentViaAi() — a malformed .docx or a missing
-    // Node runtime should fall back to storing the upload as a plain file,
-    // not 500 the whole request.
-    protected function extractDocxContent(string $path): ?string
-    {
-        try {
-            $body = $this->convertDocxBodyViaMammoth($path);
-            if ($body === null) {
-                return null;
-            }
-
-            $phpWord = IOFactory::load($path);
-            $headerBlocks = $this->extractHeaderFooterText($phpWord, 'getHeaders');
-            $footerBlocks = $this->extractHeaderFooterText($phpWord, 'getFooters');
-
-            if ($headerBlocks) {
-                $body = '<div>' . implode('', array_map(fn($b) => '<p><em>' . e($b) . '</em></p>', $headerBlocks)) . '</div><hr>' . $body;
-            }
-            if ($footerBlocks) {
-                $body .= '<hr><div>' . implode('', array_map(fn($b) => '<p><em>' . e($b) . '</em></p>', $footerBlocks)) . '</div>';
-            }
-
-            return '<div class="docx-content">' . $body . '</div>';
-        } catch (\Throwable $e) {
-            report($e);
-            return null;
-        }
-    }
-
-    protected function convertDocxBodyViaMammoth(string $path): ?string
-    {
-        $result = Process::timeout(60)->run(['node', base_path('scripts/docx-to-html.js'), $path]);
-
-        if (!$result->successful()) {
-            report(new \RuntimeException('docx-to-html failed: ' . $result->errorOutput()));
-            return null;
-        }
-
-        $html = trim($result->output());
-
-        return $html === '' ? null : $html;
-    }
-
-    // Returns one text block per top-level header/footer element (each
-    // paragraph, or each cell of a letterhead table) instead of one long
-    // joined string — so a two-column letterhead (e.g. university name on
-    // the left, college name on the right) comes out as separate lines
-    // instead of being run together into one unreadable sentence.
-    protected function extractHeaderFooterText(\PhpOffice\PhpWord\PhpWord $phpWord, string $getter): array
-    {
-        $blocks = [];
-
-        foreach ($phpWord->getSections() as $section) {
-            foreach ($section->$getter() as $headerFooter) {
-                foreach ($headerFooter->getElements() as $element) {
-                    if ($element instanceof \PhpOffice\PhpWord\Element\Table) {
-                        foreach ($element->getRows() as $row) {
-                            foreach ($row->getCells() as $cell) {
-                                foreach ($cell->getElements() as $cellElement) {
-                                    $text = $this->flattenElementText($cellElement);
-                                    if ($text !== '') {
-                                        $blocks[] = $text;
-                                    }
-                                }
-                            }
-                        }
-                        continue;
-                    }
-
-                    $text = $this->flattenElementText($element);
-                    if ($text !== '') {
-                        $blocks[] = $text;
-                    }
-                }
-            }
-        }
-
-        return $blocks;
-    }
-
-    protected function flattenElementText($element): string
-    {
-        if (method_exists($element, 'getText')) {
-            $t = $element->getText();
-
-            return is_string($t) ? trim($t) : '';
-        }
-
-        if (method_exists($element, 'getElements')) {
-            $parts = [];
-            foreach ($element->getElements() as $child) {
-                $childText = $this->flattenElementText($child);
-                if ($childText !== '') {
-                    $parts[] = $childText;
-                }
-            }
-
-            return trim(implode(' ', $parts));
-        }
-
-        return '';
     }
 
     // Uses the same Claude integration already wired up elsewhere in the app
@@ -273,6 +157,42 @@ class ContentModuleController extends Controller
         $module->update($data);
 
         return back()->with('success', 'Module updated.');
+    }
+
+    public function docxFile(ContentModule $module)
+    {
+        abort_unless($module->created_by === auth()->id() && $module->isEditableDocx(), 403);
+
+        return response()->file(Storage::disk('public')->path($module->file_path), [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Cache-Control' => 'no-store',
+        ]);
+    }
+
+    public function docxText(ContentModule $module)
+    {
+        abort_unless($module->created_by === auth()->id() && $module->isEditableDocx(), 403);
+
+        return response()->json([
+            'paragraphs' => (new DocxTextEditor())->paragraphs(Storage::disk('public')->path($module->file_path)),
+        ]);
+    }
+
+    public function updateDocxText(Request $request, ContentModule $module)
+    {
+        abort_unless($module->created_by === auth()->id() && $module->isEditableDocx(), 403);
+
+        $request->validate([
+            'paragraphs'   => 'required|array|min:1',
+            'paragraphs.*' => 'nullable|string|max:5000',
+        ]);
+
+        $path = Storage::disk('public')->path($module->file_path);
+        (new DocxTextEditor())->applyParagraphs($path, $request->input('paragraphs'));
+
+        $module->update(['file_size' => Storage::disk('public')->size($module->file_path)]);
+
+        return response()->json(['status' => 'ok']);
     }
 
     // Strips anything that could execute script in the editor's saved HTML
