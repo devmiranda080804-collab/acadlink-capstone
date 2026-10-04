@@ -248,13 +248,7 @@
                     elseif ($req->is_due_soon) { $cardClass = 'soon'; $badgeClass = 'badge-soon'; $badgeText = $daysLeft == 0 ? 'Due today' : $daysLeft . ' day(s) left'; }
                     else { $cardClass = 'ok'; $badgeClass = 'badge-ok'; $badgeText = $daysLeft . ' day(s) left'; }
 
-                    $typeIcon = match(true) {
-                        str_contains(strtolower($req->type), 'syllabus') => '📘',
-                        str_contains(strtolower($req->type), 'lesson') => '📗',
-                        str_contains(strtolower($req->type), 'tos') => '📊',
-                        str_contains(strtolower($req->type), 'exam') => '📝',
-                        default => '📄',
-                    };
+                    $typeIcon = \App\Models\SubmissionRequirement::typeIcon($req->type);
                 @endphp
                 <div class="req-card {{ $cardClass }}" data-status="{{ $cardClass }}">
                     <div class="req-type-icon">{{ $typeIcon }}</div>
@@ -322,10 +316,9 @@
                     <div class="modal-field">
                         <label>Type</label>
                         <select name="type" id="f-type">
-                            <option value="syllabus">Syllabus</option>
-                            <option value="tos">TOS</option>
-                            <option value="exam_bank">Exam Bank</option>
-                            <option value="other">Other</option>
+                            @foreach(\App\Models\SubmissionRequirement::typeOptions() as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="modal-field">

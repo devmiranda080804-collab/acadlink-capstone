@@ -189,7 +189,7 @@
                     <tbody>
                         @forelse($compliance['by_type'] as $type => $row)
                             <tr>
-                                <td>{{ ucwords(str_replace('_', ' ', $type)) }}</td>
+                                <td>{{ \App\Models\SubmissionRequirement::typeLabel($type) }}</td>
                                 <td>{{ $row['expected'] }}</td>
                                 <td>{{ $row['submitted'] }}</td>
                                 <td>{{ $row['on_time'] }}</td>

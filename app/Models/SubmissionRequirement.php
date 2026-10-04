@@ -19,6 +19,32 @@ class SubmissionRequirement extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    // The document kinds a requirement can ask for: the same types used for Admin
+    // templates, plus the TOS and Exam Bank a course submission usually needs.
+    public static function typeOptions(): array
+    {
+        $options = [];
+        foreach (TemplateDocument::TYPES as $key => $meta) {
+            $options[$key] = $meta['label'];
+        }
+
+        return $options + ['tos' => 'TOS', 'exam_bank' => 'Exam Bank', 'other' => 'Other'];
+    }
+
+    public static function typeLabel(string $type): string
+    {
+        return self::typeOptions()[$type] ?? str_replace('_', ' ', ucfirst($type));
+    }
+
+    public static function typeIcon(string $type): string
+    {
+        return match ($type) {
+            'tos'         => '📊',
+            'exam_bank'   => '📝',
+            default       => TemplateDocument::typeIcon($type),
+        };
+    }
+
     public function submissions()
     {
         return $this->hasMany(Submission::class, 'requirement_id');

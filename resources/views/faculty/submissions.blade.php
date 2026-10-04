@@ -235,13 +235,7 @@
                         $cardClass = 'ok'; $badgeClass = 'badge-ok'; $badgeText = $daysLeft . ' day(s) left';
                     }
 
-                    $typeIcon = match(true) {
-                        str_contains(strtolower($req['type']), 'syllabus') => '📘',
-                        str_contains(strtolower($req['type']), 'lesson') => '📗',
-                        str_contains(strtolower($req['type']), 'tos') => '📊',
-                        str_contains(strtolower($req['type']), 'exam') => '📝',
-                        default => '📄',
-                    };
+                    $typeIcon = \App\Models\SubmissionRequirement::typeIcon($req['type_key']);
                 @endphp
                 <div class="req-card {{ $cardClass }}" data-status="{{ $cardClass }}">
                     <div class="req-type-icon">{{ $typeIcon }}</div>

@@ -7,6 +7,7 @@ use App\Models\SubmissionRequirement;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class SubmissionController extends Controller
 {
@@ -34,7 +35,7 @@ class SubmissionController extends Controller
         $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'type'        => 'required|string|max:50',
+            'type'        => ['required', Rule::in(array_keys(SubmissionRequirement::typeOptions()))],
             'deadline'    => 'required|date',
         ]);
 
@@ -57,7 +58,7 @@ class SubmissionController extends Controller
         $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'type'        => 'required|string|max:50',
+            'type'        => ['required', Rule::in(array_keys(SubmissionRequirement::typeOptions()))],
             'deadline'    => 'required|date',
         ]);
 
