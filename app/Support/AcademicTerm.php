@@ -35,5 +35,30 @@ class AcademicTerm
         ];
     }
 
+    // Dropdown options for school-year pickers: two prior years, the current one,
+    // and the next one (so accounts/assignments can be set up ahead of time), plus
+    // any year already stored on an account so older records stay filterable.
+    // Derived from the calendar, so it moves forward each school year on its own.
+    public static function schoolYearOptions(): array
+    {
+        $startYear = (int) explode('-', self::currentSchoolYear())[0];
+
+        $years = [];
+        for ($y = $startYear - 2; $y <= $startYear + 1; $y++) {
+            $years[] = $y . '-' . ($y + 1);
+        }
+
+        $stored = \App\Models\User::query()
+            ->whereNotNull('academic_year')
+            ->distinct()
+            ->pluck('academic_year')
+            ->all();
+
+        $years = array_unique(array_merge($years, $stored));
+        rsort($years);
+
+        return $years;
+    }
+
     const SEMESTERS = ['First Semester', 'Second Semester', 'Summer'];
 }

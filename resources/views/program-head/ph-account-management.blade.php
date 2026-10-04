@@ -257,8 +257,9 @@
                         <input type="hidden" name="search" value="{{ request('search') }}">
                         <select name="academic_year" class="filter-select" onchange="this.form.submit()">
                             <option value="">All Year</option>
-                            <option value="2025-2026" {{ request('academic_year') == '2025-2026' ? 'selected' : '' }}>2025-2026</option>
-                            <option value="2024-2025" {{ request('academic_year') == '2024-2025' ? 'selected' : '' }}>2024-2025</option>
+                            @foreach($schoolYears as $sy)
+                                <option value="{{ $sy }}" {{ request('academic_year') == $sy ? 'selected' : '' }}>{{ $sy }}</option>
+                            @endforeach
                         </select>
                     </form>
                 </div>
@@ -369,8 +370,9 @@
                 <div class="modal-field">
                     <label>Academic Year <span style="color:#ef4444">*</span></label>
                     <select id="f-year" name="academic_year">
-                        <option value="2025-2026">2025-2026</option>
-                        <option value="2024-2025">2024-2025</option>
+                        @foreach($schoolYears as $sy)
+                            <option value="{{ $sy }}">{{ $sy }}</option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -430,7 +432,7 @@
             ['f-firstname', 'f-lastname', 'f-email', 'f-google-email'].forEach(function (id) {
                 document.getElementById(id).value = '';
             });
-            document.getElementById('f-year').selectedIndex = 0;
+            document.getElementById('f-year').value = @json($currentSchoolYear);
             document.getElementById('modal-error').style.display = 'none';
         }
 

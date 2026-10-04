@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\NewAccountCredentials;
 use App\Models\User;
+use App\Support\AcademicTerm;
 use App\Support\Programs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -46,7 +47,10 @@ class AccountManagementController extends Controller
 
         $accounts = $query->latest()->paginate(6)->withQueryString();
 
-        return view('admin.account-management', compact('accounts'));
+        $schoolYears = AcademicTerm::schoolYearOptions();
+        $currentSchoolYear = AcademicTerm::currentSchoolYear();
+
+        return view('admin.account-management', compact('accounts', 'schoolYears', 'currentSchoolYear'));
     }
 
     public function store(Request $request)

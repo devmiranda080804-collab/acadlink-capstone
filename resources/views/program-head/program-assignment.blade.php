@@ -168,7 +168,7 @@
                         <option value="4" {{ $yearLevel == '4' ? 'selected' : '' }}>Fourth Year</option>
                     </select>
                     <select name="school_year" class="filter-select" onchange="this.form.submit()">
-                        @foreach([$schoolYear, ($schoolYear != '2025-2026' ? '2025-2026' : '2026-2027')] as $sy)
+                        @foreach($schoolYears as $sy)
                             <option value="{{ $sy }}" {{ $schoolYear == $sy ? 'selected' : '' }}>{{ $sy }}</option>
                         @endforeach
                     </select>

@@ -49,7 +49,7 @@ class ProgramAssignmentController extends Controller
         return view('admin.program-assignment', compact(
             'courses', 'assignments', 'facultyList', 'program', 'yearLevel',
             'schoolYear', 'semester'
-        ));
+        ) + ['schoolYears' => AcademicTerm::schoolYearOptions()]);
     }
 
     public function store(Request $request)
