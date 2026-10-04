@@ -35,6 +35,7 @@
 
         .content { flex: 1; overflow-y: auto; padding: 24px 28px 28px; }
         .alert-success { background: #dcfce7; color: #166534; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #bbf7d0; border-radius: 8px; font-size: 13px; }
+        .alert-error { background: #fee2e2; color: #b91c1c; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #fca5a5; border-radius: 8px; font-size: 13px; }
 
         .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
         .page-title { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 3px; }
@@ -193,6 +194,9 @@
         </div>
 
         <div class="content">
+            @if($errors->any())
+                <div class="alert-error">{{ $errors->first() }}</div>
+            @endif
             @if(session('success'))
                 <div class="alert-success">{{ session('success') }}</div>
             @endif
@@ -397,6 +401,7 @@
             const m = document.getElementById('edit-method'); if (m) m.remove();
             document.getElementById('f-title').value = '';
             document.getElementById('f-deadline').value = '';
+            document.getElementById('f-deadline').min = @json(now()->toDateString());
             document.getElementById('f-description').value = '';
             document.getElementById('f-type').selectedIndex = 0;
             document.getElementById('req-overlay').classList.add('open');
@@ -413,6 +418,7 @@
             }
             document.getElementById('f-title').value = req.title;
             document.getElementById('f-deadline').value = req.deadline.split('T')[0];
+            document.getElementById('f-deadline').removeAttribute('min');
             document.getElementById('f-description').value = req.description || '';
             document.getElementById('f-type').value = req.type;
             document.getElementById('req-overlay').classList.add('open');

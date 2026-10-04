@@ -36,7 +36,9 @@ class SubmissionController extends Controller
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'type'        => ['required', Rule::in(array_keys(SubmissionRequirement::typeOptions()))],
-            'deadline'    => 'required|date',
+            'deadline'    => 'required|date|after_or_equal:today',
+        ], [
+            'deadline.after_or_equal' => 'The deadline can\'t be earlier than today.',
         ]);
 
         SubmissionRequirement::create([
@@ -55,11 +57,17 @@ class SubmissionController extends Controller
     {
         abort_unless($requirement->program === auth()->user()->program, 403);
 
+        // A deadline that's already passed can stay as-is when only the title or
+        // description changes; it just can't be moved to a past date.
+        $deadlineChanged = $request->input('deadline') !== $requirement->deadline->format('Y-m-d');
+
         $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'type'        => ['required', Rule::in(array_keys(SubmissionRequirement::typeOptions()))],
-            'deadline'    => 'required|date',
+            'deadline'    => $deadlineChanged ? 'required|date|after_or_equal:today' : 'required|date',
+        ], [
+            'deadline.after_or_equal' => 'The deadline can\'t be earlier than today.',
         ]);
 
         $requirement->update($request->only(['title', 'description', 'type', 'deadline']));
