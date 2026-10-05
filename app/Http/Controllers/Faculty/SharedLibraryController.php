@@ -98,6 +98,10 @@ class SharedLibraryController extends Controller
 
         $items = $items->sortByDesc('date')->values();
 
+        // Newest files across every folder, so fresh uploads aren't buried inside one.
+        $recentDays = 14;
+        $recentItems = $items->filter(fn($i) => $i['date'] && $i['date']->gte(now()->subDays($recentDays)))->take(6)->values();
+
         // Build the folder list (one row per distinct folder_key), each
         // carrying its own item count — this is what renders as the
         // top-level "shelves" the faculty clicks into.
@@ -113,7 +117,7 @@ class SharedLibraryController extends Controller
             ];
         })->sortBy('label')->values();
 
-        return view('faculty.shared-library', compact('items', 'folders', 'myProgram'));
+        return view('faculty.shared-library', compact('items', 'folders', 'myProgram', 'recentItems', 'recentDays'));
     }
 
     // Every file in the library is served through here instead of a raw public

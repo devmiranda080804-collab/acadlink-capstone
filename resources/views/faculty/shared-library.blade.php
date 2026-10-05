@@ -71,6 +71,7 @@
         .search-results-label strong { color: #1a1a2e; }
 
         .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+        .lib-folder { font-size: 11px; color: #0f2557; background: #f0f4ff; border-radius: 4px; padding: 3px 7px; margin-bottom: 8px; align-self: flex-start; }
         .lib-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; transition: box-shadow 0.15s, transform 0.15s; }
         .lib-card:hover { box-shadow: 0 6px 18px rgba(15,37,87,0.1); transform: translateY(-2px); }
         .lib-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
@@ -226,6 +227,20 @@
                         <p>Nothing in the library yet for <strong>{{ $myProgram }}</strong>.<br>Share a resource to get started!</p>
                     </div>
                 @else
+                    @if($recentItems->isNotEmpty())
+                        <div class="folder-section">
+                            <div class="folder-section-title">
+                                Recently Added
+                                <span class="folder-section-count">last {{ $recentDays }} days</span>
+                            </div>
+                            <div class="lib-grid">
+                                @foreach($recentItems as $item)
+                                    @include('faculty.partials.library-card', ['item' => $item, 'showFolder' => true])
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
                     @foreach(['templates' => 'Official Templates', 'materials' => 'Course Materials', 'shared' => 'Faculty Shared Resources'] as $group => $sectionLabel)
                         @php $groupFolders = $folders->where('group', $group); @endphp
                         @if($groupFolders->isNotEmpty())
@@ -262,47 +277,9 @@
                 </div>
 
                 <div class="lib-grid" id="lib-grid">
-                    @forelse($items as $item)
-                        <div class="lib-card" data-title="{{ strtolower($item['title']) }}" data-folder="{{ $item['folder_key'] }}">
-                            <div class="lib-card-top">
-                                <span class="lib-icon">@if($item['file_type'] == 'gdoc') 📑 @elseif($item['file_type'] == 'pdf') 📄 @elseif(in_array($item['file_type'], ['xls','xlsx'])) 📊 @elseif(in_array($item['file_type'], ['ppt','pptx'])) 📊 @else 📝 @endif</span>
-                                @if($item['source'] == 'template')
-                                    <span class="source-badge source-template">Template</span>
-                                @elseif($item['source'] == 'material')
-                                    <span class="source-badge source-material">Material</span>
-                                @else
-                                    <span class="source-badge source-shared">Shared</span>
-                                @endif
-                            </div>
-                            <div class="lib-title">{{ $item['title'] }}</div>
-                            <div class="lib-desc">{{ $item['desc'] }}</div>
-                            <div class="lib-meta">
-                                <span>By {{ $item['shared_by'] }}</span>
-                                <span class="dot">·</span>
-                                <span>{{ $item['date']->format('M d, Y') }}</span>
-                                @if(!empty($item['file_size']))
-                                    <span class="dot">·</span>
-                                    <span>{{ $item['file_size'] }}</span>
-                                @endif
-                            </div>
-                            <div class="lib-actions">
-                                <a class="btn-view" href="{{ $item['file_url'] }}" target="_blank">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                    View / Download
-                                </a>
-                                @if($item['can_delete'])
-                                    <form method="POST" action="{{ url('/faculty/shared-library/' . $item['id']) }}" onsubmit="return confirm('Remove this resource?')" style="display:inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn-del" title="Delete">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                                        </button>
-                                    </form>
-                                @endif
-                            </div>
-                        </div>
-                    @empty
-                    @endforelse
+                    @foreach($items as $item)
+                        @include('faculty.partials.library-card', ['item' => $item])
+                    @endforeach
                 </div>
                 <div class="empty-state" id="no-search-results" style="display:none;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
