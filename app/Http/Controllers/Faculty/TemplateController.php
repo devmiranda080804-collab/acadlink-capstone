@@ -27,7 +27,12 @@ class TemplateController extends Controller
             ->pluck('template_document_id')
             ->all();
 
-        $templates->each(fn($t) => $t->is_new = !in_array($t->id, $viewedIds));
+        // A foreach, not ->each(fn): an arrow fn returns the assigned value, and
+        // each() stops at the first false — every card after the first viewed
+        // one lost its NEW label.
+        foreach ($templates as $t) {
+            $t->is_new = !in_array($t->id, $viewedIds);
+        }
 
         return view('faculty.my-template', compact('templates'));
     }
