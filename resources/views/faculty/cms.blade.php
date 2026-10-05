@@ -485,22 +485,36 @@
     {{-- Uploaded Word file editor: shows the original file exactly as-is on the left,
          and lets only the wording of each paragraph change on the right. --}}
     <style>
-        .docx-editor-modal { max-width: 1200px; width: 96vw; }
-        .docx-editor-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
-        .docx-editor-preview { height: 62vh; overflow: auto; background: #f1f3f7; border: 1px solid #dde1ea; border-radius: 6px; padding: 10px; }
-        .docx-editor-text { height: 62vh; overflow: auto; padding-right: 4px; }
+        .docx-editor-modal { max-width: 1500px; width: 96vw; height: 92vh; display: flex; flex-direction: column; }
+        .docx-editor-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .docx-editor-head .modal-title { margin-bottom: 0; }
+        .btn-fullscreen { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #ccc; color: #444; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
+        .btn-fullscreen:hover { background: #f5f5f5; }
+        .btn-fullscreen svg { width: 14px; height: 14px; }
+        .docx-editor-cols { display: grid; grid-template-columns: 3fr 2fr; gap: 14px; margin-top: 10px; flex: 1; min-height: 0; }
+        .docx-editor-preview { overflow: auto; background: #f1f3f7; border: 1px solid #dde1ea; border-radius: 6px; padding: 10px; min-height: 0; }
+        .docx-editor-text { overflow: auto; padding-right: 4px; min-height: 0; }
+        .docx-editor-modal.is-fullscreen { width: 100vw; max-width: 100vw; height: 100vh; border-radius: 0; padding: 16px 20px; }
+        .docx-editor-modal.is-fullscreen .docx-editor-cols { grid-template-columns: 2fr 1fr; }
         .docx-para-input { width: 100%; box-sizing: border-box; border: 1px solid #d5dbe6; border-radius: 4px; padding: 6px 8px; font: 13px Arial, sans-serif; margin-bottom: 6px; resize: none; overflow: hidden; }
         .docx-editor-status { font-size: 12.5px; color: #666; padding: 10px; }
         .docx-editor-error { display: none; font-size: 12.5px; color: #b91c1c; margin-top: 8px; }
         @media (max-width: 800px) {
             .docx-editor-cols { grid-template-columns: 1fr; }
+            .docx-editor-modal { height: auto; max-height: 96vh; overflow: auto; }
             .docx-editor-preview, .docx-editor-text { height: auto; max-height: 50vh; }
         }
     </style>
 
     <div class="modal-overlay" id="docx-editor-overlay">
-        <div class="modal docx-editor-modal">
-            <div class="modal-title" id="docx-editor-title">Edit Document</div>
+        <div class="modal docx-editor-modal" id="docx-editor-modal">
+            <div class="docx-editor-head">
+                <div class="modal-title" id="docx-editor-title">Edit Document</div>
+                <button type="button" class="btn-fullscreen" id="docx-fullscreen-btn" onclick="toggleDocxFullscreen()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+                    <span id="docx-fullscreen-label">Full Screen</span>
+                </button>
+            </div>
             <div class="modal-hint">Ang layout, logo, at formatting ay mananatili gaya ng orihinal. Wording lang ng bawat paragraph ang puwedeng baguhin.</div>
             <div class="docx-editor-cols">
                 <div class="docx-editor-preview" id="docx-preview-pane"></div>
@@ -527,8 +541,21 @@
             loadDocxEditor();
         }
         function closeDocxEditor() {
+            setDocxFullscreen(false);
             document.getElementById('docx-editor-overlay').classList.remove('open');
         }
+        function setDocxFullscreen(on) {
+            document.getElementById('docx-editor-modal').classList.toggle('is-fullscreen', on);
+            document.getElementById('docx-fullscreen-label').textContent = on ? 'Exit Full Screen' : 'Full Screen';
+        }
+        function toggleDocxFullscreen() {
+            setDocxFullscreen(!document.getElementById('docx-editor-modal').classList.contains('is-fullscreen'));
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && document.getElementById('docx-editor-modal').classList.contains('is-fullscreen')) {
+                setDocxFullscreen(false);
+            }
+        });
         document.getElementById('docx-editor-overlay').addEventListener('click', function(e) {
             if (e.target === this) closeDocxEditor();
         });
