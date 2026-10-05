@@ -344,7 +344,7 @@
                         </div>
                     </div>
                 @empty
-                    <div class="empty-state">Wala ka pang content/module. Pindutin ang "+ New Module" para gumawa ng una mo.</div>
+                    <div class="empty-state">You don't have any content or modules yet. Click "+ New Module" to create your first one.</div>
                 @endforelse
             </div>
 
@@ -515,7 +515,7 @@
                     <span id="docx-fullscreen-label">Full Screen</span>
                 </button>
             </div>
-            <div class="modal-hint">Ang layout, logo, at formatting ay mananatili gaya ng orihinal. Wording lang ng bawat paragraph ang puwedeng baguhin.</div>
+            <div class="modal-hint">The layout, logos, and formatting stay exactly as in the original file. Only the wording of each paragraph can be changed.</div>
             <div class="docx-editor-cols">
                 <div class="docx-editor-preview" id="docx-preview-pane"></div>
                 <div class="docx-editor-text" id="docx-text-list"></div>
@@ -580,7 +580,7 @@
                     fetch(base + '/docx-text', { credentials: 'same-origin', headers: { 'Accept': 'application/json' } })
                 ]);
                 if (!responses[0].ok || !responses[1].ok) {
-                    throw new Error('Hindi ma-load ang document.');
+                    throw new Error('The document could not be loaded.');
                 }
 
                 var blob = await responses[0].blob();
@@ -601,7 +601,7 @@
             var indexes = Object.keys(paragraphs);
 
             if (indexes.length === 0) {
-                list.innerHTML = '<div class="docx-editor-status">Walang text na puwedeng i-edit sa document na ito.</div>';
+                list.innerHTML = '<div class="docx-editor-status">This document has no editable text.</div>';
                 return;
             }
 
@@ -650,7 +650,7 @@
                     body: JSON.stringify({ paragraphs: changed })
                 });
                 if (!res.ok) {
-                    throw new Error('Hindi na-save ang mga pagbabago (' + res.status + ').');
+                    throw new Error('Your changes could not be saved (' + res.status + ').');
                 }
                 await loadDocxEditor();
             } catch (err) {
