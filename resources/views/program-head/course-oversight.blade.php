@@ -71,6 +71,10 @@
         .btn-del { background: none; border: none; color: #ccc; cursor: pointer; padding: 5px 8px; border-radius: 4px; transition: color 0.15s, background 0.15s; }
         .btn-del:hover { color: #ef4444; background: #fee2e2; }
         .btn-del svg { width: 15px; height: 15px; }
+        .btn-edit-icon { background: none; border: none; color: #bbb; cursor: pointer; padding: 5px 8px; border-radius: 4px; transition: color 0.15s, background 0.15s; }
+        .btn-edit-icon:hover { color: #0f2557; background: #eef2ff; }
+        .btn-edit-icon svg { width: 15px; height: 15px; }
+        .outcome-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
         .folder-empty { text-align: center; padding: 36px; color: #bbb; font-size: 12.5px; }
 
         .sub-tabs { display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 18px; }
@@ -211,6 +215,7 @@
                     <label>Select Course</label>
                     <div class="course-select-wrap">
                         <form method="GET" id="course-form">
+                            <input type="hidden" name="tab" id="course-form-tab" value="{{ in_array(request('tab'), ['materials', 'outcomes', 'topics'], true) ? request('tab') : 'materials' }}">
                             <select name="course_id" onchange="document.getElementById('course-form').submit()">
                                 <option value="" disabled {{ !$selectedCourse ? 'selected' : '' }}>— Select a course —</option>
                                 @foreach($courses as $course)
@@ -306,13 +311,18 @@
                                 <span class="outcome-code">{{ $po->code }}</span>
                                 <div class="file-name" style="font-weight:400;">{{ $po->description }}</div>
                             </div>
-                            <form method="POST" action="{{ url('/program-head/course-oversight/program-outcomes/' . $po->id) }}">
-                                @csrf
-                                @method('DELETE')
-                                <button type="button" class="btn-del" title="Delete" onclick="openDeleteOutcomeModal(this, 'Program Outcome', @js($po->code))">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                            <div class="outcome-actions">
+                                <button type="button" class="btn-edit-icon" title="Edit" onclick="openPoModal(@js(['id' => $po->id, 'code' => $po->code, 'description' => $po->description]))">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
                                 </button>
-                            </form>
+                                <form method="POST" action="{{ url('/program-head/course-oversight/program-outcomes/' . $po->id) }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="btn-del" title="Delete" onclick="openDeleteOutcomeModal(this, 'Program Outcome', @js($po->code))">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     @empty
                         <div class="folder-empty">No Program Outcomes defined yet.</div>
@@ -342,13 +352,18 @@
                                         <span class="outcome-code">{{ $co->code }}</span>
                                         <span class="file-name" style="font-weight:400;">{{ $co->description }}</span>
                                     </div>
-                                    <form method="POST" action="{{ url('/program-head/course-oversight/course-outcomes/' . $co->id) }}">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button" class="btn-del" title="Delete" onclick="openDeleteOutcomeModal(this, 'Course Outcome', @js($co->code))">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                    <div class="outcome-actions">
+                                        <button type="button" class="btn-edit-icon" title="Edit" onclick="openCoModal(@js(['id' => $co->id, 'code' => $co->code, 'description' => $co->description, 'sample_activities' => $co->sample_activities]))">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4z"/></svg>
                                         </button>
-                                    </form>
+                                        <form method="POST" action="{{ url('/program-head/course-oversight/course-outcomes/' . $co->id) }}">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button" class="btn-del" title="Delete" onclick="openDeleteOutcomeModal(this, 'Course Outcome', @js($co->code))">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
 
                                 @if($co->sample_activities)
@@ -413,22 +428,23 @@
     {{-- Add Program Outcome Modal --}}
     <div class="modal-overlay" id="po-overlay">
         <div class="modal">
-            <form method="POST" action="{{ url('/program-head/course-oversight/program-outcomes') }}">
+            <form method="POST" action="{{ url('/program-head/course-oversight/program-outcomes') }}" id="po-form">
                 @csrf
-                <div class="modal-title">Add Program Outcome</div>
+                <input type="hidden" name="_method" id="po-method" value="POST">
+                <div class="modal-title" id="po-modal-title">Add Program Outcome</div>
                 <div class="modal-row">
                     <div class="modal-field">
                         <label>Code <span style="color:#ef4444">*</span></label>
-                        <input type="text" name="code" placeholder="e.g. PO1" required>
+                        <input type="text" name="code" id="po-code" placeholder="e.g. PO1" required>
                     </div>
                 </div>
                 <div class="modal-field">
                     <label>Description <span style="color:#ef4444">*</span></label>
-                    <textarea name="description" rows="3" placeholder="e.g. Apply core accounting principles to real-world business problems." required style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
+                    <textarea name="description" id="po-description" rows="3" placeholder="e.g. Apply core accounting principles to real-world business problems." required style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closePoModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Add</button>
+                    <button type="submit" class="btn-save" id="po-submit">Add</button>
                 </div>
             </form>
         </div>
@@ -437,27 +453,28 @@
     {{-- Add Course Outcome Modal --}}
     <div class="modal-overlay" id="co-overlay">
         <div class="modal">
-            <form method="POST" action="{{ url('/program-head/course-oversight/course-outcomes') }}">
+            <form method="POST" action="{{ url('/program-head/course-oversight/course-outcomes') }}" id="co-form">
                 @csrf
+                <input type="hidden" name="_method" id="co-method" value="POST">
                 <input type="hidden" name="course_id" value="{{ $selectedCourse->id ?? '' }}">
-                <div class="modal-title">Add Course Outcome</div>
+                <div class="modal-title" id="co-modal-title">Add Course Outcome</div>
                 <div class="modal-row">
                     <div class="modal-field">
                         <label>Code <span style="color:#ef4444">*</span></label>
-                        <input type="text" name="code" placeholder="e.g. CO1" required>
+                        <input type="text" name="code" id="co-code" placeholder="e.g. CO1" required>
                     </div>
                 </div>
                 <div class="modal-field">
                     <label>Description <span style="color:#ef4444">*</span></label>
-                    <textarea name="description" rows="3" placeholder="e.g. Prepare basic financial statements." required style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
+                    <textarea name="description" id="co-description" rows="3" placeholder="e.g. Prepare basic financial statements." required style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
                 </div>
                 <div class="modal-field">
                     <label>Sample Learning Activities <span style="font-size:10px;color:#999;">(optional)</span></label>
-                    <textarea name="sample_activities" rows="3" placeholder="e.g. Group case study preparing an income statement from raw ledger data." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
+                    <textarea name="sample_activities" id="co-sample-activities" rows="3" placeholder="e.g. Group case study preparing an income statement from raw ledger data." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeCoModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Add</button>
+                    <button type="submit" class="btn-save" id="co-submit">Add</button>
                 </div>
             </form>
         </div>
@@ -583,22 +600,47 @@
             el.classList.add('active');
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById('tab-' + tabName).classList.add('active');
+            // Picking a course reloads the page; carry the open tab along with it.
+            document.getElementById('course-form-tab').value = tabName;
         }
 
-        function openPoModal() { document.getElementById('po-overlay').classList.add('open'); }
+        // Same modal for Add (no argument) and Edit (the outcome's current values).
+        function openPoModal(po) {
+            var editing = !!po;
+            document.getElementById('po-form').action = '{{ url("/program-head/course-oversight/program-outcomes") }}' + (editing ? '/' + po.id : '');
+            document.getElementById('po-method').value = editing ? 'PUT' : 'POST';
+            document.getElementById('po-modal-title').textContent = editing ? 'Edit Program Outcome' : 'Add Program Outcome';
+            document.getElementById('po-submit').textContent = editing ? 'Save' : 'Add';
+            document.getElementById('po-code').value = editing ? po.code : '';
+            document.getElementById('po-description').value = editing ? po.description : '';
+            document.getElementById('po-overlay').classList.add('open');
+        }
         function closePoModal() { document.getElementById('po-overlay').classList.remove('open'); }
         document.getElementById('po-overlay').addEventListener('click', function(e) { if (e.target === this) closePoModal(); });
 
-        function openCoModal() { document.getElementById('co-overlay').classList.add('open'); }
+        function openCoModal(co) {
+            var editing = !!co;
+            document.getElementById('co-form').action = '{{ url("/program-head/course-oversight/course-outcomes") }}' + (editing ? '/' + co.id : '');
+            document.getElementById('co-method').value = editing ? 'PUT' : 'POST';
+            document.getElementById('co-modal-title').textContent = editing ? 'Edit Course Outcome' : 'Add Course Outcome';
+            document.getElementById('co-submit').textContent = editing ? 'Save' : 'Add';
+            document.getElementById('co-code').value = editing ? co.code : '';
+            document.getElementById('co-description').value = editing ? co.description : '';
+            document.getElementById('co-sample-activities').value = editing ? (co.sample_activities || '') : '';
+            document.getElementById('co-overlay').classList.add('open');
+        }
         function closeCoModal() { document.getElementById('co-overlay').classList.remove('open'); }
         document.getElementById('co-overlay').addEventListener('click', function(e) { if (e.target === this) closeCoModal(); });
 
         // Re-open whichever sub-tab the PH was on before a form submit (or a validation
         // error) redirected back here — without this, every add/remove bounces back to
         // Materials, losing their place.
-        @if(session('active_tab') || $errors->any())
+        @php
+            $initialTab = session('active_tab') ?: ($errors->any() ? 'outcomes' : request('tab'));
+        @endphp
+        @if(in_array($initialTab, ['materials', 'outcomes', 'topics'], true))
             document.addEventListener('DOMContentLoaded', function() {
-                var target = @json(session('active_tab', 'outcomes'));
+                var target = @json($initialTab);
                 var order = ['materials', 'outcomes', 'topics'];
                 var idx = order.indexOf(target);
                 var tabs = document.querySelectorAll('.sub-tab');

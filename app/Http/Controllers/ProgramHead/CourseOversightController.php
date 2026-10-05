@@ -117,6 +117,20 @@ class CourseOversightController extends Controller
         return back()->with('success', 'Program Outcome added.')->with('active_tab', 'outcomes');
     }
 
+    public function updateProgramOutcome(Request $request, ProgramOutcome $programOutcome)
+    {
+        abort_unless($programOutcome->program === auth()->user()->program, 403);
+
+        $request->validate([
+            'code'        => 'required|string|max:20',
+            'description' => 'required|string|max:1000',
+        ]);
+
+        $programOutcome->update($request->only('code', 'description'));
+
+        return back()->with('success', 'Program Outcome updated.')->with('active_tab', 'outcomes');
+    }
+
     public function destroyProgramOutcome(ProgramOutcome $programOutcome)
     {
         abort_unless($programOutcome->program === auth()->user()->program, 403);
@@ -155,6 +169,21 @@ class CourseOversightController extends Controller
         ]);
 
         return back()->with('success', 'Course Outcome added.')->with('active_tab', 'outcomes');
+    }
+
+    public function updateCourseOutcome(Request $request, CourseOutcome $courseOutcome)
+    {
+        abort_unless($courseOutcome->course->program === auth()->user()->program, 403);
+
+        $request->validate([
+            'code'              => 'required|string|max:20',
+            'description'       => 'required|string|max:1000',
+            'sample_activities' => 'nullable|string|max:2000',
+        ]);
+
+        $courseOutcome->update($request->only('code', 'description', 'sample_activities'));
+
+        return back()->with('success', 'Course Outcome updated.')->with('active_tab', 'outcomes');
     }
 
     public function destroyCourseOutcome(CourseOutcome $courseOutcome)

@@ -180,8 +180,10 @@ Route::middleware('role:program_head')->prefix('program-head')->group(function (
     Route::post('/course-oversight/materials', [CourseOversightController::class, 'store']);
     Route::delete('/course-oversight/materials/{material}', [CourseOversightController::class, 'destroy']);
     Route::post('/course-oversight/program-outcomes', [CourseOversightController::class, 'storeProgramOutcome']);
+    Route::put('/course-oversight/program-outcomes/{programOutcome}', [CourseOversightController::class, 'updateProgramOutcome']);
     Route::delete('/course-oversight/program-outcomes/{programOutcome}', [CourseOversightController::class, 'destroyProgramOutcome']);
     Route::post('/course-oversight/course-outcomes', [CourseOversightController::class, 'storeCourseOutcome']);
+    Route::put('/course-oversight/course-outcomes/{courseOutcome}', [CourseOversightController::class, 'updateCourseOutcome']);
     Route::delete('/course-oversight/course-outcomes/{courseOutcome}', [CourseOversightController::class, 'destroyCourseOutcome']);
     Route::post('/course-oversight/course-outcomes/{courseOutcome}/mapping/{programOutcome}', [CourseOversightController::class, 'toggleMapping']);
 
