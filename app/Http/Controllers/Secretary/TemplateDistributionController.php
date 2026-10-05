@@ -31,8 +31,11 @@ class TemplateDistributionController extends Controller
             'forwarded_at' => now(),
         ]);
 
-        AuditLog::record('Template Forwarded', "{$template->title} forwarded to Program Heads by " . auth()->user()->name);
+        // Only the programs the Admin picked receive it — say which, instead of "all".
+        $programs = $template->programs->pluck('program')->implode(', ');
 
-        return back()->with('success', 'Template forwarded to all Program Heads.');
+        AuditLog::record('Template Forwarded', "{$template->title} forwarded to the Program Head(s) of {$programs} by " . auth()->user()->name);
+
+        return back()->with('success', "Template forwarded to the Program Head(s) of: {$programs}.");
     }
 }
