@@ -69,7 +69,7 @@ class CourseCoordinationController extends Controller
             'course_id'      => 'required|exists:courses,id',
             'grading_period' => 'required|in:Prelim,Midterm,Final',
             'topic'          => 'required|string|max:255',
-            'weeks'          => 'nullable|string|max:50',
+            'weeks'          => 'required|string|max:50',
             'hours'          => 'required|integer|min:1',
             'notes'          => 'nullable|string|max:5000',
             // Required when first adding a topic — Teaching Notes alone is not
@@ -115,7 +115,7 @@ class CourseCoordinationController extends Controller
 
         $request->validate([
             'topic'  => 'required|string|max:255',
-            'weeks'  => 'nullable|string|max:50',
+            'weeks'  => 'required|string|max:50',
             'hours'  => 'required|integer|min:1',
             'notes'  => 'nullable|string|max:5000',
             'module' => 'nullable|file|mimes:pdf,docx|max:20480',

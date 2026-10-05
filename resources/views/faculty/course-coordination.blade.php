@@ -489,8 +489,8 @@
                     <input type="text" name="topic" id="topic-field-topic" required>
                 </div>
                 <div class="modal-field">
-                    <label>Weeks <span style="font-size:10px;color:#999;">(optional)</span></label>
-                    <input type="text" name="weeks" id="topic-field-weeks">
+                    <label>Weeks</label>
+                    <input type="text" name="weeks" id="topic-field-weeks" placeholder="e.g. Week 1-2" maxlength="50" required>
                 </div>
                 <div class="modal-field">
                     <label>Hours</label>
