@@ -1081,6 +1081,23 @@
         </div>
     </div>
 
+    {{-- ════════════ ITEM BANK: ADD TO EXAM MODAL ════════════ --}}
+    <div class="modal-overlay" id="bank-add-overlay">
+        <div class="modal" style="width:460px;">
+            <div class="modal-title">Add Question to Exam</div>
+            <div style="font-size:12.5px;color:#444;background:#f7f8fb;border:1px solid #e4e6ee;border-radius:6px;padding:10px 12px;margin-bottom:14px;line-height:1.5;" id="bank-add-question"></div>
+            <div class="modal-field">
+                <label>Add to section</label>
+                <select id="bank-add-section"></select>
+            </div>
+            <div class="modal-error" id="bank-add-error"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeBankAddModal()">Cancel</button>
+                <button type="button" class="btn-save" id="bank-add-confirm" onclick="confirmBankAdd()">Add Question</button>
+            </div>
+        </div>
+    </div>
+
     {{-- ════════════ EXAM PREVIEW MODAL ════════════ --}}
     <div class="modal-overlay" id="preview-overlay">
         <div class="modal" style="width:760px;max-height:85vh;overflow-y:auto;">
@@ -1191,6 +1208,7 @@
             }
 
             tosTargetCache = { assignmentId: assignmentId, period: period, totalItems: totalItems, result: result };
+            seedTosPointsPerItem(result);
             tosEditMode = false;
             document.getElementById('tos-total-hours').textContent = result.total_hours + ' hrs';
 
@@ -1216,12 +1234,15 @@
             topics.forEach(function(t) { totalHours += t.hours; });
 
             var totalItems = 0;
+            var totalPoints = 0;
             topics.forEach(function(t) {
                 var topicItems = 0;
+                var topicPoints = 0;
                 TOS_BLOOM_LEVELS.forEach(function(l) {
                     var cell = t.levels[l];
-                    cell.points_per_item = 1;
-                    cell.points = cell.count;
+                    cell.points_per_item = tosPointsPerItem[l] || 1;
+                    cell.points = cell.count * cell.points_per_item;
+                    topicPoints += cell.points;
                     if (cell.count > 0) {
                         if (l === 'Creating') {
                             var start = counterII; counterII += cell.count; var end = counterII - 1;
@@ -1236,12 +1257,24 @@
                     topicItems += cell.count;
                 });
                 t.target_items = topicItems;
-                t.topic_points = topicItems;
+                t.topic_points = topicPoints;
                 t.weight_percent = totalHours ? Math.round((t.hours / totalHours) * 1000) / 10 : 0;
                 totalItems += topicItems;
+                totalPoints += topicPoints;
             });
 
-            return { total_hours: totalHours, total_items: totalItems, total_points: totalItems, topics: topics };
+            return { total_hours: totalHours, total_items: totalItems, total_points: totalPoints, topics: topics };
+        }
+
+        // Points per item for each Bloom's level, shared by every topic row. Seeded from
+        // the server's breakdown, then editable in Edit mode.
+        var tosPointsPerItem = {};
+        function seedTosPointsPerItem(result) {
+            tosPointsPerItem = {};
+            var first = (result.topics || [])[0];
+            TOS_BLOOM_LEVELS.forEach(function(l) {
+                tosPointsPerItem[l] = (first && first.levels[l] && first.levels[l].points_per_item) || 1;
+            });
         }
 
         function onTosInputChange(e) {
@@ -1254,6 +1287,8 @@
 
             if (field === 'hours') {
                 topics[ti].hours = val;
+            } else if (field === 'ppi' && level) {
+                tosPointsPerItem[level] = Math.max(1, val);
             } else if (level) {
                 topics[ti].levels[level].count = val;
             }
@@ -1301,8 +1336,20 @@
                     '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + hoursCell + '</td>' +
                     '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + t.weight_percent + '%</td>' +
                     '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;font-weight:700;">' + t.target_items + '</td>' +
+                    '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;font-weight:700;">' + t.topic_points + '</td>' +
                 '</tr>';
             }).join('');
+
+            var ppiCells = TOS_BLOOM_LEVELS.map(function(l) {
+                var v = tosPointsPerItem[l] || 1;
+                var inner = editable
+                    ? '<input type="number" min="1" class="tos-edit-input" data-field="ppi" data-level="' + l + '" value="' + v + '" style="width:38px;text-align:center;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:3px;">'
+                    : v;
+                return '<td style="padding:6px;border:1px solid #e0e0e0;text-align:center;">' + inner + '</td>';
+            }).join('');
+            var ppiRow = '<tr style="background:#fafafa;font-size:10.5px;color:#555;">' +
+                '<td style="padding:6px 8px;border:1px solid #e0e0e0;">Points per item</td>' + ppiCells +
+                '<td colspan="4" style="padding:6px 8px;border:1px solid #e0e0e0;color:#999;">' + (editable ? 'Change to weight a level (e.g. 5 for Creating)' : '') + '</td></tr>';
 
             var levelHeaders = TOS_BLOOM_LEVELS.map(function(l) {
                 return '<th style="padding:8px;border:1px solid #e0e0e0;font-size:10.5px;">' + l + '</th>';
@@ -1320,13 +1367,15 @@
                 '<th style="padding:8px;border:1px solid #e0e0e0;">No. of<br>Hours</th>' +
                 '<th style="padding:8px;border:1px solid #e0e0e0;">%</th>' +
                 '<th style="padding:8px;border:1px solid #e0e0e0;">No. of<br>Items</th>' +
-                '</tr></thead><tbody>' + rows + '</tbody>' +
+                '<th style="padding:8px;border:1px solid #e0e0e0;">No. of<br>Points</th>' +
+                '</tr></thead><tbody>' + rows + ppiRow + '</tbody>' +
                 '<tfoot><tr style="background:#f5f5f5;font-weight:700;">' +
                 '<td style="padding:8px;border:1px solid #e0e0e0;">TOTAL</td>' +
                 levelTotals +
                 '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + result.total_hours + '</td>' +
                 '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">100%</td>' +
                 '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + result.total_items + '</td>' +
+                '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + result.total_points + '</td>' +
                 '</tr></tfoot></table></div>' +
                 '<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">' +
                 '<button class="tos-action-btn" type="button" onclick="toggleTosEdit()">' + (editable ? '💾 Done Editing' : '✏ Edit') + '</button>' +
@@ -2442,7 +2491,7 @@
                 var bloomLabel = item.bloom_level || ct.bloom;
                 return '<div class="question-card" style="margin-bottom:10px;">' +
                     '<div class="q-header"><div class="q-num" style="flex:1;">' + escapeHtml(item.question_text || '(Case Analysis scenario)') + '</div>' +
-                    '<button class="btn-q-action" onclick="reuseBankItem(' + item.id + ')" title="Add to current exam" ' + (currentExam ? '' : 'disabled') + '>+ Add</button></div>' +
+                    '<button class="btn-q-action" data-bank-id="' + item.id + '" onclick="reuseBankItem(' + item.id + ')" title="Add to current exam" ' + (currentExam ? '' : 'disabled') + '>+ Add</button></div>' +
                     '<div class="q-footer"><span class="q-type-label">' + (ct.label || item.type) + '</span>' +
                     (bloomLabel ? '<span class="q-blooms-badge">' + bloomLabel + '</span>' : '') +
                     (item.topic ? '<span class="q-type-label">' + escapeHtml(item.topic) + '</span>' : '') + '</div>' +
@@ -2450,33 +2499,70 @@
             }).join('');
         }
 
-        async function reuseBankItem(questionId) {
-            if (!currentExam || currentExam.sections.length === 0) {
-                alert('Open an exam with at least one section in the Exam Builder first.');
-                return;
-            }
-            var targetSectionId = currentExam.sections[0].id;
-            if (currentExam.sections.length > 1) {
-                var choice = prompt('Add to which section?\n' + currentExam.sections.map(function(s, i) { return (i + 1) + '. ' + s.title; }).join('\n'), '1');
-                var idx = parseInt(choice) - 1;
-                if (isNaN(idx) || !currentExam.sections[idx]) return;
-                targetSectionId = currentExam.sections[idx].id;
+        var bankAddQuestionId = null;
+
+        function showBankAddError(message) {
+            var el = document.getElementById('bank-add-error');
+            el.textContent = message || '';
+            el.style.display = message ? 'block' : 'none';
+        }
+
+        function reuseBankItem(questionId) {
+            var item = allBankItems.find(function(i) { return i.id === questionId; });
+            bankAddQuestionId = questionId;
+            document.getElementById('bank-add-question').textContent = (item && item.question_text) || '(Case Analysis scenario)';
+
+            var select = document.getElementById('bank-add-section');
+            var sections = (currentExam && currentExam.sections) || [];
+            select.innerHTML = sections.map(function(s, i) {
+                var unsaved = String(s.id).indexOf('new-') === 0;
+                return '<option value="' + s.id + '"' + (unsaved ? ' disabled' : '') + '>' +
+                    'Test ' + toRoman(i + 1) + ' — ' + escapeHtml(s.title || 'Untitled') + (unsaved ? ' (save the exam first)' : '') + '</option>';
+            }).join('');
+            var firstSaved = sections.find(function(s) { return String(s.id).indexOf('new-') !== 0; });
+            if (firstSaved) select.value = firstSaved.id;
+
+            var confirmBtn = document.getElementById('bank-add-confirm');
+            confirmBtn.disabled = !firstSaved;
+            if (!currentExam || sections.length === 0) {
+                showBankAddError('Open an exam with at least one section in the Exam Builder first.');
+            } else if (!firstSaved) {
+                showBankAddError('Save the exam first so its sections exist, then try again.');
+            } else {
+                showBankAddError('');
             }
 
-            if (String(targetSectionId).indexOf('new-') === 0) {
-                alert('Save the exam first so this section exists on the server, then try again.');
-                return;
-            }
+            document.getElementById('bank-add-overlay').classList.add('open');
+        }
 
+        function closeBankAddModal() {
+            bankAddQuestionId = null;
+            document.getElementById('bank-add-overlay').classList.remove('open');
+        }
+        document.getElementById('bank-add-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeBankAddModal();
+        });
+
+        async function confirmBankAdd() {
+            var sectionId = document.getElementById('bank-add-section').value;
+            if (!bankAddQuestionId || !sectionId) return;
+
+            var btn = document.getElementById('bank-add-confirm');
+            btn.disabled = true;
+            showBankAddError('');
             try {
-                await api('/faculty/exam-generator/item-bank/' + questionId + '/reuse', {
+                await api('/faculty/exam-generator/item-bank/' + bankAddQuestionId + '/reuse', {
                     method: 'POST',
-                    body: { exam_section_id: targetSectionId }
+                    body: { exam_section_id: sectionId }
                 });
                 await loadExam(currentExam.id);
-                alert('Item added.');
+                var cardBtn = document.querySelector('[data-bank-id="' + bankAddQuestionId + '"]');
+                if (cardBtn) cardBtn.textContent = '✓ Added';
+                closeBankAddModal();
             } catch (e) {
-                alert(e.message);
+                showBankAddError(e.message);
+            } finally {
+                btn.disabled = false;
             }
         }
 
