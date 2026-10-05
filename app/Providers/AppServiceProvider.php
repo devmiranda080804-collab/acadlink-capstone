@@ -25,6 +25,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // PhpWord writes text into the .docx XML unescaped by default, so a topic or
+        // question containing "&" or "<" produced a file Word refuses to open.
+        \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
+
         // Share permissions with all views
         View::composer('*', function ($view) {
             if (Auth::check()) {
