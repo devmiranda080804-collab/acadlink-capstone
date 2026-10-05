@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CalendarActivity;
+use App\Support\PhilippineHolidays;
 use Illuminate\Http\Request;
 
 class CalendarController extends Controller
@@ -34,6 +35,9 @@ class CalendarController extends Controller
 
         $canManage = in_array($role, $this->canManage);
 
+        $year = now()->year;
+        $holidays = PhilippineHolidays::forYears([$year - 1, $year, $year + 1]);
+
         // Choose the correct blade based on role
         $viewMap = [
             'admin'        => 'admin.calendar',
@@ -42,7 +46,7 @@ class CalendarController extends Controller
             'faculty'      => 'faculty.calendar',
         ];
 
-        return view($viewMap[$role], compact('activities', 'canManage'));
+        return view($viewMap[$role], compact('activities', 'canManage', 'holidays'));
     }
 
     public function store(Request $request)
@@ -54,7 +58,7 @@ class CalendarController extends Controller
             'description'   => 'nullable|string',
             'activity_date' => 'required|date',
             'location'      => 'nullable|string|max:255',
-            'category'      => 'required|in:general,exam,faculty,holiday',
+            'category'      => 'required|in:general,exam,faculty',
         ]);
 
         CalendarActivity::create([
@@ -78,7 +82,7 @@ class CalendarController extends Controller
             'description'   => 'nullable|string',
             'activity_date' => 'required|date',
             'location'      => 'nullable|string|max:255',
-            'category'      => 'required|in:general,exam,faculty,holiday',
+            'category'      => 'required|in:general,exam,faculty',
         ]);
 
         $activity->update($request->only([

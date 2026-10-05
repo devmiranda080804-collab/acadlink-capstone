@@ -59,6 +59,14 @@
         .cal-day.has-event { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
         .cal-day.has-event.today { background: #0f2557; color: #fff; }
         .cal-day .dot { width: 4px; height: 4px; background: #1d4ed8; border-radius: 50%; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); }
+        .cal-day.holiday { background: #fef2f2; color: #b91c1c; font-weight: 700; }
+        .cal-day.holiday.today { background: #0f2557; color: #fff; }
+        .holidays-title { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; color: #1a1a2e; margin: 22px 0 10px; padding-top: 16px; border-top: 1px solid #f0f0f0; }
+        .holiday-swatch { width: 10px; height: 10px; border-radius: 3px; background: #fef2f2; border: 1px solid #fca5a5; }
+        .holiday-item { display: flex; align-items: center; gap: 12px; padding: 7px 0; font-size: 12.5px; }
+        .holiday-date { min-width: 52px; font-size: 11px; font-weight: 700; color: #b91c1c; background: #fef2f2; border-radius: 6px; padding: 4px 6px; text-align: center; }
+        .holiday-name { color: #333; }
+        .holidays-empty { font-size: 12px; color: #bbb; padding: 6px 0; }
         .cal-day.today .dot { background: #fff; }
 
         .events-panel { flex: 1; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 20px; }
@@ -198,6 +206,8 @@
                 <div class="events-panel">
                     <div class="events-title">Upcoming Activities</div>
                     <div id="events-list"></div>
+                    <div class="holidays-title"><span class="holiday-swatch"></span>Upcoming Philippine Holidays</div>
+                    <div id="holidays-list"></div>
                 </div>
             </div>
         </div>
@@ -225,7 +235,6 @@
                             <option value="general">General Activity</option>
                             <option value="exam">Examination Period</option>
                             <option value="faculty">Faculty Action Required</option>
-                            <option value="holiday">Holiday / No Class</option>
                         </select>
                     </div>
                 </div>
@@ -267,6 +276,7 @@
 
     <script>
         const activities = @json($activities);
+        const holidays = @json($holidays);
         const canManage = true; // Secretary
         const BASE = '{{ url('/secretary/calendar') }}';
 
@@ -294,6 +304,8 @@
                 const dateStr = currentYear + '-' + String(currentMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
                 const isToday = (d === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear());
                 const hasEvent = activities.some(a => a.date === dateStr);
+                const holiday = holidays.find(h => h.date === dateStr);
+                if (holiday) { cell.classList.add('holiday'); cell.title = holiday.name; }
                 if (isToday) cell.classList.add('today');
                 if (hasEvent) {
                     cell.classList.add('has-event');
@@ -339,6 +351,25 @@
             });
         }
 
+        // Philippine public holidays are detected automatically (not entered as activities).
+        function renderHolidays() {
+            const list = document.getElementById('holidays-list');
+            const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const end = new Date(start); end.setDate(end.getDate() + 60);
+            const upcoming = holidays.filter(h => {
+                const d = new Date(h.date + 'T00:00:00');
+                return d >= start && d <= end;
+            });
+            if (upcoming.length === 0) {
+                list.innerHTML = '<div class="holidays-empty">No holidays in the next 60 days.</div>';
+                return;
+            }
+            list.innerHTML = upcoming.map(h => {
+                const d = new Date(h.date + 'T00:00:00');
+                return '<div class="holiday-item"><span class="holiday-date">' + monthShort[d.getMonth()] + ' ' + d.getDate() + '</span><span class="holiday-name">' + escapeHtml(h.name) + '</span></div>';
+            }).join('');
+        }
+
         function escapeHtml(str) {
             const div = document.createElement('div');
             div.textContent = str == null ? '' : str;
@@ -373,7 +404,10 @@
             document.getElementById('f-date').value = a.date;
             document.getElementById('f-location').value = a.location || '';
             document.getElementById('f-description').value = a.description || '';
-            document.getElementById('f-category').value = a.category;
+            // An older activity may still use the retired "holiday" category — fall back to General.
+            const categorySelect = document.getElementById('f-category');
+            categorySelect.value = a.category;
+            if (categorySelect.value !== a.category) categorySelect.value = 'general';
             document.getElementById('event-overlay').classList.add('open');
         }
 
@@ -402,6 +436,7 @@
 
         renderCalendar();
         renderEvents();
+        renderHolidays();
     </script>
 
 
