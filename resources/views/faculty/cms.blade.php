@@ -333,10 +333,10 @@
                                     Edit
                                 </button>
                             @endif
-                            <form method="POST" action="{{ url('/faculty/cms/' . $module->id) }}" style="display:inline;" onsubmit="return confirm('Delete this module? This cannot be undone.')">
+                            <form method="POST" action="{{ url('/faculty/cms/' . $module->id) }}" style="display:inline;">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn-sm btn-del-sm">
+                                <button type="button" class="btn-sm btn-del-sm" onclick="confirmDeleteModule(this)">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                                     Delete
                                 </button>
@@ -454,6 +454,33 @@
             </form>
         </div>
     </div>
+
+    {{-- Delete confirmation --}}
+    <div class="modal-overlay" id="delete-module-overlay">
+        <div class="modal" style="width:380px;">
+            <div class="modal-title">Delete this module?</div>
+            <div style="font-size:13px;color:#555;">This can't be undone. The content and any uploaded file will be removed.</div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeDeleteModule()">Cancel</button>
+                <button type="button" onclick="submitDeleteModule()" style="background:#ef4444;color:#fff;border:none;font-size:12.5px;font-weight:600;padding:8px 18px;border-radius:5px;cursor:pointer;">Delete</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        var pendingDeleteModuleForm = null;
+        function confirmDeleteModule(btn) {
+            pendingDeleteModuleForm = btn.closest('form');
+            document.getElementById('delete-module-overlay').classList.add('open');
+        }
+        function closeDeleteModule() {
+            pendingDeleteModuleForm = null;
+            document.getElementById('delete-module-overlay').classList.remove('open');
+        }
+        function submitDeleteModule() {
+            if (pendingDeleteModuleForm) pendingDeleteModuleForm.submit();
+        }
+        document.getElementById('delete-module-overlay').addEventListener('click', function(e) { if (e.target === this) closeDeleteModule(); });
+    </script>
 
     {{-- Uploaded Word file editor: shows the original file exactly as-is on the left,
          and lets only the wording of each paragraph change on the right. --}}
