@@ -502,10 +502,14 @@
 
         var currentFolder = null; // null = no folder open (home or global search)
         var currentFolderLabel = '';
+        // Remove/upload actions reload the page; remembering the open folder lets the
+        // admin land back where they were instead of on the folder home.
+        var OPEN_FOLDER_KEY = 'adminTemplatesOpenFolder';
 
         function openFolder(key, label) {
             currentFolder = key;
             currentFolderLabel = label;
+            try { sessionStorage.setItem(OPEN_FOLDER_KEY, JSON.stringify({ key: key, label: label })); } catch (e) {}
             document.getElementById('template-search').value = '';
             document.getElementById('folder-home').style.display = 'none';
             document.getElementById('file-view').style.display = '';
@@ -516,6 +520,7 @@
         function backToFolders() {
             currentFolder = null;
             currentFolderLabel = '';
+            try { sessionStorage.removeItem(OPEN_FOLDER_KEY); } catch (e) {}
             document.getElementById('template-search').value = '';
             document.getElementById('file-view').style.display = 'none';
             document.getElementById('folder-home').style.display = '';
@@ -586,6 +591,21 @@
                 document.getElementById('modal-error').style.display = 'block';
             });
         @endif
+
+        (function restoreOpenFolder() {
+            var saved = null;
+            try { saved = JSON.parse(sessionStorage.getItem(OPEN_FOLDER_KEY) || 'null'); } catch (e) {}
+            if (!saved || !saved.key) return;
+
+            // The folder may now be empty (its last template was removed) — stay home then.
+            var stillHasFiles = Array.from(document.querySelectorAll('#template-grid .tmpl-card'))
+                .some(function (card) { return card.dataset.folder === saved.key; });
+            if (stillHasFiles) {
+                openFolder(saved.key, saved.label);
+            } else {
+                try { sessionStorage.removeItem(OPEN_FOLDER_KEY); } catch (e) {}
+            }
+        })();
     </script>
 
 
