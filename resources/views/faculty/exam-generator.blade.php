@@ -1208,7 +1208,7 @@
             }
 
             tosTargetCache = { assignmentId: assignmentId, period: period, totalItems: totalItems, result: result };
-            seedTosPointsPerItem(result);
+            tosManualNumbering = false;
             tosEditMode = false;
             document.getElementById('tos-total-hours').textContent = result.total_hours + ' hrs';
 
@@ -1222,28 +1222,52 @@
             renderTosResult();
         }
 
-        // Recomputes derived fields (per-topic item total, sequential I./II. item
-        // numbering, weight %, grand totals) from raw hours + per-level counts — every
-        // level is worth exactly 1 point/item, so "No. of Items" always equals the Total
-        // Items you configured (or whatever you edit it to below). Same rule the backend
-        // uses in CourseTopic::targetBreakdown(), run client-side so Edit-mode changes
-        // reflect immediately without a round trip.
+        // Once the faculty types their own item numbers into any cell, the TOS stops
+        // auto-numbering so their format (e.g. "1, 2, 3" or "6, 8") is never overwritten.
+        // Generating the TOS again starts over with automatic numbering.
+        var tosManualNumbering = false;
+
+        // Counts the items in a cell's item-number text: "1, 2, 3" → 3, "1-15" → 15,
+        // "I.16-30" → 15, "6, 8, 10-12" → 5. Anything else marks the cell invalid.
+        function parseItemNumbers(text) {
+            var count = 0, valid = true;
+            (text || '').split(/[,;]+/).forEach(function(raw) {
+                var token = raw.trim().replace(/^(I{1,3}|IV|V)\.\s*/i, '');
+                if (token === '') return;
+                var range = token.match(/^(\d+)\s*-\s*(\d+)$/);
+                if (range) {
+                    var a = parseInt(range[1], 10), b = parseInt(range[2], 10);
+                    if (b >= a) { count += b - a + 1; } else { valid = false; }
+                } else if (/^\d+$/.test(token)) {
+                    count += 1;
+                } else {
+                    valid = false;
+                }
+            });
+            return { count: count, valid: valid };
+        }
+
+        // Recomputes derived fields (per-topic item total, weight %, grand totals). With
+        // automatic numbering, each cell's count drives sequential I./II. item numbers —
+        // the same rule the backend uses in CourseTopic::targetBreakdown(). With manual
+        // numbering, each cell's typed item numbers drive its count instead.
         function recomputeTosBreakdown(topics) {
             var counterI = 1, counterII = 1;
             var totalHours = 0;
             topics.forEach(function(t) { totalHours += t.hours; });
 
             var totalItems = 0;
-            var totalPoints = 0;
             topics.forEach(function(t) {
                 var topicItems = 0;
-                var topicPoints = 0;
                 TOS_BLOOM_LEVELS.forEach(function(l) {
                     var cell = t.levels[l];
-                    cell.points_per_item = tosPointsPerItem[l] || 1;
-                    cell.points = cell.count * cell.points_per_item;
-                    topicPoints += cell.points;
-                    if (cell.count > 0) {
+                    if (tosManualNumbering) {
+                        var parsed = parseItemNumbers(cell.range);
+                        cell.count = parsed.count;
+                        cell.invalid = !parsed.valid;
+                        if (!cell.range) cell.range = null;
+                    } else if (cell.count > 0) {
+                        cell.invalid = false;
                         if (l === 'Creating') {
                             var start = counterII; counterII += cell.count; var end = counterII - 1;
                             cell.range = 'II.' + (cell.count === 1 ? start : start + '-' + end);
@@ -1252,29 +1276,20 @@
                             cell.range = 'I.' + (cell.count === 1 ? start2 : start2 + '-' + end2);
                         }
                     } else {
+                        cell.invalid = false;
                         cell.range = null;
                     }
+                    cell.points_per_item = 1;
+                    cell.points = cell.count;
                     topicItems += cell.count;
                 });
                 t.target_items = topicItems;
-                t.topic_points = topicPoints;
+                t.topic_points = topicItems;
                 t.weight_percent = totalHours ? Math.round((t.hours / totalHours) * 1000) / 10 : 0;
                 totalItems += topicItems;
-                totalPoints += topicPoints;
             });
 
-            return { total_hours: totalHours, total_items: totalItems, total_points: totalPoints, topics: topics };
-        }
-
-        // Points per item for each Bloom's level, shared by every topic row. Seeded from
-        // the server's breakdown, then editable in Edit mode.
-        var tosPointsPerItem = {};
-        function seedTosPointsPerItem(result) {
-            tosPointsPerItem = {};
-            var first = (result.topics || [])[0];
-            TOS_BLOOM_LEVELS.forEach(function(l) {
-                tosPointsPerItem[l] = (first && first.levels[l] && first.levels[l].points_per_item) || 1;
-            });
+            return { total_hours: totalHours, total_items: totalItems, total_points: totalItems, topics: topics };
         }
 
         function onTosInputChange(e) {
@@ -1282,15 +1297,15 @@
             var ti = parseInt(e.target.dataset.ti, 10);
             var level = e.target.dataset.level;
             var field = e.target.dataset.field;
-            var val = Math.max(0, parseInt(e.target.value, 10) || 0);
             var topics = tosTargetCache.result.topics;
 
             if (field === 'hours') {
-                topics[ti].hours = val;
-            } else if (field === 'ppi' && level) {
-                tosPointsPerItem[level] = Math.max(1, val);
-            } else if (level) {
-                topics[ti].levels[level].count = val;
+                topics[ti].hours = Math.max(0, parseInt(e.target.value, 10) || 0);
+            } else if (field === 'topic') {
+                topics[ti].topic = e.target.value.trim() || topics[ti].topic;
+            } else if (field === 'items' && level) {
+                tosManualNumbering = true;
+                topics[ti].levels[level].range = e.target.value.trim() || null;
             }
 
             tosTargetCache.result = recomputeTosBreakdown(topics);
@@ -1305,11 +1320,13 @@
 
         function levelCellHtml(cell, editable, ti, level) {
             if (editable) {
-                return '<input type="number" min="0" class="tos-edit-input" data-ti="' + ti + '" data-level="' + level + '" value="' + cell.count + '" style="width:38px;text-align:center;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:3px;">' +
-                    (cell.count > 0 ? '<div style="font-size:9px;color:#888;margin-top:3px;">' + cell.range + '</div>' : '');
+                return '<input type="text" class="tos-edit-input" data-ti="' + ti + '" data-level="' + level + '" data-field="items" value="' + escapeAttr(cell.range || '') + '" placeholder="e.g. 1, 2, 3"' +
+                    (cell.invalid ? ' title="Use numbers separated by commas, or ranges like 1-15"' : '') +
+                    ' style="width:100%;min-width:70px;box-sizing:border-box;text-align:center;font-size:11px;padding:3px;border:1px solid ' + (cell.invalid ? '#ef4444' : '#ccc') + ';border-radius:3px;">' +
+                    '<div style="font-size:9.5px;color:' + (cell.invalid ? '#ef4444' : '#888') + ';margin-top:3px;">' + (cell.invalid ? 'check format' : '(' + cell.count + ')') + '</div>';
             }
             if (!cell || cell.count === 0) return '';
-            return '<div>' + cell.range + '</div><div>(' + cell.count + ')</div>';
+            return '<div>' + escapeHtml(cell.range) + '</div><div>(' + cell.count + ')</div>';
         }
 
         function renderTosResult() {
@@ -1330,26 +1347,18 @@
                     ? '<input type="number" min="0" class="tos-edit-input" data-ti="' + ti + '" data-field="hours" value="' + t.hours + '" style="width:44px;text-align:center;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:3px;">'
                     : t.hours;
 
+                var topicCell = editable
+                    ? '<input type="text" class="tos-edit-input" data-ti="' + ti + '" data-field="topic" value="' + escapeAttr(t.topic) + '" style="width:100%;min-width:120px;box-sizing:border-box;font-size:11px;padding:3px;border:1px solid #ccc;border-radius:3px;">'
+                    : escapeHtml(t.topic);
+
                 return '<tr>' +
-                    '<td style="padding:8px;border:1px solid #e0e0e0;">' + escapeHtml(t.topic) + '</td>' +
+                    '<td style="padding:8px;border:1px solid #e0e0e0;">' + topicCell + '</td>' +
                     levelCells +
                     '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + hoursCell + '</td>' +
                     '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + t.weight_percent + '%</td>' +
                     '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;font-weight:700;">' + t.target_items + '</td>' +
-                    '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;font-weight:700;">' + t.topic_points + '</td>' +
                 '</tr>';
             }).join('');
-
-            var ppiCells = TOS_BLOOM_LEVELS.map(function(l) {
-                var v = tosPointsPerItem[l] || 1;
-                var inner = editable
-                    ? '<input type="number" min="1" class="tos-edit-input" data-field="ppi" data-level="' + l + '" value="' + v + '" style="width:38px;text-align:center;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:3px;">'
-                    : v;
-                return '<td style="padding:6px;border:1px solid #e0e0e0;text-align:center;">' + inner + '</td>';
-            }).join('');
-            var ppiRow = '<tr style="background:#fafafa;font-size:10.5px;color:#555;">' +
-                '<td style="padding:6px 8px;border:1px solid #e0e0e0;">Points per item</td>' + ppiCells +
-                '<td colspan="4" style="padding:6px 8px;border:1px solid #e0e0e0;color:#999;">' + (editable ? 'Change to weight a level (e.g. 5 for Creating)' : '') + '</td></tr>';
 
             var levelHeaders = TOS_BLOOM_LEVELS.map(function(l) {
                 return '<th style="padding:8px;border:1px solid #e0e0e0;font-size:10.5px;">' + l + '</th>';
@@ -1367,16 +1376,15 @@
                 '<th style="padding:8px;border:1px solid #e0e0e0;">No. of<br>Hours</th>' +
                 '<th style="padding:8px;border:1px solid #e0e0e0;">%</th>' +
                 '<th style="padding:8px;border:1px solid #e0e0e0;">No. of<br>Items</th>' +
-                '<th style="padding:8px;border:1px solid #e0e0e0;">No. of<br>Points</th>' +
-                '</tr></thead><tbody>' + rows + ppiRow + '</tbody>' +
+                '</tr></thead><tbody>' + rows + '</tbody>' +
                 '<tfoot><tr style="background:#f5f5f5;font-weight:700;">' +
                 '<td style="padding:8px;border:1px solid #e0e0e0;">TOTAL</td>' +
                 levelTotals +
                 '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + result.total_hours + '</td>' +
                 '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">100%</td>' +
                 '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + result.total_items + '</td>' +
-                '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + result.total_points + '</td>' +
                 '</tr></tfoot></table></div>' +
+                (editable ? '<div style="font-size:11px;color:#666;margin-top:8px;">Type the item numbers in each cell — e.g. <strong>1, 2, 3</strong>, <strong>6, 8</strong>, or <strong>1-15</strong>. The number of items and totals update automatically.</div>' : '') +
                 '<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">' +
                 '<button class="tos-action-btn" type="button" onclick="toggleTosEdit()">' + (editable ? '💾 Done Editing' : '✏ Edit') + '</button>' +
                 '<button class="tos-action-btn" type="button" onclick="downloadTos()">⬇ Download TOS</button>' +
