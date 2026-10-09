@@ -241,5 +241,6 @@
         </div>
     </div>
 
+    @include('partials.system-feedback')
 </body>
 </html>

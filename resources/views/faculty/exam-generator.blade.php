@@ -1422,7 +1422,7 @@
                 a.remove();
                 URL.revokeObjectURL(url);
             } catch (e) {
-                alert(e.message);
+                showToast(e.message, 'error');
             }
         }
 
@@ -1514,7 +1514,7 @@
 
             if (!body.program_assignment_id || !body.title) {
                 if (errorEl) { errorEl.textContent = 'Subject and Title are required.'; errorEl.style.display = 'block'; }
-                else alert('Subject and Title are required.');
+                else showToast('Choose a subject and enter a title.', 'error');
                 return;
             }
 
@@ -1536,7 +1536,7 @@
                 await loadExam(exam.id);
             } catch (e) {
                 if (errorEl) { errorEl.textContent = e.message; errorEl.style.display = 'block'; }
-                else alert(e.message);
+                else showToast(e.message, 'error');
             }
         }
 
@@ -1553,7 +1553,7 @@
             try {
                 currentExam = await api('/faculty/exam-generator/' + id);
             } catch (e) {
-                alert(e.message);
+                showToast(e.message, 'error');
                 return;
             }
             currentExam.sections.forEach(function(sec) {
@@ -2222,7 +2222,7 @@
             if (!sec) return;
 
             if (qtypeTarget.qi !== null && type === 'case-analysis') {
-                alert('A Case Analysis sub-question cannot itself be a Case Analysis.');
+                showToast('A Case Analysis sub-question cannot itself be a Case Analysis.', 'error');
                 return;
             }
 
@@ -2567,6 +2567,7 @@
                 var cardBtn = document.querySelector('[data-bank-id="' + bankAddQuestionId + '"]');
                 if (cardBtn) cardBtn.textContent = '✓ Added';
                 closeBankAddModal();
+                showToast('Question added to the exam.', 'success');
             } catch (e) {
                 showBankAddError(e.message);
             } finally {
@@ -2595,5 +2596,6 @@
         document.getElementById('logout-confirm-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
     </script>
 
+    @include('partials.system-feedback')
 </body>
 </html>

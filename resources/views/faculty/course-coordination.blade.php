@@ -149,8 +149,6 @@
         .btn-danger { background: #ef4444; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
         .btn-danger:hover { background: #dc2626; }
 
-        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #0f2557; color: #fff; font-size: 12.5px; padding: 10px 20px; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.25); z-index: 2000; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
-        .toast.show { opacity: 1; }
 
         svg { display: inline-block; vertical-align: middle; }
     </style>
@@ -581,7 +579,6 @@
         </div>
     </div>
 
-    <div class="toast" id="toast"></div>
 
     <script>
         const CSRF = document.querySelector('meta[name="csrf-token"]').content;
@@ -637,15 +634,6 @@
             return div.innerHTML;
         }
 
-        let toastTimer = null;
-        function showToast(message) {
-            const el = document.getElementById('toast');
-            el.textContent = message;
-            el.classList.add('show');
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
-        }
-
         function deleteDocument(docId, title) {
             openConfirm(`Delete "${title}"? This removes it from Google Drive too — other instructors will lose access.`, null, function() {
                 performDeleteDocument(docId);
@@ -659,7 +647,7 @@
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                alert(err.message || 'Could not delete the document.');
+                showToast(err.message || 'Could not delete the document.', 'error');
                 return;
             }
             loadDocuments();
@@ -686,7 +674,7 @@
         async function refreshDocDetail() {
             if (!currentDetailDocId) return;
             const res = await fetch(`${BASE}/collab/documents/${currentDetailDocId}`, { headers: { 'Accept': 'application/json' } });
-            if (!res.ok) { showToast('Could not load document details.'); return; }
+            if (!res.ok) { showToast('Could not load document details.', 'error'); return; }
             const data = await res.json();
 
             const viewersBox = document.getElementById('doc-detail-viewers');
@@ -725,11 +713,11 @@
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                showToast(err.message || 'Could not save a version right now.');
+                showToast(err.message || 'Could not save a version right now.', 'error');
                 return;
             }
             const data = await res.json();
-            showToast(data.status === 'unchanged' ? 'No changes since the last saved version.' : 'Version saved.');
+            showToast(data.status === 'unchanged' ? 'No changes since the last saved version.' : 'Version saved.', data.status === 'unchanged' ? 'info' : 'success');
             await refreshDocDetail();
         }
 
@@ -825,7 +813,7 @@
 
         async function createDocument() {
             const title = document.getElementById('new-doc-title').value.trim();
-            if (!title) { alert('Please enter a title.'); return; }
+            if (!title) { showToast('Please enter a title.', 'error'); return; }
             const res = await fetch(`${BASE}/collab/courses/${COURSE_ID}/documents`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
@@ -833,7 +821,7 @@
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
-                alert(err.message || 'Could not create the document.');
+                showToast(err.message || 'Could not create the document.', 'error');
                 return;
             }
             const doc = await res.json();
@@ -872,5 +860,6 @@
         document.getElementById('logout-confirm-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
     </script>
 
+    @include('partials.system-feedback')
 </body>
 </html>

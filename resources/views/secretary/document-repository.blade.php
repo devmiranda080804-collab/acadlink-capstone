@@ -319,7 +319,7 @@
                                                             View
                                                         </a>
                                                         @if($doc['can_delete'])
-                                                            <form method="POST" action="{{ url('/secretary/document-repository/' . $doc['id']) }}" onsubmit="return confirm('Remove this document?')" style="display:inline;">
+                                                            <form method="POST" action="{{ url('/secretary/document-repository/' . $doc['id']) }}" data-confirm="Remove this document from the repository? This cannot be undone." data-confirm-title="Remove Document" data-confirm-button="Remove" style="display:inline;">
                                                                 @csrf
                                                                 @method('DELETE')
                                                                 <button type="submit" class="btn-del" title="Delete">
@@ -473,5 +473,6 @@
         document.getElementById('logout-confirm-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
     </script>
 
+    @include('partials.system-feedback')
 </body>
 </html>

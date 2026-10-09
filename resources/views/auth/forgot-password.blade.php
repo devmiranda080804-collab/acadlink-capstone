@@ -73,5 +73,6 @@
             <p class="copyright">© 2026 CBMA System. All rights reserved.</p>
         </div>
     </div>
+    @include('partials.system-feedback')
 </body>
 </html>

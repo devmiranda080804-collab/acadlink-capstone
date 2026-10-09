@@ -653,6 +653,7 @@
                     throw new Error('Your changes could not be saved (' + res.status + ').');
                 }
                 await loadDocxEditor();
+                showToast('Changes saved.', 'success');
             } catch (err) {
                 showDocxError(err.message);
             } finally {
@@ -774,5 +775,6 @@
         document.getElementById('logout-confirm-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
     </script>
 
+    @include('partials.system-feedback')
 </body>
 </html>

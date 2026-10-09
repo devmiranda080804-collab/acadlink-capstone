@@ -55,5 +55,6 @@
             <button type="submit" class="btn">Update Password</button>
         </form>
     </div>
+    @include('partials.system-feedback')
 </body>
 </html>

@@ -29,7 +29,7 @@
             View / Download
         </a>
         @if($item['can_delete'])
-            <form method="POST" action="{{ url('/faculty/shared-library/' . $item['id']) }}" onsubmit="return confirm('Remove this resource?')" style="display:inline;">
+            <form method="POST" action="{{ url('/faculty/shared-library/' . $item['id']) }}" data-confirm="Remove this resource from the Shared Library? This cannot be undone." data-confirm-title="Remove Resource" data-confirm-button="Remove" style="display:inline;">
                 @csrf
                 @method('DELETE')
                 <button type="submit" class="btn-del" title="Delete">

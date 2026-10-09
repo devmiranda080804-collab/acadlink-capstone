@@ -636,5 +636,6 @@
         document.getElementById('logout-confirm-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
     </script>
 
+    @include('partials.system-feedback')
 </body>
 </html>
