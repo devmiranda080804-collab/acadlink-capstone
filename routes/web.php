@@ -142,8 +142,9 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
 
     // Template Approvals (dating System Approvals)
     Route::get('/template-approvals', [TemplateApprovalController::class, 'index']);
-    Route::post('/template-approvals', [TemplateApprovalController::class, 'store']);
-    Route::post('/template-approvals/{template}/new-version', [TemplateApprovalController::class, 'newVersion']);
+    Route::post('/template-approvals/{template}/approve', [TemplateApprovalController::class, 'approve']);
+    Route::post('/template-approvals/{template}/send', [TemplateApprovalController::class, 'send']);
+    Route::post('/template-approvals/{template}/return', [TemplateApprovalController::class, 'returnToSecretary']);
     Route::get('/template-approvals/{template}/versions', [TemplateApprovalController::class, 'versions']);
     Route::delete('/template-approvals/{template}', [TemplateApprovalController::class, 'destroy']);
 
@@ -175,7 +176,6 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
 Route::middleware('role:program_head')->prefix('program-head')->group(function () {
     Route::get('/dashboard', [PHDashboardController::class, 'index']);
     Route::get('/template-review', [TemplateReviewController::class, 'index']);
-    Route::post('/template-review/{template}/distribute', [TemplateReviewController::class, 'distribute']);
     Route::get('/course-oversight', [CourseOversightController::class, 'index']);
     Route::post('/course-oversight/materials', [CourseOversightController::class, 'store']);
     Route::delete('/course-oversight/materials/{material}', [CourseOversightController::class, 'destroy']);
@@ -225,7 +225,9 @@ Route::middleware('role:secretary')->prefix('secretary')->group(function () {
     Route::post('/document-repository', [DocumentRepositoryController::class, 'store']);
     Route::delete('/document-repository/{document}', [DocumentRepositoryController::class, 'destroy']);
     Route::get('/template-distribution', [TemplateDistributionController::class, 'index']);
-    Route::post('/template-distribution/{template}/forward', [TemplateDistributionController::class, 'forward']);
+    Route::post('/template-distribution', [TemplateDistributionController::class, 'store']);
+    Route::post('/template-distribution/{template}/new-version', [TemplateDistributionController::class, 'newVersion']);
+    Route::delete('/template-distribution/{template}', [TemplateDistributionController::class, 'destroy']);
     Route::get('/course-filing', [CourseFilingController::class, 'index']);
 
     // Account Management

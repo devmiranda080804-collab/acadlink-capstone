@@ -197,7 +197,7 @@
             <div class="dash-row">
                 <div class="panel">
                     <div class="panel-title">
-                        Recently Distributed Templates
+                        Recently Received Templates
                         <a href="{{ url('/faculty/my-template') }}">Templates →</a>
                     </div>
                     @forelse($revisionTemplates as $template)
@@ -212,7 +212,7 @@
                             <span class="li-badge">New</span>
                         </div>
                     @empty
-                        <div class="empty-mini">No templates have been distributed to your program yet.</div>
+                        <div class="empty-mini">The Dean hasn't sent any templates to your program yet.</div>
                     @endforelse
                 </div>
 

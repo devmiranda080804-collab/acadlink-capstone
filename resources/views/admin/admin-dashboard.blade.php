@@ -186,18 +186,18 @@
                 <div class="stat-card">
                     <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $awaitingSecretary }}</div>
-                        <div class="stat-label">Awaiting Secretary</div>
+                        <div class="stat-value">{{ $awaitingApproval }}</div>
+                        <div class="stat-label">Templates for Approval</div>
                     </div>
                 </div>
             </div>
 
             {{-- Bottom two-column --}}
             <div class="dash-row">
-                {{-- Templates awaiting the Secretary's forward --}}
+                {{-- Templates the Secretary submitted for the Dean's approval --}}
                 <div class="panel">
                     <div class="panel-title">
-                        Templates Awaiting Secretary
+                        Templates Awaiting Your Approval
                         <a href="{{ url('/admin/template-approvals') }}">View all →</a>
                     </div>
                     @forelse($pendingTemplates as $template)
@@ -206,13 +206,13 @@
                                 <span class="li-icon">@if($template->file_type == 'pdf') 📄 @else 📝 @endif</span>
                                 <div>
                                     <div class="li-title">{{ $template->title }}</div>
-                                    <div class="li-meta">{{ str_replace('_',' ',$template->type) }} · Uploaded by {{ $template->creator->name }}</div>
+                                    <div class="li-meta">{{ \App\Models\TemplateDocument::typeLabel($template->type) }} · Submitted by {{ $template->creator->name }}</div>
                                 </div>
                             </div>
-                            <span class="li-badge">Awaiting Secretary</span>
+                            <span class="li-badge">For Approval</span>
                         </div>
                     @empty
-                        <div class="empty-mini">No templates awaiting the Secretary. 🎉</div>
+                        <div class="empty-mini">No templates waiting for your approval. 🎉</div>
                     @endforelse
                 </div>
 

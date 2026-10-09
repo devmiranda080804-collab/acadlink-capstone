@@ -136,7 +136,7 @@
 
         <div class="content">
             <div class="page-title">Welcome back, {{ auth()->user()->name }}!</div>
-            <div class="page-sub">Summary of template distribution and accounts.</div>
+            <div class="page-sub">Summary of template submissions and accounts.</div>
 
             @if($unreadAnnouncements->isNotEmpty())
                 <div class="announcement-banner">
@@ -153,15 +153,15 @@
                 <div class="stat-card">
                     <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $awaitingForward }}</div>
-                        <div class="stat-label">Awaiting Forward</div>
+                        <div class="stat-value">{{ $awaitingApproval }}</div>
+                        <div class="stat-label">Waiting for Dean Approval</div>
                     </div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $forwardedCount }}</div>
-                        <div class="stat-label">Forwarded to Program Heads</div>
+                        <div class="stat-value">{{ $approvedCount }}</div>
+                        <div class="stat-label">Approved by the Dean</div>
                     </div>
                 </div>
                 <div class="stat-card">
@@ -174,8 +174,8 @@
                 <div class="stat-card">
                     <div class="stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <div class="stat-info">
-                        <div class="stat-value">{{ $totalTemplates }}</div>
-                        <div class="stat-label">Total Templates</div>
+                        <div class="stat-value">{{ $returnedCount }}</div>
+                        <div class="stat-label">Returned to You</div>
                     </div>
                 </div>
             </div>
@@ -183,7 +183,7 @@
             <div class="dash-row">
                 <div class="panel">
                     <div class="panel-title">
-                        Awaiting Forward
+                        Needs Your Attention
                         <a href="{{ url('/secretary/template-distribution') }}">View all →</a>
                     </div>
                     @forelse($pendingDistribution as $template)
@@ -192,13 +192,13 @@
                                 <span class="li-icon">@if($template->file_type == 'pdf') 📄 @else 📝 @endif</span>
                                 <div>
                                     <div class="li-title">{{ $template->title }}</div>
-                                    <div class="li-meta">{{ str_replace('_',' ',$template->type) }} · Uploaded by {{ $template->creator->name }}</div>
+                                    <div class="li-meta">{{ \App\Models\TemplateDocument::typeLabel($template->type) }}@if($template->isReturned()) · {{ $template->return_reason }}@endif</div>
                                 </div>
                             </div>
-                            <span class="li-badge">Awaiting Forward</span>
+                            <span class="li-badge">{{ $template->isReturned() ? 'Returned' : 'Waiting for Dean' }}</span>
                         </div>
                     @empty
-                        <div class="empty-mini">No templates awaiting forward.</div>
+                        <div class="empty-mini">No templates waiting for the Dean or returned to you.</div>
                     @endforelse
                 </div>
 

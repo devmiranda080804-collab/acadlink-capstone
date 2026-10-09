@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Template Distribution – CBMA System</title>
+    <title>Templates – CBMA System</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: Arial, sans-serif; background-color: #f0f0f0; display: flex; height: 100vh; overflow: hidden; }
@@ -123,7 +123,7 @@
             <li class="{{ request()->is('program-head/dashboard') ? 'active' : '' }}"><a href="{{ url('/program-head/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
             @endif
             @if($navPermissions['template-review'] ?? true)
-            <li class="{{ request()->is('program-head/template-review*') ? 'active' : '' }}"><a href="{{ url('/program-head/template-review') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Template Distribution</a></li>
+            <li class="{{ request()->is('program-head/template-review*') ? 'active' : '' }}"><a href="{{ url('/program-head/template-review') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates</a></li>
             @endif
             @if($navPermissions['course-oversight'] ?? true)
             <li class="{{ request()->is('program-head/course-oversight*') ? 'active' : '' }}"><a href="{{ url('/program-head/course-oversight') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Oversight</a></li>
@@ -181,27 +181,23 @@
                 <div class="alert-success">{{ session('success') }}</div>
             @endif
 
-            <div class="page-title">Template Distribution</div>
-            <div class="page-sub">Templates the Secretary has forwarded to you. Distribute each one so every faculty member in <strong>{{ $myProgram }}</strong> can access it.</div>
+            <div class="page-title">Templates</div>
+            <div class="page-sub">Official templates the Dean has approved and sent to <strong>{{ $myProgram }}</strong>. Your faculty can already see and download these.</div>
 
             @php
                 $rows = $templates->map(fn($t) => ['template' => $t, 'row' => $t->programRow($myProgram)]);
-                $distributedCount = $rows->filter(fn($r) => $r['row'] && $r['row']->distributed_at)->count();
-                $pendingCount = $rows->count() - $distributedCount;
+                $isRecent = fn($r) => $r['row'] && $r['row']->distributed_at && $r['row']->distributed_at->gte(now()->subDays(30));
+                $recentCount = $rows->filter($isRecent)->count();
             @endphp
 
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                    <div class="stat-info"><div class="stat-value">{{ $rows->count() }}</div><div class="stat-label">Total Forwarded</div></div>
+                    <div class="stat-info"><div class="stat-value">{{ $rows->count() }}</div><div class="stat-label">Templates for {{ $myProgram }}</div></div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                    <div class="stat-info"><div class="stat-value">{{ $pendingCount }}</div><div class="stat-label">Awaiting Distribution</div></div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-                    <div class="stat-info"><div class="stat-value">{{ $distributedCount }}</div><div class="stat-label">Distributed</div></div>
+                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $recentCount }}</div><div class="stat-label">Received in the Last 30 Days</div></div>
                 </div>
             </div>
 
@@ -213,32 +209,16 @@
             </div>
 
             @php
-                $pendingRows = $rows->filter(fn($r) => !($r['row'] && $r['row']->distributed_at));
                 $typeFolders = $rows->groupBy(fn($r) => $r['template']->type)->map(function ($group, $type) {
                     return [
                         'key'     => 'type-' . $type,
                         'label'   => \App\Models\TemplateDocument::typeLabel($type) . ' Templates',
                         'icon'    => \App\Models\TemplateDocument::typeIcon($type),
                         'count'   => $group->count(),
-                        'pending' => $group->filter(fn($r) => !($r['row'] && $r['row']->distributed_at))->count(),
+                        'pending' => $group->filter($isRecent)->count(),
                     ];
                 })->sortBy('label')->values();
             @endphp
-
-            {{-- Needs Attention: pinned so nothing awaiting distribution gets buried once there are many already-distributed templates --}}
-            @if($pendingRows->isNotEmpty())
-                <div class="attention-banner">
-                    <div class="attention-banner-title">
-                        <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        Needs Attention — Awaiting Distribution ({{ $pendingRows->count() }})
-                    </div>
-                    <div class="template-grid">
-                        @foreach($pendingRows as $r)
-                            @include('program-head.partials.template-card', ['r' => $r])
-                        @endforeach
-                    </div>
-                </div>
-            @endif
 
             {{-- FOLDER HOME: templates arranged by type, like library shelves --}}
             <div id="folder-home">
@@ -248,13 +228,13 @@
                         <span class="folder-section-count">{{ $rows->count() }} file{{ $rows->count() == 1 ? '' : 's' }}</span>
                     </div>
                     @if($typeFolders->isEmpty())
-                        <div class="empty-state">No templates have been forwarded to your program yet.</div>
+                        <div class="empty-state">The Dean hasn't sent any templates to your program yet.</div>
                     @else
                         <div class="folder-grid">
                             @foreach($typeFolders as $folder)
                                 <button type="button" class="folder-card" onclick="openFolder('{{ $folder['key'] }}', @js($folder['label']))">
                                     @if($folder['pending'] > 0)
-                                        <span class="folder-card-pending-badge" title="{{ $folder['pending'] }} awaiting distribution">{{ $folder['pending'] }}</span>
+                                        <span class="folder-card-pending-badge" title="{{ $folder['pending'] }} received in the last 30 days">{{ $folder['pending'] }}</span>
                                     @endif
                                     <span class="folder-card-icon">{{ $folder['icon'] }}</span>
                                     <div>

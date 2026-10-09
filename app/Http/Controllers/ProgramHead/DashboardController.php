@@ -21,22 +21,22 @@ class DashboardController extends Controller
             ->whereNull('archived_at')
             ->count();
 
-        // Templates the Secretary already forwarded, still waiting for this PH to distribute
-        $awaitingDistribution = TemplateDocument::whereNotNull('forwarded_at')
-            ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNull('distributed_at'))
+        // Templates the Dean sent to this program in the last 30 days
+        $awaitingDistribution = TemplateDocument::whereNull('superseded_at')
+            ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->where('distributed_at', '>=', now()->subDays(30)))
             ->count();
 
         // Courses within the PH's program
         $courseCount = Course::where('program', $myProgram)->count();
 
-        // Templates this PH has already distributed to their faculty
-        $distributedCount = TemplateDocument::whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
+        // Templates the Dean has sent to this program
+        $distributedCount = TemplateDocument::whereNull('superseded_at')->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
             ->count();
 
-        // List of templates awaiting this PH's distribution
+        // Templates most recently sent to this program
         $reviewTemplates = TemplateDocument::with('creator')
-            ->whereNotNull('forwarded_at')
-            ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNull('distributed_at'))
+            ->whereNull('superseded_at')
+            ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
             ->latest()
             ->take(5)
             ->get();

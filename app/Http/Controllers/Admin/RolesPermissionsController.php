@@ -13,7 +13,7 @@ class RolesPermissionsController extends Controller
     protected array $roleModules = [
         'program_head' => [
             'dashboard'           => 'Dashboard',
-            'template-review'     => 'Template Distribution',
+            'template-review'     => 'Templates',
             'course-oversight'    => 'Course Oversight',
             'program-assignment'  => 'Program Assignment',
             'submissions'         => 'Submissions and Deadline',

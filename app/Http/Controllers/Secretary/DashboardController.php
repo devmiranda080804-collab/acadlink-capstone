@@ -12,23 +12,21 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Templates Admin uploaded that still need to be forwarded to Program Heads
-        $awaitingForward = TemplateDocument::whereNull('forwarded_at')->count();
-
-        // Already forwarded
-        $forwardedCount = TemplateDocument::whereNotNull('forwarded_at')->count();
+        $current = fn() => TemplateDocument::whereNull('superseded_at');
+        $awaitingApproval = $current()->where('status', TemplateDocument::STATUS_PENDING)->count();
+        $approvedCount = $current()->where('status', TemplateDocument::STATUS_APPROVED)->count();
+        $returnedCount = $current()->where('status', TemplateDocument::STATUS_RETURNED)->count();
 
         // Total faculty accounts (all programs — institutional oversight)
         $facultyCount = User::where('role', 'faculty')
             ->whereNull('archived_at')
             ->count();
 
-        // Total templates Admin has ever uploaded
-        $totalTemplates = TemplateDocument::count();
-
-        // List of templates awaiting forward
+        // Returned templates first (they need the Secretary's action), then pending ones.
         $pendingDistribution = TemplateDocument::with('creator')
-            ->whereNull('forwarded_at')
+            ->whereNull('superseded_at')
+            ->whereIn('status', [TemplateDocument::STATUS_RETURNED, TemplateDocument::STATUS_PENDING])
+            ->orderByRaw("status = ? desc", [TemplateDocument::STATUS_RETURNED])
             ->latest()
             ->take(5)
             ->get();
@@ -47,8 +45,8 @@ class DashboardController extends Controller
             ->get();
 
         return view('secretary.secretary-dashboard', compact(
-            'awaitingForward', 'forwardedCount', 'facultyCount',
-            'totalTemplates', 'pendingDistribution', 'upcomingActivities',
+            'awaitingApproval', 'approvedCount', 'returnedCount', 'facultyCount',
+            'pendingDistribution', 'upcomingActivities',
             'unreadAnnouncements'
         ));
     }

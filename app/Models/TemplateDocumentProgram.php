@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class TemplateDocumentProgram extends Model
 {
+    // distributed_by / distributed_at record when the Dean sent the template to this program.
     protected $fillable = ['template_document_id', 'program', 'distributed_by', 'distributed_at'];
 
     protected function casts(): array

@@ -8,8 +8,15 @@ class TemplateDocument extends Model
 {
     protected $fillable = [
         'created_by', 'title', 'type', 'version', 'root_template_id', 'file_path', 'file_name',
-        'file_type', 'file_size', 'forwarded_by', 'forwarded_at', 'superseded_at',
+        'file_type', 'file_size', 'superseded_at',
+        'status', 'reviewed_by', 'reviewed_at', 'return_reason',
     ];
+
+    // Workflow: the Secretary uploads (pending) → the Dean approves and sends it to
+    // programs, or returns it to the Secretary with a reason.
+    const STATUS_PENDING  = 'pending';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_RETURNED = 'returned';
 
     // Single source of truth for every document type the Template Library
     // accepts — covers both instructional formats (syllabus/course guide/
@@ -55,7 +62,7 @@ class TemplateDocument extends Model
     protected function casts(): array
     {
         return [
-            'forwarded_at'  => 'datetime',
+            'reviewed_at'   => 'datetime',
             'superseded_at' => 'datetime',
         ];
     }
@@ -65,9 +72,9 @@ class TemplateDocument extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function forwarder()
+    public function reviewer()
     {
-        return $this->belongsTo(User::class, 'forwarded_by');
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     public function programs()
@@ -83,9 +90,30 @@ class TemplateDocument extends Model
             ->orderByDesc('version');
     }
 
-    public function isForwarded(): bool
+    public function isPending(): bool
     {
-        return $this->forwarded_at !== null;
+        return $this->status === self::STATUS_PENDING;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
+    }
+
+    public function isReturned(): bool
+    {
+        return $this->status === self::STATUS_RETURNED;
+    }
+
+    // Programs the Dean has actually sent this template to (faculty there can see it).
+    public function sentPrograms(): array
+    {
+        return $this->programs->whereNotNull('distributed_at')->pluck('program')->values()->all();
+    }
+
+    public function isSent(): bool
+    {
+        return $this->sentPrograms() !== [];
     }
 
     public function isSuperseded(): bool
@@ -103,8 +131,7 @@ class TemplateDocument extends Model
         return (bool) $this->programRow($program)?->distributed_at;
     }
 
-    // The template currently distributed (or most recently forwarded) to a
-    // program for a given type — e.g. letting a faculty member jump straight
+    // The template currently sent by the Dean to a program for a given type — e.g. letting a faculty member jump straight
     // from "upload my syllabus" in Course Coordination to the official
     // Syllabus format for their own program, without hunting through the
     // whole library. Only ever the CURRENT (non-superseded) version.

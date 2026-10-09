@@ -100,6 +100,32 @@
         .dist-status { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
         .dist-status.yes { background: #d1fae5; color: #065f46; }
         .dist-status.no { background: #fef9c3; color: #92400e; }
+        .dist-status.returned { background: #fee2e2; color: #b91c1c; }
+        .tmpl-card.returned { border-left: 4px solid #ef4444; }
+        .return-reason { font-size: 11.5px; color: #991b1b; background: #fef2f2; border-radius: 6px; padding: 7px 9px; margin-bottom: 10px; line-height: 1.4; }
+        .btn-withdraw { display: inline-flex; align-items: center; justify-content: center; background: #fff; color: #999; border: 1px solid #d0d0d0; padding: 8px 10px; border-radius: 5px; cursor: pointer; flex-shrink: 0; }
+        .btn-withdraw:hover { color: #ef4444; border-color: #fca5a5; background: #fef2f2; }
+        .btn-withdraw svg { width: 12px; height: 12px; }
+        .alert-error { background: #fee2e2; color: #b91c1c; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #fca5a5; border-radius: 8px; font-size: 13px; }
+        .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+        .btn-create { display: flex; align-items: center; gap: 6px; background: #0f2557; color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; white-space: nowrap; }
+        .btn-create:hover { background: #1a3a7a; }
+        .stat-icon.red { background: #fee2e2; color: #b91c1c; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: #fff; border-radius: 10px; padding: 24px 26px; width: 440px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
+        .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 16px; }
+        .modal-field { margin-bottom: 13px; }
+        .modal-field label { display: block; font-size: 11.5px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .modal-field input, .modal-field select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; outline: none; font-family: Arial, sans-serif; background: #fff; }
+        .modal-field input:focus, .modal-field select:focus { border-color: #0f2557; }
+        .modal-hint { font-size: 10.5px; color: #999; margin-top: 4px; }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+        .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 5px; cursor: pointer; }
+        .btn-cancel:hover { background: #f5f5f5; }
+        .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .btn-save:hover { background: #1a3a7a; }
+        .btn-danger { background: #ef4444; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
 
         .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #bbb; font-size: 13px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; }
 
@@ -177,27 +203,40 @@
             @if(session('success'))
                 <div class="alert-success">{{ session('success') }}</div>
             @endif
+            @if($errors->any())
+                <div class="alert-error">{{ $errors->first() }}</div>
+            @endif
 
-            <div class="page-title">Template Distribution</div>
-            <div class="page-sub">Templates the Admin has uploaded. Forward each one so every Program Head can distribute it to their own faculty.</div>
+            <div class="page-header">
+                <div>
+                    <div class="page-title">Template Distribution</div>
+                    <div class="page-sub">Upload new templates and submit them to the Dean for approval. The Dean approves them and sends them to programs, or returns them to you with a reason.</div>
+                </div>
+                <button class="btn-create" type="button" onclick="openCreateModal()">+ New Template</button>
+            </div>
 
             @php
-                $waitingCount = $templates->filter(fn($t) => !$t->isForwarded())->count();
-                $forwardedCount = $templates->count() - $waitingCount;
+                $waitingCount = $templates->filter(fn($t) => $t->isPending())->count();
+                $approvedCount = $templates->filter(fn($t) => $t->isApproved())->count();
+                $returnedCount = $templates->filter(fn($t) => $t->isReturned())->count();
             @endphp
 
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                    <div class="stat-info"><div class="stat-value">{{ $templates->count() }}</div><div class="stat-label">Total From Admin</div></div>
+                    <div class="stat-info"><div class="stat-value">{{ $templates->count() }}</div><div class="stat-label">Total Templates</div></div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                    <div class="stat-info"><div class="stat-value">{{ $waitingCount }}</div><div class="stat-label">Awaiting Forward</div></div>
+                    <div class="stat-info"><div class="stat-value">{{ $waitingCount }}</div><div class="stat-label">Waiting for Dean</div></div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-                    <div class="stat-info"><div class="stat-value">{{ $forwardedCount }}</div><div class="stat-label">Forwarded</div></div>
+                    <div class="stat-info"><div class="stat-value">{{ $approvedCount }}</div><div class="stat-label">Approved</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $returnedCount }}</div><div class="stat-label">Returned to You</div></div>
                 </div>
             </div>
 
@@ -209,24 +248,25 @@
             </div>
 
             @php
-                $waitingTemplates = $templates->filter(fn($t) => !$t->isForwarded());
+                // Returned ones need the Secretary's action, so they're pinned on top.
+                $waitingTemplates = $templates->filter(fn($t) => $t->isReturned());
                 $typeFolders = $templates->groupBy('type')->map(function ($group, $type) {
                     return [
                         'key'     => 'type-' . $type,
                         'label'   => \App\Models\TemplateDocument::typeLabel($type) . ' Templates',
                         'icon'    => \App\Models\TemplateDocument::typeIcon($type),
                         'count'   => $group->count(),
-                        'pending' => $group->filter(fn($t) => !$t->isForwarded())->count(),
+                        'pending' => $group->filter(fn($t) => $t->isReturned())->count(),
                     ];
                 })->sortBy('label')->values();
             @endphp
 
-            {{-- Needs Attention: pinned so nothing awaiting forwarding gets buried once there are many already-forwarded templates --}}
+            {{-- Needs Attention: returned templates are pinned so they don't get buried --}}
             @if($waitingTemplates->isNotEmpty())
                 <div class="attention-banner">
                     <div class="attention-banner-title">
                         <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        Needs Attention — Awaiting Forward ({{ $waitingTemplates->count() }})
+                        Needs Attention — Returned by the Dean ({{ $waitingTemplates->count() }})
                     </div>
                     <div class="template-grid">
                         @foreach($waitingTemplates as $template)
@@ -244,13 +284,13 @@
                         <span class="folder-section-count">{{ $templates->count() }} file{{ $templates->count() == 1 ? '' : 's' }}</span>
                     </div>
                     @if($typeFolders->isEmpty())
-                        <div class="empty-state">No templates uploaded yet.</div>
+                        <div class="empty-state">No templates yet. Click "+ New Template" to submit one to the Dean.</div>
                     @else
                         <div class="folder-grid">
                             @foreach($typeFolders as $folder)
                                 <button type="button" class="folder-card" onclick="openFolder('{{ $folder['key'] }}', @js($folder['label']))">
                                     @if($folder['pending'] > 0)
-                                        <span class="folder-card-pending-badge" title="{{ $folder['pending'] }} awaiting forward">{{ $folder['pending'] }}</span>
+                                        <span class="folder-card-pending-badge" title="{{ $folder['pending'] }} returned">{{ $folder['pending'] }}</span>
                                     @endif
                                     <span class="folder-card-icon">{{ $folder['icon'] }}</span>
                                     <div>
@@ -285,7 +325,103 @@
         </div>
     </div>
 
+    {{-- New Template --}}
+    <div class="modal-overlay" id="create-overlay">
+        <div class="modal">
+            <form action="{{ url('/secretary/template-distribution') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <input type="hidden" name="form" value="create">
+                <div class="modal-title">New Template</div>
+                <div class="modal-field">
+                    <label>Title <span style="color:#ef4444">*</span></label>
+                    <input type="text" name="title" placeholder="e.g. Official Syllabus Format 2026" value="{{ old('title') }}" required>
+                </div>
+                <div class="modal-field">
+                    <label>Template Type <span style="color:#ef4444">*</span></label>
+                    <select name="type">
+                        @foreach(\App\Models\TemplateDocument::TYPES as $typeKey => $t)
+                            <option value="{{ $typeKey }}" {{ old('type') === $typeKey ? 'selected' : '' }}>{{ $t['label'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label>File <span style="color:#ef4444">*</span></label>
+                    <input type="file" name="file" accept=".pdf,.doc,.docx" required>
+                    <div class="modal-hint">PDF or Word, max 20MB. The file is checked to make sure it matches the selected type, then sent to the Dean for approval.</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Submit to Dean</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- New or corrected version --}}
+    <div class="modal-overlay" id="new-version-overlay">
+        <div class="modal">
+            <form id="new-version-form" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-title">New Version — <span id="nv-target-title"></span></div>
+                <div class="modal-field">
+                    <label>New Title <span style="font-size:10px;color:#999;">(optional)</span></label>
+                    <input type="text" name="title" placeholder="Leave blank to keep the current title">
+                </div>
+                <div class="modal-field">
+                    <label>File <span style="color:#ef4444">*</span></label>
+                    <input type="file" name="file" accept=".pdf,.doc,.docx" required>
+                    <div class="modal-hint">The new version goes to the Dean for approval. Faculty keep using the current approved version until then.</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeNewVersionModal()">Cancel</button>
+                    <button type="submit" class="btn-save">Submit to Dean</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Withdraw a pending or returned submission --}}
+    <div class="modal-overlay" id="withdraw-overlay">
+        <div class="modal" style="width:400px;">
+            <div class="modal-title">Withdraw Template</div>
+            <div style="font-size:13px;color:#555;">Withdraw <strong id="withdraw-target-title"></strong>? It will be removed and the Dean will no longer see it.</div>
+            <form id="withdraw-form" method="POST">
+                @csrf
+                @method('DELETE')
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeWithdrawModal()">Cancel</button>
+                    <button type="submit" class="btn-danger">Withdraw</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        function openCreateModal() { document.getElementById('create-overlay').classList.add('open'); }
+        function closeCreateModal() { document.getElementById('create-overlay').classList.remove('open'); }
+        document.getElementById('create-overlay').addEventListener('click', function(e) { if (e.target === this) closeCreateModal(); });
+
+        function openNewVersionModal(id, title) {
+            document.getElementById('nv-target-title').textContent = title;
+            document.getElementById('new-version-form').action = '{{ url("/secretary/template-distribution") }}/' + id + '/new-version';
+            document.getElementById('new-version-overlay').classList.add('open');
+        }
+        function closeNewVersionModal() { document.getElementById('new-version-overlay').classList.remove('open'); }
+        document.getElementById('new-version-overlay').addEventListener('click', function(e) { if (e.target === this) closeNewVersionModal(); });
+
+        function openWithdrawModal(id, title) {
+            document.getElementById('withdraw-target-title').textContent = title;
+            document.getElementById('withdraw-form').action = '{{ url("/secretary/template-distribution") }}/' + id;
+            document.getElementById('withdraw-overlay').classList.add('open');
+        }
+        function closeWithdrawModal() { document.getElementById('withdraw-overlay').classList.remove('open'); }
+        document.getElementById('withdraw-overlay').addEventListener('click', function(e) { if (e.target === this) closeWithdrawModal(); });
+
+        // A failed "New Template" submit reopens its form with the entered values.
+        @if($errors->any() && old('form') === 'create')
+            openCreateModal();
+        @endif
+
         var currentFolder = null;
         var currentFolderLabel = '';
 

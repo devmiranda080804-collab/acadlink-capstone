@@ -215,7 +215,9 @@
                                     str_contains($log->action, 'Approved') => 'action-approved',
                                     str_contains($log->action, 'Rejected') => 'action-rejected',
                                     str_contains($log->action, 'Revision') => 'action-revision',
-                                    str_contains($log->action, 'Distributed') => 'action-distributed',
+                                    str_contains($log->action, 'Distributed'), str_contains($log->action, 'Sent') => 'action-distributed',
+                                    str_contains($log->action, 'Returned'), str_contains($log->action, 'Removed'), str_contains($log->action, 'Withdrawn') => 'action-rejected',
+                                    str_contains($log->action, 'Submitted') => 'action-revision',
                                     str_contains($log->action, 'Permissions') => 'action-permissions',
                                     default => 'action-default',
                                 };

@@ -3,21 +3,20 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\TemplateDocument;
-use App\Services\AcademicDocumentValidator;
 use App\Support\Programs;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use App\Models\AuditLog;
+use Illuminate\Support\Facades\Storage;
 
+// The Dean reviews templates the Secretary submitted: approve and send them to
+// programs (faculty there can then see them), or return them with a reason.
 class TemplateApprovalController extends Controller
 {
     public function index()
     {
-        // Only the current version of each template — superseded ones stay
-        // in the database (real version history) but drop out of the normal
-        // working list. See versions() for the full history of a template.
-        $templates = TemplateDocument::with(['creator', 'forwarder', 'programs'])
+        // Only the current version of each template; older versions are in versions().
+        $templates = TemplateDocument::with(['creator', 'reviewer', 'programs'])
             ->whereNull('superseded_at')
             ->latest()
             ->get();
@@ -25,140 +24,115 @@ class TemplateApprovalController extends Controller
         return view('admin.system-approvals', compact('templates'));
     }
 
-    // Full version history for one template's lineage — read-only, for the
-    // "Version History" view on its card.
     public function versions(TemplateDocument $template)
     {
-        $versions = $template->allVersions()->with(['creator', 'forwarder'])->get();
+        $versions = $template->allVersions()->with(['creator', 'reviewer'])->get();
 
         return response()->json($versions->map(fn($v) => [
-            'id'            => $v->id,
-            'version'       => $v->version,
-            'created_by'    => $v->creator->name ?? 'Unknown',
-            'created_at'    => $v->created_at->format('Y-m-d h:i A'),
-            'file_url'      => \Illuminate\Support\Facades\Storage::url($v->file_path),
-            'is_current'    => $v->superseded_at === null,
-            'is_forwarded'  => $v->isForwarded(),
+            'id'          => $v->id,
+            'version'     => $v->version,
+            'created_by'  => $v->creator->name ?? 'Unknown',
+            'created_at'  => $v->created_at->format('Y-m-d h:i A'),
+            'file_url'    => Storage::url($v->file_path),
+            'is_current'  => $v->superseded_at === null,
+            'status'      => $v->status,
         ]));
     }
 
-    public function store(Request $request)
+    public function approve(Request $request, TemplateDocument $template)
     {
-        $request->validate([
-            'title'       => 'required|string|max:255',
-            'type'        => ['required', Rule::in(array_keys(TemplateDocument::TYPES))],
-            'file'        => 'required|file|mimes:pdf,doc,docx|max:20480',
-            'programs'    => 'required|array|min:1',
-            'programs.*'  => 'in:' . implode(',', Programs::codes()),
+        abort_unless($template->isPending(), 422, 'Only templates waiting for approval can be approved.');
+        $programs = $this->validatedPrograms($request);
+
+        $template->update([
+            'status'        => TemplateDocument::STATUS_APPROVED,
+            'reviewed_by'   => auth()->id(),
+            'reviewed_at'   => now(),
+            'return_reason' => null,
         ]);
 
-        // Templates are always a plain file through the whole pipeline —
-        // Secretary forwards it, Program Head distributes it, and faculty
-        // view/download it. No Google Docs anywhere in this pipeline.
-        $file = $request->file('file');
+        // A newly approved version replaces the one faculty were using.
+        TemplateDocument::where('root_template_id', $template->root_template_id)
+            ->where('id', '!=', $template->id)
+            ->whereNull('superseded_at')
+            ->update(['superseded_at' => now()]);
 
-        // Content sanity-check — this is specifically claimed to be a
-        // {type}, so it should actually look like one.
-        $check = (new AcademicDocumentValidator())->validate($file->getRealPath(), $file->getClientOriginalExtension(), $request->type);
-        if (!$check['valid']) {
-            return back()->withErrors([
-                'file' => ($check['reason'] ?? 'This file does not appear to match the selected template type.')
-                    . ' Please upload the correct type of document, or pick a different Template Type.',
-            ]);
-        }
+        $this->sendTo($template, $programs);
 
-        $document = $this->storeFileAsDocument($file, [
-            'created_by' => auth()->id(),
-            'title'      => $request->title,
-            'type'       => $request->type,
-        ], $request->programs);
+        AuditLog::record('Template Approved', "{$template->title} (v{$template->version}) approved by " . auth()->user()->name . ' and sent to ' . implode(', ', $programs));
 
-        AuditLog::record('Template Provided', "{$document->title} uploaded by " . auth()->user()->name . ' for Secretary to relay.');
-
-        return back()->with('success', 'Template uploaded. It now awaits the Secretary to forward it to the Program Heads.');
+        return back()->with('success', 'Template approved and sent to: ' . implode(', ', $programs) . '.');
     }
 
-    // Replaces an existing template with an updated file — the old row isn't
-    // deleted, it's marked superseded and kept as version history (see
-    // TemplateDocument::allVersions()). The new version is a fresh row that
-    // starts its own Admin -> Secretary -> Program Head -> Faculty pipeline
-    // cycle from scratch (Awaiting Secretary again) rather than silently
-    // inheriting the old version's forwarded/distributed state, since the
-    // content genuinely changed and should be reviewed again at each step.
-    public function newVersion(Request $request, TemplateDocument $template)
+    // Send an already approved template to more programs.
+    public function send(Request $request, TemplateDocument $template)
     {
-        $request->validate([
-            'title' => 'nullable|string|max:255',
-            'file'  => 'required|file|mimes:pdf,doc,docx|max:20480',
+        abort_unless($template->isApproved(), 422, 'Approve this template before sending it to programs.');
+        $programs = $this->validatedPrograms($request);
+
+        $this->sendTo($template, $programs);
+
+        AuditLog::record('Template Sent', "{$template->title} sent to " . implode(', ', $programs) . ' by ' . auth()->user()->name);
+
+        return back()->with('success', 'Template sent to: ' . implode(', ', $programs) . '.');
+    }
+
+    public function returnToSecretary(Request $request, TemplateDocument $template)
+    {
+        abort_unless($template->isPending(), 422, 'Only templates waiting for approval can be returned.');
+
+        $request->validate(['reason' => 'required|string|max:1000']);
+
+        $template->update([
+            'status'        => TemplateDocument::STATUS_RETURNED,
+            'reviewed_by'   => auth()->id(),
+            'reviewed_at'   => now(),
+            'return_reason' => $request->reason,
         ]);
 
-        $file = $request->file('file');
+        AuditLog::record('Template Returned', "{$template->title} returned to the Secretary by " . auth()->user()->name . ": {$request->reason}");
 
-        $check = (new AcademicDocumentValidator())->validate($file->getRealPath(), $file->getClientOriginalExtension(), $template->type);
-        if (!$check['valid']) {
-            return back()->withErrors([
-                'file' => ($check['reason'] ?? 'This file does not appear to match this template\'s type.')
-                    . ' Please upload the correct type of document.',
-            ]);
-        }
-
-        $newVersion = $this->storeFileAsDocument($file, [
-            'created_by'       => auth()->id(),
-            'title'            => $request->title ?: $template->title,
-            'type'             => $template->type,
-            'root_template_id' => $template->root_template_id,
-            'version'          => $template->version + 1,
-        ], $template->programs->pluck('program')->all());
-
-        $template->update(['superseded_at' => now()]);
-
-        AuditLog::record('Template Provided', "{$newVersion->title} (v{$newVersion->version}) uploaded by " . auth()->user()->name . ' for Secretary to relay, replacing v' . $template->version . '.');
-
-        return back()->with('success', "New version (v{$newVersion->version}) uploaded. It now awaits the Secretary to forward it to the Program Heads.");
+        return back()->with('success', 'Template returned to the Secretary.');
     }
 
-    protected function storeFileAsDocument(\Illuminate\Http\UploadedFile $file, array $attributes, array $programs): TemplateDocument
-    {
-        $path = $file->store('template-documents', 'public');
-
-        $document = TemplateDocument::create(array_merge($attributes, [
-            'file_path' => $path,
-            'file_name' => $file->getClientOriginalName(),
-            'file_type' => $file->getClientOriginalExtension(),
-            'file_size' => $file->getSize(),
-        ]));
-
-        // Only the Dean/Admin-selected programs get a row — each Program
-        // Head only ever sees templates meant for their own program (see
-        // ProgramHead\TemplateReviewController::index()'s whereHas filter).
-        foreach ($programs as $program) {
-            $document->programs()->create(['program' => $program]);
-        }
-
-        return $document;
-    }
-
-    // Removing a forwarded template also takes it out of the Secretary's repository,
-    // each program's distribution, and the faculty libraries — those views read from
-    // this row, and the program/view/copy rows cascade with it.
+    // Removing a sent template also takes it out of the Secretary's repository and
+    // the faculty libraries — those read from this row, and its program/view rows cascade.
     public function destroy(TemplateDocument $template)
     {
-        $wasForwarded = $template->isForwarded();
-        $programs = $template->programs->pluck('program')->implode(', ');
+        $sentTo = implode(', ', $template->sentPrograms());
 
-        if ($template->file_path) {
-            \Illuminate\Support\Facades\Storage::disk('public')->delete($template->file_path);
-        }
+        Storage::disk('public')->delete($template->file_path);
 
         $title = $template->title;
         $template->delete();
 
         AuditLog::record(
             'Template Removed',
-            "{$title} removed by " . auth()->user()->name
-                . ($wasForwarded ? " (was forwarded to: " . ($programs ?: 'no programs') . ")" : '')
+            "{$title} removed by " . auth()->user()->name . ($sentTo ? " (was sent to: {$sentTo})" : '')
         );
 
         return back()->with('success', 'Template removed.');
+    }
+
+    protected function validatedPrograms(Request $request): array
+    {
+        $request->validate([
+            'programs'   => 'required|array|min:1',
+            'programs.*' => 'in:' . implode(',', Programs::codes()),
+        ], [
+            'programs.required' => 'Choose at least one program to send this template to.',
+        ]);
+
+        return array_values(array_unique($request->programs));
+    }
+
+    protected function sendTo(TemplateDocument $template, array $programs): void
+    {
+        foreach ($programs as $program) {
+            $row = $template->programs()->firstOrNew(['program' => $program]);
+            if (!$row->distributed_at) {
+                $row->fill(['distributed_by' => auth()->id(), 'distributed_at' => now()])->save();
+            }
+        }
     }
 }

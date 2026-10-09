@@ -42,10 +42,8 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('navPermissions', $permissions);
                 $view->with('unreadAnnouncementsCount', Announcement::unreadCountFor(Auth::user()));
 
-                // Only faculty submit against requirements, and only faculty
-                // receive distributed templates — Program Head/Admin/Secretary
-                // handle those from the upload/forward/distribute side, so
-                // these counts wouldn't mean anything for those roles.
+                // Only faculty submit against requirements and receive the
+                // templates the Dean sends, so these counts only apply to them.
                 if ($role === 'faculty') {
                     $view->with('urgentSubmissionsCount', SubmissionRequirement::urgentCountFor(Auth::user()));
                     $view->with('newTemplatesCount', TemplateDocument::newCountFor(Auth::user()));

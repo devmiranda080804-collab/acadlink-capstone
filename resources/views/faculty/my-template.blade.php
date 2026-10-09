@@ -189,7 +189,7 @@
             <div class="page-header">
                 <div>
                     <div class="page-title">Templates</div>
-                    <div class="page-sub">Official templates your Program Head has distributed to your program</div>
+                    <div class="page-sub">Official templates the Dean has approved and sent to your program</div>
                 </div>
             </div>
 
@@ -232,7 +232,7 @@
                         <span class="folder-section-count">{{ $templates->count() }} file{{ $templates->count() == 1 ? '' : 's' }}</span>
                     </div>
                     @if($typeFolders->isEmpty())
-                        <div class="empty-state">No templates have been distributed to your program yet.</div>
+                        <div class="empty-state">The Dean hasn't sent any templates to your program yet.</div>
                     @else
                         <div class="folder-grid">
                             @foreach($typeFolders as $folder)

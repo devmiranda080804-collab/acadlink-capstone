@@ -106,6 +106,18 @@
         .status-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; }
         .status-waiting { background: #fef9c3; color: #92400e; }
         .status-forwarded { background: #dbeafe; color: #1e40af; }
+        .status-returned { background: #fee2e2; color: #b91c1c; }
+        .status-approved-only { background: #f3f4f6; color: #555; }
+        .tmpl-card.returned { border-left: 4px solid #ef4444; }
+        .return-reason { font-size: 11.5px; color: #991b1b; background: #fef2f2; border-radius: 6px; padding: 7px 9px; margin-bottom: 10px; line-height: 1.4; }
+        .btn-approve { display: inline-flex; align-items: center; justify-content: center; background: #0f2557; color: #fff; border: none; font-size: 11.5px; font-weight: 600; padding: 8px 10px; border-radius: 5px; cursor: pointer; flex: 1; white-space: nowrap; }
+        .btn-approve:hover { background: #1a3a7a; }
+        .btn-return { display: inline-flex; align-items: center; justify-content: center; background: #fff; color: #b91c1c; border: 1px solid #fca5a5; font-size: 11.5px; font-weight: 600; padding: 8px 10px; border-radius: 5px; cursor: pointer; }
+        .btn-return:hover { background: #fef2f2; }
+        .btn-icon-del:hover { color: #ef4444; border-color: #fca5a5; }
+        .alert-error { background: #fee2e2; color: #b91c1c; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #fca5a5; border-radius: 8px; font-size: 13px; }
+        .modal-field textarea { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; outline: none; font-family: Arial, sans-serif; resize: vertical; min-height: 90px; }
+        .modal-field textarea:focus { border-color: #0f2557; }
 
         .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #bbb; font-size: 13px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; }
 
@@ -225,18 +237,24 @@
             @if(session('success'))
                 <div class="alert-success">{{ session('success') }}</div>
             @endif
+            @if($errors->any())
+                <div class="alert-error">{{ $errors->first() }}</div>
+            @endif
 
             <div class="page-header">
                 <div>
                     <div class="page-title">Templates</div>
-                    <div class="page-sub">Upload the official template formats here. Each one is relayed by the Secretary to every Program Head, who then distributes it to their own faculty.</div>
+                    <div class="page-sub">Templates the Secretary submits come here for your approval. Approve a template and choose the programs to send it to; faculty in those programs can then see it. Return it to the Secretary with a reason if it needs changes.</div>
                 </div>
-                <button class="btn-create" type="button" onclick="openCreateModal()">+ New Template</button>
             </div>
 
             @php
-                $waitingCount = $templates->filter(fn($t) => !$t->isForwarded())->count();
-                $forwardedCount = $templates->count() - $waitingCount;
+                $waitingCount = $templates->filter(fn($t) => $t->isPending())->count();
+                $approvedCount = $templates->filter(fn($t) => $t->isApproved())->count();
+                $returnedCount = $templates->filter(fn($t) => $t->isReturned())->count();
+                $sentByRoot = $templates->filter(fn($t) => $t->isApproved())
+                    ->mapWithKeys(fn($t) => [$t->root_template_id => $t->sentPrograms()])
+                    ->all();
             @endphp
 
             <div class="stats-grid">
@@ -246,11 +264,15 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                    <div class="stat-info"><div class="stat-value">{{ $waitingCount }}</div><div class="stat-label">Awaiting Secretary</div></div>
+                    <div class="stat-info"><div class="stat-value">{{ $waitingCount }}</div><div class="stat-label">For Your Approval</div></div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-                    <div class="stat-info"><div class="stat-value">{{ $forwardedCount }}</div><div class="stat-label">Forwarded</div></div>
+                    <div class="stat-info"><div class="stat-value">{{ $approvedCount }}</div><div class="stat-label">Approved</div></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:#fee2e2;color:#b91c1c;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg></div>
+                    <div class="stat-info"><div class="stat-value">{{ $returnedCount }}</div><div class="stat-label">Returned to Secretary</div></div>
                 </div>
             </div>
 
@@ -262,24 +284,24 @@
             </div>
 
             @php
-                $waitingTemplates = $templates->filter(fn($t) => !$t->isForwarded());
+                $waitingTemplates = $templates->filter(fn($t) => $t->isPending());
                 $typeFolders = $templates->groupBy('type')->map(function ($group, $type) {
                     return [
                         'key'     => 'type-' . $type,
                         'label'   => \App\Models\TemplateDocument::typeLabel($type) . ' Templates',
                         'icon'    => \App\Models\TemplateDocument::typeIcon($type),
                         'count'   => $group->count(),
-                        'pending' => $group->filter(fn($t) => !$t->isForwarded())->count(),
+                        'pending' => $group->filter(fn($t) => $t->isPending())->count(),
                     ];
                 })->sortBy('label')->values();
             @endphp
 
-            {{-- Needs Attention: pinned so nothing awaiting forwarding gets buried once there are many Forwarded templates --}}
+            {{-- Needs Attention: pinned so nothing awaiting approval gets buried under approved templates --}}
             @if($waitingTemplates->isNotEmpty())
                 <div class="attention-banner">
                     <div class="attention-banner-title">
                         <svg style="width:16px;height:16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                        Needs Attention — Awaiting Secretary ({{ $waitingTemplates->count() }})
+                        Needs Attention — Waiting for Your Approval ({{ $waitingTemplates->count() }})
                     </div>
                     <div class="template-grid">
                         @foreach($waitingTemplates as $template)
@@ -297,13 +319,13 @@
                         <span class="folder-section-count">{{ $templates->count() }} file{{ $templates->count() == 1 ? '' : 's' }}</span>
                     </div>
                     @if($typeFolders->isEmpty())
-                        <div class="empty-state">No templates uploaded yet.</div>
+                        <div class="empty-state">No templates yet. Templates the Secretary submits will appear here.</div>
                     @else
                         <div class="folder-grid">
                             @foreach($typeFolders as $folder)
                                 <button type="button" class="folder-card" onclick="openFolder('{{ $folder['key'] }}', @js($folder['label']))">
                                     @if($folder['pending'] > 0)
-                                        <span class="folder-card-pending-badge" title="{{ $folder['pending'] }} awaiting Secretary">{{ $folder['pending'] }}</span>
+                                        <span class="folder-card-pending-badge" title="{{ $folder['pending'] }} waiting for approval">{{ $folder['pending'] }}</span>
                                     @endif
                                     <span class="folder-card-icon">{{ $folder['icon'] }}</span>
                                     <div>
@@ -338,28 +360,13 @@
         </div>
     </div>
 
-    {{-- Upload Modal --}}
-    <div class="modal-overlay" id="modal-overlay">
+    {{-- Approve & Send / Send to more programs --}}
+    <div class="modal-overlay" id="send-overlay">
         <div class="modal">
-            <form action="{{ url('/admin/template-approvals') }}" method="POST" enctype="multipart/form-data">
+            <form id="send-form" method="POST">
                 @csrf
-                <div class="modal-title">New Template</div>
-                <div class="modal-error" id="modal-error">{{ $errors->first() }}</div>
-
-                <div class="modal-field">
-                    <label>Title <span style="color:#ef4444">*</span></label>
-                    <input type="text" name="title" placeholder="e.g. Official Syllabus Format 2026" value="{{ old('title') }}">
-                </div>
-
-                <div class="modal-field">
-                    <label>Template Type <span style="color:#ef4444">*</span></label>
-                    <select name="type">
-                        @foreach(\App\Models\TemplateDocument::TYPES as $typeKey => $t)
-                            <option value="{{ $typeKey }}">{{ $t['label'] }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
+                <div class="modal-title" id="send-modal-title">Approve &amp; Send</div>
+                <div class="delete-target" style="margin-bottom:12px;"><strong id="send-target-title"></strong></div>
                 <div class="modal-field">
                     <label>Send to Programs <span style="color:#ef4444">*</span></label>
                     <div class="program-checklist">
@@ -369,22 +376,37 @@
                         </label>
                         @foreach(\App\Support\Programs::options() as $code => $label)
                             <label class="program-check">
-                                <input type="checkbox" name="programs[]" value="{{ $code }}" class="program-check-item" onchange="syncSelectAll()" {{ in_array($code, old('programs', [])) ? 'checked' : '' }}>
+                                <input type="checkbox" name="programs[]" value="{{ $code }}" class="program-check-item" onchange="syncSelectAll()">
                                 <span title="{{ $label }}">{{ $code }} — {{ $label }}</span>
                             </label>
                         @endforeach
                     </div>
+                    <div class="modal-hint" id="send-modal-hint">Faculty in the selected programs will see this template right away.</div>
                 </div>
-
-                <div class="modal-field">
-                    <label>File <span style="color:#ef4444">*</span></label>
-                    <input type="file" name="file" accept=".pdf,.doc,.docx" required>
-                    <div class="modal-hint">Secretary forwards it, Program Head distributes it, and faculty can view/download it.</div>
-                </div>
-
+                <div class="modal-error" id="send-error">Choose at least one program.</div>
                 <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Create</button>
+                    <button type="button" class="btn-cancel" onclick="closeSendModal()">Cancel</button>
+                    <button type="submit" class="btn-save" id="send-submit">Approve &amp; Send</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Return to Secretary --}}
+    <div class="modal-overlay" id="return-overlay">
+        <div class="modal">
+            <form id="return-form" method="POST">
+                @csrf
+                <div class="modal-title">Return to Secretary</div>
+                <div class="delete-target" style="margin-bottom:12px;"><strong id="return-target-title"></strong></div>
+                <div class="modal-field">
+                    <label>Reason <span style="color:#ef4444">*</span></label>
+                    <textarea name="reason" maxlength="1000" required placeholder="e.g. Please use the 2026 course outcomes and add the signatory block."></textarea>
+                    <div class="modal-hint">The Secretary will see this reason and can upload a corrected version.</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeReturnModal()">Cancel</button>
+                    <button type="submit" class="btn-danger">Return Template</button>
                 </div>
             </form>
         </div>
@@ -396,7 +418,7 @@
             <div class="modal-title">Remove Template</div>
             <div class="delete-target">Remove <strong id="delete-target-title"></strong>? This cannot be undone.</div>
             <div id="delete-forwarded-warning" style="display:none;margin-top:12px;background:#fef3c7;border:1px solid #fcd34d;color:#92400e;font-size:12.5px;padding:10px 12px;border-radius:6px;line-height:1.5;">
-                <strong>This template has already been forwarded.</strong> Removing it also removes it from the Secretary's Document Repository, from each Program Head's distribution, and from the Faculty Template Library. Faculty who already downloaded a copy keep their own file.
+                <strong>This template has already been sent to programs.</strong> Removing it also removes it from the Secretary's Document Repository and from the Templates of the Program Heads and faculty who received it. Faculty who already downloaded a copy keep their own file.
             </div>
             <form id="delete-form" method="POST">
                 @csrf
@@ -404,30 +426,6 @@
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
                     <button type="submit" class="btn-danger">Remove Template</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {{-- Upload New Version Modal --}}
-    <div class="modal-overlay" id="new-version-overlay">
-        <div class="modal">
-            <form id="new-version-form" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="modal-title">New Version — <span id="nv-target-title"></span></div>
-                <div class="modal-error" id="nv-error"></div>
-                <div class="modal-field">
-                    <label>New Title <span style="font-size:10px;color:#999;">(optional — leave blank to keep the same title)</span></label>
-                    <input type="text" name="title" placeholder="Leave blank to keep current title">
-                </div>
-                <div class="modal-field">
-                    <label>File <span style="color:#ef4444">*</span></label>
-                    <input type="file" name="file" accept=".pdf,.doc,.docx" required>
-                    <div class="modal-hint">The current version is kept as history — this starts a fresh Secretary → Program Head → Faculty cycle for the new file.</div>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeNewVersionModal()">Cancel</button>
-                    <button type="submit" class="btn-save">Upload New Version</button>
                 </div>
             </form>
         </div>
@@ -458,17 +456,48 @@
             if (e.target === this) closeDeleteModal();
         });
 
-        function openNewVersionModal(id, title) {
-            document.getElementById('nv-target-title').textContent = title;
-            document.getElementById('nv-error').style.display = 'none';
-            document.getElementById('new-version-form').action = '{{ url("/admin/template-approvals") }}/' + id + '/new-version';
-            document.getElementById('new-version-overlay').classList.add('open');
+        // Approve & Send (pending) or Send to more programs (approved). Programs the
+        // template already went to stay checked and can't be unsent from here.
+        function openSendModal(id, title, mode, checkedPrograms) {
+            var approving = mode === 'approve';
+            document.getElementById('send-form').action = '{{ url("/admin/template-approvals") }}/' + id + (approving ? '/approve' : '/send');
+            document.getElementById('send-modal-title').textContent = approving ? 'Approve & Send' : 'Send to Programs';
+            document.getElementById('send-submit').textContent = approving ? 'Approve & Send' : 'Send';
+            document.getElementById('send-target-title').textContent = title;
+            document.getElementById('send-error').style.display = 'none';
+            document.querySelectorAll('.program-check-item').forEach(function(cb) {
+                var already = (checkedPrograms || []).indexOf(cb.value) !== -1;
+                cb.checked = already;
+                cb.disabled = !approving && already;
+            });
+            syncSelectAll();
+            document.getElementById('send-overlay').classList.add('open');
         }
-        function closeNewVersionModal() {
-            document.getElementById('new-version-overlay').classList.remove('open');
+        function closeSendModal() {
+            document.getElementById('send-overlay').classList.remove('open');
         }
-        document.getElementById('new-version-overlay').addEventListener('click', function(e) {
-            if (e.target === this) closeNewVersionModal();
+        document.getElementById('send-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeSendModal();
+        });
+        document.getElementById('send-form').addEventListener('submit', function(e) {
+            var picked = Array.from(document.querySelectorAll('.program-check-item')).some(function(cb) { return cb.checked && !cb.disabled; });
+            if (!picked) {
+                e.preventDefault();
+                document.getElementById('send-error').style.display = 'block';
+            }
+        });
+
+        function openReturnModal(id, title) {
+            document.getElementById('return-form').action = '{{ url("/admin/template-approvals") }}/' + id + '/return';
+            document.getElementById('return-target-title').textContent = title;
+            document.querySelector('#return-form textarea').value = '';
+            document.getElementById('return-overlay').classList.add('open');
+        }
+        function closeReturnModal() {
+            document.getElementById('return-overlay').classList.remove('open');
+        }
+        document.getElementById('return-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeReturnModal();
         });
 
         async function openHistoryModal(id, title) {
@@ -484,7 +513,7 @@
                     return '<div class="history-row">' +
                         '<div>' +
                             '<div class="history-row-label"><strong>v' + v.version + '</strong>' + (v.is_current ? '<span class="history-current-tag">Current</span>' : '') + '</div>' +
-                            '<div class="history-row-meta">' + v.created_by + ' • ' + v.created_at + ' • ' + (v.is_forwarded ? 'Forwarded' : 'Not forwarded') + '</div>' +
+                            '<div class="history-row-meta">' + v.created_by + ' • ' + v.created_at + ' • ' + ({ pending: 'Waiting for approval', approved: 'Approved', returned: 'Returned' }[v.status] || v.status) + '</div>' +
                         '</div>' +
                         '<a class="btn-view" style="flex:none;" href="' + v.file_url + '" target="_blank">View</a>' +
                     '</div>';
@@ -566,7 +595,7 @@
 
         function toggleAllPrograms(selectAllCheckbox) {
             document.querySelectorAll('.program-check-item').forEach(function(cb) {
-                cb.checked = selectAllCheckbox.checked;
+                if (!cb.disabled) cb.checked = selectAllCheckbox.checked;
             });
         }
         function syncSelectAll() {
@@ -574,23 +603,6 @@
             var allChecked = Array.from(items).every(function(cb) { return cb.checked; });
             document.getElementById('programs-select-all').checked = allChecked;
         }
-
-        function openCreateModal() {
-            document.getElementById('modal-overlay').classList.add('open');
-        }
-        function closeModal() {
-            document.getElementById('modal-overlay').classList.remove('open');
-        }
-        document.getElementById('modal-overlay').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
-
-        @if($errors->any())
-            document.addEventListener('DOMContentLoaded', function () {
-                document.getElementById('modal-overlay').classList.add('open');
-                document.getElementById('modal-error').style.display = 'block';
-            });
-        @endif
 
         (function restoreOpenFolder() {
             var saved = null;

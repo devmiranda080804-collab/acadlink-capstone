@@ -39,16 +39,13 @@ class DocumentRepositoryController extends Controller
     {
         $documents = collect();
 
-        // 1. Forwarded templates — the current pipeline is Admin creates ->
-        // Secretary forwards -> Program Head distributes per program. A
-        // forwarded template counts as "official" here since forwarding is
-        // this Secretary's own action; one row per program it serves, since
-        // a single master template can be shared across several programs.
+        // 1. Official templates — approved by the Dean and sent to programs; one row
+        // per program it was sent to, since one template can serve several programs.
         TemplateDocument::with(['creator', 'programs'])
-            ->whereNotNull('forwarded_at')
+            ->where('status', TemplateDocument::STATUS_APPROVED)
             ->get()
             ->each(function ($t) use (&$documents) {
-                foreach ($t->programs as $p) {
+                foreach ($t->programs->whereNotNull('distributed_at') as $p) {
                     $documents->push([
                         'id'        => $t->id,
                         'source'    => 'template',
@@ -58,8 +55,8 @@ class DocumentRepositoryController extends Controller
                         'uploader'  => $t->creator->name ?? 'Unknown',
                         'file_type' => $t->file_type,
                         'file_url'  => Storage::url($t->file_path),
-                        'version'   => 'v1.0',
-                        'date'      => $p->distributed_at ?? $t->forwarded_at,
+                        'version'   => 'v' . $t->version,
+                        'date'      => $p->distributed_at,
                         'can_delete'=> false,
                     ]);
                 }

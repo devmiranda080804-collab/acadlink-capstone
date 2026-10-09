@@ -17,8 +17,8 @@ class DashboardController extends Controller
         $secretaryCount   = User::where('role', 'secretary')->whereNull('archived_at')->count();
         $facultyCount     = User::where('role', 'faculty')->whereNull('archived_at')->count();
 
-        // Templates Admin has uploaded that the Secretary hasn't forwarded yet
-        $awaitingSecretary = TemplateDocument::whereNull('forwarded_at')->count();
+        // Templates the Secretary submitted that still need the Dean's decision
+        $awaitingApproval = TemplateDocument::where('status', TemplateDocument::STATUS_PENDING)->whereNull('superseded_at')->count();
 
         // Announcements + activities
         $announcementCount = Announcement::count();
@@ -34,16 +34,16 @@ class DashboardController extends Controller
             ->take(3)
             ->get();
 
-        // Templates still awaiting the Secretary (for the quick list)
         $pendingTemplates = TemplateDocument::with('creator')
-            ->whereNull('forwarded_at')
+            ->where('status', TemplateDocument::STATUS_PENDING)
+            ->whereNull('superseded_at')
             ->latest()
             ->take(5)
             ->get();
 
         return view('admin.admin-dashboard', compact(
             'programHeadCount', 'secretaryCount', 'facultyCount',
-            'awaitingSecretary',
+            'awaitingApproval',
             'announcementCount', 'upcomingActivities', 'pendingTemplates',
             'unreadAnnouncements'
         ));
