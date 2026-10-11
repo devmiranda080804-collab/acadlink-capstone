@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\User;
 use App\Support\AcademicTerm;
 use App\Support\BloomLevels;
+use App\Support\Signatories;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\SimpleType\Jc;
 use PhpOffice\PhpWord\Style\Font;
@@ -44,7 +45,7 @@ class TosDocumentBuilder
         $section->addText('Date Submitted: ___________________', ['size' => 10]);
         $section->addTextBreak(1);
 
-        $this->addSignOffBlock($section, $faculty);
+        $this->addSignOffBlock($section, $faculty, Signatories::programHead($course->program), Signatories::dean());
 
         return $phpWord;
     }
@@ -108,26 +109,27 @@ class TosDocumentBuilder
         $table->addCell($widths[9], $headerStyle)->addText((string) $breakdown['total_items'], $headerFont, $center);
     }
 
-    protected function addSignOffBlock(\PhpOffice\PhpWord\Element\Section $section, User $faculty): void
+    // Names come from the accounts/settings; an unknown signatory gets a blank line to sign on.
+    protected function addSignOffBlock(\PhpOffice\PhpWord\Element\Section $section, User $faculty, array $programHead, array $dean): void
     {
+        $nameStyle = ['bold' => true, 'underline' => Font::UNDERLINE_SINGLE, 'size' => 10];
+        $blank = '___________________________';
+        $nameOrBlank = fn(?string $name) => $name ? mb_strtoupper($name) : $blank;
+
         $table = $section->addTable();
         $table->addRow();
-
         $table->addCell(4500)->addText('Prepared by:', ['size' => 10]);
-        $table->addCell(4500)->addText('Checked and Verified:', ['size' => 10]);
+        $table->addCell(4500)->addText('Checked and Reviewed:', ['size' => 10]);
+        $table->addCell(5000)->addText('Approved:', ['size' => 10]);
 
         $table->addRow();
-        $table->addCell(4500)->addText($faculty->name, ['bold' => true, 'underline' => Font::UNDERLINE_SINGLE, 'size' => 10]);
-        $table->addCell(4500)->addText('___________________________', ['size' => 10]);
+        $table->addCell(4500)->addText(mb_strtoupper($faculty->name), $nameStyle);
+        $table->addCell(4500)->addText($nameOrBlank($programHead['name']), $programHead['name'] ? $nameStyle : ['size' => 10]);
+        $table->addCell(5000)->addText($nameOrBlank($dean['name']), $dean['name'] ? $nameStyle : ['size' => 10]);
 
         $table->addRow();
         $table->addCell(4500)->addText('Faculty In-Charge', ['italic' => true, 'size' => 9]);
-        $table->addCell(4500)->addText('Program Head', ['italic' => true, 'size' => 9]);
-
-        $section->addTextBreak(1);
-        $section->addText('Approved:', ['size' => 10]);
-        $section->addTextBreak(1);
-        $section->addText('___________________________', ['size' => 10]);
-        $section->addText('Dean', ['italic' => true, 'size' => 9]);
+        $table->addCell(4500)->addText($programHead['title'], ['italic' => true, 'size' => 9]);
+        $table->addCell(5000)->addText($dean['title'], ['italic' => true, 'size' => 9]);
     }
 }

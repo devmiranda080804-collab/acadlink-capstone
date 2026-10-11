@@ -7,6 +7,7 @@ use App\Http\Controllers\ProgramHead\AccountManagementController as PHAccountMan
 use App\Http\Controllers\Secretary\AccountManagementController as SecAccountManagementController;
 use App\Http\Controllers\ChangePasswordController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\Admin\RolesPermissionsController;
@@ -172,6 +173,8 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
     Route::delete('/program-assignment/{assignment}', [ProgramAssignmentController::class, 'destroy']);
 
     Route::get('/analytics', [AdminAnalyticsController::class, 'index']);
+    Route::get('/settings', [AdminSettingsController::class, 'index']);
+    Route::put('/settings', [AdminSettingsController::class, 'update']);
 });
 
 /*
