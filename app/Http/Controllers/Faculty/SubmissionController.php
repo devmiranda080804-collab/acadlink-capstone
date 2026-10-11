@@ -17,7 +17,7 @@ class SubmissionController extends Controller
         $facultyId = auth()->id();
 
         $requirements = SubmissionRequirement::where('program', $myProgram)
-            ->orderBy('deadline')
+            ->orderByPriority()
             ->get()
             ->map(function ($req) use ($facultyId) {
                 $mySubmission = Submission::where('requirement_id', $req->id)
@@ -30,6 +30,7 @@ class SubmissionController extends Controller
                     'description' => $req->description,
                     'type'        => \App\Models\SubmissionRequirement::typeLabel($req->type),
                     'type_key'    => $req->type,
+                    'priority'    => $req->priority,
                     'deadline'    => $req->deadline,
                     'days_left'   => $req->days_left,
                     'is_due_soon' => $req->is_due_soon,

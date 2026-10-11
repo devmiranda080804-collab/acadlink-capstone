@@ -52,6 +52,14 @@
         .stat-info .stat-label { font-size: 11.5px; color: #888; margin-top: 2px; }
 
         .filter-tabs { display: flex; gap: 4px; margin-bottom: 18px; }
+        .list-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+        .list-toolbar .filter-tabs { margin-bottom: 0; flex-wrap: wrap; }
+        .sort-control { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; }
+        .sort-control select { padding: 6px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 12px; color: #333; background: #fff; font-family: Arial, sans-serif; cursor: pointer; }
+        .priority-badge { display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; padding: 2px 8px; border-radius: 10px; margin-right: 6px; vertical-align: middle; }
+        .priority-urgent { background: #fee2e2; color: #b91c1c; }
+        .priority-important { background: #fef3c7; color: #92400e; }
+        .priority-standard { background: #f1f2f5; color: #666; }
         .filter-tab { padding: 7px 16px; font-size: 12px; color: #666; background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; cursor: pointer; user-select: none; }
         .filter-tab:hover { border-color: #0f2557; color: #0f2557; }
         .filter-tab.active { background: #0f2557; color: #fff; border-color: #0f2557; font-weight: 600; }
@@ -210,11 +218,20 @@
                 </div>
             </div>
 
-            <div class="filter-tabs">
-                <span class="filter-tab active" onclick="filterReqs('all', this)">All</span>
-                <span class="filter-tab" onclick="filterReqs('overdue', this)">Overdue</span>
-                <span class="filter-tab" onclick="filterReqs('soon', this)">Due Soon</span>
-                <span class="filter-tab" onclick="filterReqs('done', this)">Submitted</span>
+            <div class="list-toolbar">
+                <div class="filter-tabs">
+                    <span class="filter-tab active" onclick="filterReqs('all', this)">All</span>
+                    <span class="filter-tab" onclick="filterReqs('overdue', this)">Overdue</span>
+                    <span class="filter-tab" onclick="filterReqs('soon', this)">Due Soon</span>
+                    <span class="filter-tab" onclick="filterReqs('done', this)">Submitted</span>
+                </div>
+                <div class="sort-control">
+                    <label for="sort-reqs">Sort by</label>
+                    <select id="sort-reqs" onchange="sortReqs(this.value)">
+                        <option value="priority">Priority</option>
+                        <option value="deadline">Nearest deadline</option>
+                    </select>
+                </div>
             </div>
 
             <div id="req-list">
@@ -237,12 +254,12 @@
 
                     $typeIcon = \App\Models\SubmissionRequirement::typeIcon($req['type_key']);
                 @endphp
-                <div class="req-card {{ $cardClass }}" data-status="{{ $cardClass }}">
+                <div class="req-card {{ $cardClass }}" data-status="{{ $cardClass }}" data-priority-rank="{{ \App\Models\SubmissionRequirement::priorityRank($req['priority']) }}" data-deadline="{{ $req['deadline']->format('Y-m-d') }}">
                     <div class="req-type-icon">{{ $typeIcon }}</div>
                     <div class="req-body">
                         <div class="req-top">
                             <div>
-                                <div class="req-title">{{ $req['title'] }}</div>
+                                <div class="req-title"><span class="priority-badge priority-{{ $req['priority'] }}">{{ \App\Models\SubmissionRequirement::priorityLabel($req['priority']) }}</span>{{ $req['title'] }}</div>
                                 <div class="req-type">{{ $req['type'] }} · Due {{ $req['deadline']->format('M d, Y') }}</div>
                             </div>
                             <span class="req-deadline-badge {{ $badgeClass }}">
@@ -299,6 +316,19 @@
     </div>
 
     <script>
+        // Priority first (Urgent, Important, Standard) with the nearest deadline first
+        // inside each, or by deadline alone.
+        function sortReqs(mode) {
+            var list = document.getElementById('req-list');
+            var cards = Array.from(list.querySelectorAll('.req-card'));
+            cards.sort(function (a, b) {
+                var byDeadline = a.dataset.deadline.localeCompare(b.dataset.deadline);
+                if (mode === 'deadline') return byDeadline;
+                return (a.dataset.priorityRank - b.dataset.priorityRank) || byDeadline;
+            });
+            cards.forEach(function (card) { list.appendChild(card); });
+        }
+
         function filterReqs(status, el) {
             document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
             el.classList.add('active');

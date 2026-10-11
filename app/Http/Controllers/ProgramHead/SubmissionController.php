@@ -15,10 +15,9 @@ class SubmissionController extends Controller
     {
         $myProgram = auth()->user()->program;
 
-        // Program requirements, sorted by nearest deadline
         $requirements = SubmissionRequirement::with('submissions.faculty')
             ->where('program', $myProgram)
-            ->orderBy('deadline')
+            ->orderByPriority()
             ->get();
 
         // Count of faculty in the program (for "X of Y submitted")
@@ -36,6 +35,7 @@ class SubmissionController extends Controller
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'type'        => ['required', Rule::in(array_keys(SubmissionRequirement::typeOptions()))],
+            'priority'    => ['required', Rule::in(array_keys(SubmissionRequirement::PRIORITIES))],
             'deadline'    => 'required|date|after_or_equal:today',
         ], [
             'deadline.after_or_equal' => 'The deadline can\'t be earlier than today.',
@@ -47,6 +47,7 @@ class SubmissionController extends Controller
             'title'       => $request->title,
             'description' => $request->description,
             'type'        => $request->type,
+            'priority'    => $request->priority,
             'deadline'    => $request->deadline,
         ]);
 
@@ -65,12 +66,13 @@ class SubmissionController extends Controller
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'type'        => ['required', Rule::in(array_keys(SubmissionRequirement::typeOptions()))],
+            'priority'    => ['required', Rule::in(array_keys(SubmissionRequirement::PRIORITIES))],
             'deadline'    => $deadlineChanged ? 'required|date|after_or_equal:today' : 'required|date',
         ], [
             'deadline.after_or_equal' => 'The deadline can\'t be earlier than today.',
         ]);
 
-        $requirement->update($request->only(['title', 'description', 'type', 'deadline']));
+        $requirement->update($request->only(['title', 'description', 'type', 'priority', 'deadline']));
 
         return back()->with('success', 'Requirement updated.');
     }

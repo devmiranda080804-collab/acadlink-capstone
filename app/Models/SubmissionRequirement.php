@@ -7,8 +7,38 @@ use Illuminate\Database\Eloquent\Model;
 class SubmissionRequirement extends Model
 {
     protected $fillable = [
-        'created_by', 'program', 'title', 'description', 'type', 'deadline',
+        'created_by', 'program', 'title', 'description', 'type', 'priority', 'deadline',
     ];
+
+    // Highest first — the order lists are sorted in.
+    const PRIORITIES = [
+        'urgent'    => 'Urgent',
+        'important' => 'Important',
+        'standard'  => 'Standard',
+    ];
+
+    public static function priorityLabel(?string $priority): string
+    {
+        return self::PRIORITIES[$priority] ?? self::PRIORITIES['standard'];
+    }
+
+    public static function priorityRank(?string $priority): int
+    {
+        $rank = array_search($priority, array_keys(self::PRIORITIES), true);
+
+        return $rank === false ? count(self::PRIORITIES) - 1 : $rank;
+    }
+
+    // Urgent first, then Important, then Standard; nearest deadline first within each.
+    public function scopeOrderByPriority($query)
+    {
+        $cases = collect(array_keys(self::PRIORITIES))
+            ->map(fn($key, $rank) => "WHEN '{$key}' THEN {$rank}")
+            ->implode(' ');
+
+        return $query->orderByRaw("CASE priority {$cases} ELSE " . count(self::PRIORITIES) . ' END')
+            ->orderBy('deadline');
+    }
 
     protected $casts = [
         'deadline' => 'date',
