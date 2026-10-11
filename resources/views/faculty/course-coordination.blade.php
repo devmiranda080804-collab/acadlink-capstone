@@ -143,6 +143,9 @@
         .modal-field input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; outline: none; }
         .modal-field input:focus { border-color: #0f2557; }
         .modal-hint { font-size: 10.5px; color: #999; margin-top: -6px; margin-bottom: 14px; line-height: 1.4; }
+        .modal-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .field-note { font-size: 10.5px; color: #888; margin-top: 4px; line-height: 1.4; }
+        @media (max-width: 520px) { .modal-row-3 { grid-template-columns: 1fr 1fr; } }
         .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
         .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 18px; border-radius: 5px; cursor: pointer; }
         .btn-save { background: #0f2557; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
@@ -408,7 +411,7 @@
                                 <div class="file-row">
                                     <div class="file-left">
                                         <div>
-                                            <div class="file-name">{{ $topic->weeks ? $topic->weeks . ' — ' : '' }}{{ $topic->topic }}</div>
+                                            <div class="file-name">{{ $topic->weeks_label ? $topic->weeks_label . ' — ' : '' }}{{ $topic->topic }}</div>
                                             <div class="file-meta">
                                                 {{ $topic->hours }} hrs
                                                 @if($topic->module_path) · <span style="color:#16a34a;">✓ module uploaded (AI-ready)</span>
@@ -488,13 +491,24 @@
                     <label>Topic</label>
                     <input type="text" name="topic" id="topic-field-topic" required>
                 </div>
-                <div class="modal-field">
-                    <label>Weeks</label>
-                    <input type="text" name="weeks" id="topic-field-weeks" placeholder="e.g. Week 1-2" maxlength="50" required>
+                <div class="modal-row-3">
+                    <div class="modal-field">
+                        <label>From week</label>
+                        <input type="number" name="week_from" id="topic-field-week-from" min="1" max="{{ \App\Models\CourseTopic::MAX_WEEK }}" step="1" placeholder="e.g. 1" required oninput="computeTopicHours()">
+                    </div>
+                    <div class="modal-field">
+                        <label>To week</label>
+                        <input type="number" name="week_to" id="topic-field-week-to" min="1" max="{{ \App\Models\CourseTopic::MAX_WEEK }}" step="1" placeholder="e.g. 2" oninput="computeTopicHours()">
+                    </div>
+                    <div class="modal-field">
+                        <label>Hours per week</label>
+                        <input type="number" id="topic-field-hours-per-week" min="1" max="40" step="1" value="3" oninput="computeTopicHours()">
+                    </div>
                 </div>
                 <div class="modal-field">
                     <label>Hours</label>
                     <input type="number" name="hours" id="topic-field-hours" min="1" required>
+                    <div class="field-note" id="topic-hours-note">Computed from the weeks above. You can change it.</div>
                 </div>
                 <div class="modal-field">
                     <label>Teaching Notes <span style="font-size:10px;color:#999;">(optional — short summary; used by AI if no module is uploaded)</span></label>
@@ -739,10 +753,30 @@
             return Math.floor(hours / 24) + 'd ago';
         }
 
+        // Hours = number of weeks x hours per week. Re-runs whenever the weeks or the
+        // hours per week change; the faculty can still type a different total.
+        function computeTopicHours() {
+            var from = parseInt(document.getElementById('topic-field-week-from').value, 10);
+            var to = parseInt(document.getElementById('topic-field-week-to').value, 10) || from;
+            var perWeek = parseInt(document.getElementById('topic-field-hours-per-week').value, 10);
+            var note = document.getElementById('topic-hours-note');
+            if (!from || !perWeek) return;
+            if (to < from) {
+                note.textContent = '"To week" can\'t be earlier than "From week".';
+                return;
+            }
+            var weeks = to - from + 1;
+            document.getElementById('topic-field-hours').value = weeks * perWeek;
+            note.textContent = weeks + ' week' + (weeks === 1 ? '' : 's') + ' × ' + perWeek + ' hrs = ' + (weeks * perWeek) + ' hours. You can change it.';
+        }
+
         function resetTopicForm() {
             document.getElementById('topic-field-topic').value = '';
-            document.getElementById('topic-field-weeks').value = '';
+            document.getElementById('topic-field-week-from').value = '';
+            document.getElementById('topic-field-week-to').value = '';
+            document.getElementById('topic-field-hours-per-week').value = 3;
             document.getElementById('topic-field-hours').value = '';
+            document.getElementById('topic-hours-note').textContent = 'Computed from the weeks above. You can change it.';
             document.getElementById('topic-field-notes').value = '';
             document.getElementById('topic-current-module').style.display = 'none';
         }
@@ -766,7 +800,15 @@
             document.getElementById('topic-modal-title').textContent = 'Edit Topic';
             document.getElementById('topic-modal-sub').textContent = 'Grading period: ' + topic.grading_period;
             document.getElementById('topic-field-topic').value = topic.topic || '';
-            document.getElementById('topic-field-weeks').value = topic.weeks || '';
+            // Weeks are stored as "3" or "1-2"; an old free-text value leaves the fields empty.
+            var range = /^(\d+)(?:-(\d+))?$/.exec(topic.weeks || '');
+            var weekFrom = range ? parseInt(range[1], 10) : '';
+            var weekTo = range ? parseInt(range[2] || range[1], 10) : '';
+            document.getElementById('topic-field-week-from').value = weekFrom;
+            document.getElementById('topic-field-week-to').value = weekTo !== weekFrom ? weekTo : '';
+            var weekCount = range ? weekTo - weekFrom + 1 : 0;
+            document.getElementById('topic-field-hours-per-week').value =
+                weekCount && topic.hours % weekCount === 0 ? topic.hours / weekCount : 3;
             document.getElementById('topic-field-hours').value = topic.hours || '';
             document.getElementById('topic-field-notes').value = topic.notes || '';
             document.getElementById('topic-field-module').required = false;

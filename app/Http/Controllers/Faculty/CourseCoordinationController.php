@@ -63,13 +63,22 @@ class CourseCoordinationController extends Controller
     // the same topic list. Feeds the Assessment Generator's TOS Generator
     // (Panel comment #8: Total Hours must be auto-fetched from OBE data).
 
+    // How the topic form's fields are named in validation messages.
+    const TOPIC_FIELD_NAMES = ['week_from' => '"From week"', 'week_to' => '"To week"'];
+    const TOPIC_MESSAGES = [
+        'week_from.integer' => 'Enter "From week" as a number, for example 1.',
+        'week_to.integer'   => 'Enter "To week" as a number, for example 2.',
+        'week_to.gte'       => '"To week" can\'t be earlier than "From week".',
+    ];
+
     public function storeCourseTopic(Request $request)
     {
         $request->validate([
             'course_id'      => 'required|exists:courses,id',
             'grading_period' => 'required|in:Prelim,Midterm,Final',
             'topic'          => 'required|string|max:255',
-            'weeks'          => 'required|string|max:50',
+            'week_from'      => 'required|integer|min:1|max:' . CourseTopic::MAX_WEEK,
+            'week_to'        => 'nullable|integer|gte:week_from|max:' . CourseTopic::MAX_WEEK,
             'hours'          => 'required|integer|min:1',
             'notes'          => 'nullable|string|max:5000',
             // Required when first adding a topic — Teaching Notes alone is not
@@ -77,7 +86,7 @@ class CourseCoordinationController extends Controller
             // drafting. Editing an existing topic can still leave it as-is
             // (see updateCourseTopic()), since it may already have a module.
             'module'         => 'required|file|mimes:pdf,docx|max:20480', // 20MB max
-        ]);
+        ], self::TOPIC_MESSAGES, self::TOPIC_FIELD_NAMES);
 
         // Security: only for courses this faculty is actually assigned to teach
         $course = Course::whereIn('id', $this->assignedCourseIds())
@@ -97,7 +106,7 @@ class CourseCoordinationController extends Controller
             'course_id'        => $course->id,
             'grading_period'   => $request->grading_period,
             'topic'            => $request->topic,
-            'weeks'            => $request->weeks,
+            'weeks'            => CourseTopic::weeksValue((int) $request->week_from, $request->filled('week_to') ? (int) $request->week_to : null),
             'hours'            => $request->hours,
             'notes'            => $moduleData['extracted_notes'] ?? $request->notes,
             'module_path'      => $moduleData['module_path'],
@@ -115,15 +124,16 @@ class CourseCoordinationController extends Controller
 
         $request->validate([
             'topic'  => 'required|string|max:255',
-            'weeks'  => 'required|string|max:50',
+            'week_from' => 'required|integer|min:1|max:' . CourseTopic::MAX_WEEK,
+            'week_to'   => 'nullable|integer|gte:week_from|max:' . CourseTopic::MAX_WEEK,
             'hours'  => 'required|integer|min:1',
             'notes'  => 'nullable|string|max:5000',
             'module' => 'nullable|file|mimes:pdf,docx|max:20480',
-        ]);
+        ], self::TOPIC_MESSAGES, self::TOPIC_FIELD_NAMES);
 
         $data = [
             'topic' => $request->topic,
-            'weeks' => $request->weeks,
+            'weeks' => CourseTopic::weeksValue((int) $request->week_from, $request->filled('week_to') ? (int) $request->week_to : null),
             'hours' => $request->hours,
             'notes' => $request->notes,
         ];

@@ -9,6 +9,36 @@ class CourseTopic extends Model
 {
     protected $fillable = ['course_id', 'grading_period', 'topic', 'weeks', 'hours', 'notes', 'module_path', 'module_file_name', 'order', 'created_by'];
 
+    // Weeks are stored as numbers only: "3" for a single week, "1-2" for a range.
+    const MAX_WEEK = 24;
+
+    public static function weeksValue(int $from, ?int $to): string
+    {
+        $to = $to ?: $from;
+
+        return $from === $to ? (string) $from : "{$from}-{$to}";
+    }
+
+    // [from, to], or [null, null] for an old free-text value that isn't numeric.
+    public function weekRange(): array
+    {
+        if ($this->weeks && preg_match('/^(\d+)(?:-(\d+))?$/', $this->weeks, $m)) {
+            return [(int) $m[1], (int) ($m[2] ?? $m[1])];
+        }
+
+        return [null, null];
+    }
+
+    public function getWeeksLabelAttribute(): ?string
+    {
+        [$from, $to] = $this->weekRange();
+        if ($from === null) {
+            return $this->weeks;
+        }
+
+        return $from === $to ? "Week {$from}" : "Weeks {$from}-{$to}";
+    }
+
     public function course()
     {
         return $this->belongsTo(Course::class);
