@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\BloomLevels;
+use App\Support\TestParts;
 use Illuminate\Database\Eloquent\Model;
 
 class CourseTopic extends Model
@@ -53,13 +54,16 @@ class CourseTopic extends Model
     // #8 — no manual Total Hours input), item counts allocated per topic proportional
     // to its share of those hours, then broken down per Bloom's Taxonomy level
     // (Remembering through Creating, matching the official TOS format) and given
-    // sequential item numbers — "I." for the five regular levels, "II." for Creating
-    // only, matching the official sample's own two-sequence numbering. "No. of
+    // sequential item numbers per test the instructor chose (see TestParts) — plain
+    // "1, 2, 3" for a single test, "I.", "II." ... prefixes when there are more. "No. of
     // Items/Points" is POINTS, not a raw item count — every level is 1 point/item
     // except Creating, which is a bigger standalone item worth 5 (verified against
     // the sample's own row and TOTAL arithmetic).
-    public static function targetBreakdown(int $courseId, string $gradingPeriod, int $totalItems): array
+    public static function targetBreakdown(int $courseId, string $gradingPeriod, int $totalItems, ?array $parts = null): array
     {
+        $parts = TestParts::normalize($parts);
+        $levelPart = TestParts::levelMap($parts);
+
         $topics = self::where('course_id', $courseId)
             ->where('grading_period', $gradingPeriod)
             ->orderBy('order')
@@ -68,7 +72,7 @@ class CourseTopic extends Model
         $totalHours = $topics->sum('hours');
 
         if ($totalHours === 0 || $totalItems === 0) {
-            return ['total_hours' => $totalHours, 'total_items' => $totalItems, 'total_points' => 0, 'topics' => []];
+            return ['total_hours' => $totalHours, 'total_items' => $totalItems, 'total_points' => 0, 'topics' => [], 'parts' => self::partsWithItems($parts, [])];
         }
 
         // Pass 1: hours -> target_items per topic (largest-remainder rounding).
@@ -79,11 +83,10 @@ class CourseTopic extends Model
 
         // Pass 2: each topic's target_items -> per-Bloom's-level item counts
         // (largest-remainder rounding again, this time against LEVEL_WEIGHTS).
-        $counterI = 1;
-        $counterII = 1;
+        $counters = array_fill(0, count($parts), 1);
         $totalPoints = 0;
 
-        $topicRows = $topics->map(function ($topic) use ($topicTargets, $totalHours, &$counterI, &$counterII, &$totalPoints) {
+        $topicRows = $topics->map(function ($topic) use ($topicTargets, $totalHours, $parts, $levelPart, &$counters, &$totalPoints) {
             $target = $topicTargets[$topic->id];
             $levelCounts = self::distribute($target, BloomLevels::LEVEL_WEIGHTS);
 
@@ -98,17 +101,11 @@ class CourseTopic extends Model
 
                 $range = null;
                 if ($count > 0) {
-                    if ($level === 'Creating') {
-                        $start = $counterII;
-                        $counterII += $count;
-                        $end = $counterII - 1;
-                        $range = 'II.' . ($count === 1 ? $start : "{$start}-{$end}");
-                    } else {
-                        $start = $counterI;
-                        $counterI += $count;
-                        $end = $counterI - 1;
-                        $range = 'I.' . ($count === 1 ? $start : "{$start}-{$end}");
-                    }
+                    $part = $levelPart[$level];
+                    $start = $counters[$part];
+                    $counters[$part] += $count;
+                    $end = $counters[$part] - 1;
+                    $range = TestParts::prefix($parts, $part) . ($count === 1 ? $start : "{$start}-{$end}");
                 }
 
                 $levels[$level] = ['count' => $count, 'range' => $range, 'points' => $points, 'points_per_item' => $pointsPerItem];
@@ -132,7 +129,23 @@ class CourseTopic extends Model
             'total_items'  => $totalItems,
             'total_points' => $totalPoints,
             'topics'       => $topicRows,
+            'parts'        => self::partsWithItems($parts, $topicRows),
         ];
+    }
+
+    // Adds each test's item total (the sum of its levels across every topic).
+    protected static function partsWithItems(array $parts, array $topicRows): array
+    {
+        return array_map(function ($part) use ($topicRows) {
+            $part['items'] = 0;
+            foreach ($topicRows as $row) {
+                foreach ($part['levels'] as $level) {
+                    $part['items'] += $row['levels'][$level]['count'] ?? 0;
+                }
+            }
+
+            return $part;
+        }, $parts);
     }
 
     // Resolves which Bloom's level a question at $position (1-indexed, counting only

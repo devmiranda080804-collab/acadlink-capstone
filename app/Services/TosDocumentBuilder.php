@@ -94,20 +94,20 @@ class TosDocumentBuilder
         $doc->setValue('tot_items', (string) $breakdown['total_items']);
     }
 
-    // "I.1-3" -> "1, 2, 3" like the college's sample; Creating items belong to Test II,
-    // so they keep a "II." prefix. Long runs stay as a range, and anything the faculty
-    // typed by hand in Edit mode is printed as-is.
+    // "1-3" -> "1, 2, 3" like the college's sample; with several tests the "II." style
+    // prefix is kept. Long runs stay as a range, and anything the faculty typed by hand
+    // in Edit mode is printed as-is.
     protected function itemNumbers(?string $range, string $level): string
     {
-        if (!$range || !preg_match('/^(I{1,2})\.(\d+)(?:-(\d+))?$/', trim($range), $m)) {
+        if (!$range || !preg_match('/^(?:(VI|IV|V|I{1,3})\.)?(\d+)(?:-(\d+))?$/', trim($range), $m)) {
             return (string) $range;
         }
 
         $start = (int) $m[2];
-        $end = isset($m[3]) ? (int) $m[3] : $start;
+        $end = isset($m[3]) && $m[3] !== '' ? (int) $m[3] : $start;
         $numbers = $end - $start >= 8 ? "{$start}-{$end}" : implode(', ', range($start, max($start, $end)));
 
-        return $m[1] === 'II' ? 'II. ' . $numbers : $numbers;
+        return $m[1] !== '' ? $m[1] . '. ' . $numbers : $numbers;
     }
 
     protected function percent($value): string

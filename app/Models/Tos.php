@@ -10,8 +10,15 @@ class Tos extends Model
 
     protected $fillable = [
         'program_assignment_id', 'exam_id', 'grading_period',
-        'total_hours', 'total_items', 'total_points', 'created_by',
+        'total_hours', 'total_items', 'total_points', 'parts', 'created_by',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'parts' => 'array',
+        ];
+    }
 
     public function programAssignment()
     {

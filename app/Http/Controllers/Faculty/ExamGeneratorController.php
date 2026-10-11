@@ -15,6 +15,7 @@ use App\Services\QuestionGeneratorService;
 use App\Services\TosDocumentBuilder;
 use App\Support\AcademicTerm;
 use App\Support\BloomLevels;
+use App\Support\TestParts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -90,11 +91,11 @@ class ExamGeneratorController extends Controller
         // breakdown) is supposed to be built FROM the TOS, not the other way
         // around — so the TOS for this subject + grading period must already
         // exist (Generate TOS in the TOS Generator tab) before an exam can start.
-        $tosExists = Tos::where('program_assignment_id', $assignment->id)
+        $tos = Tos::where('program_assignment_id', $assignment->id)
             ->where('grading_period', $request->grading_period)
-            ->exists();
+            ->first();
 
-        abort_unless($tosExists, 422, 'Generate the Table of Specifications (TOS) for this subject and grading period first — the exam is built from it.');
+        abort_unless((bool) $tos, 422, 'Generate the Table of Specifications (TOS) for this subject and grading period first — the exam is built from it.');
 
         // A faculty member should only ever have one unfinished (draft) exam
         // per subject + grading period at a time — without this, clicking
@@ -118,6 +119,16 @@ class ExamGeneratorController extends Controller
             'duration_minutes'      => $request->duration_minutes,
             'target_items'          => $request->target_items,
         ]);
+
+        // One section per test the instructor chose in the TOS (e.g. "Test I – Multiple
+        // Choice"), so the exam starts with the same structure as its TOS.
+        foreach ($tos->parts ?? [] as $i => $part) {
+            $exam->sections()->create([
+                'title'        => TestParts::sectionTitle($part),
+                'instructions' => TestParts::INSTRUCTIONS[$part['type']] ?? null,
+                'order'        => $i,
+            ]);
+        }
 
         // Link this exam to its originating TOS, if one was generated for the same
         // program assignment + grading period and isn't already linked to another exam.
@@ -269,13 +280,14 @@ class ExamGeneratorController extends Controller
             'program_assignment_id' => 'required|exists:program_assignments,id',
             'grading_period'        => 'required|in:Prelim,Midterm,Final',
             'total_items'           => 'required|integer|min:1',
+            'parts'                 => 'nullable|array|max:' . TestParts::MAX,
         ]);
 
         $assignment = ProgramAssignment::where('id', $request->program_assignment_id)
             ->where('faculty_id', auth()->id())
             ->firstOrFail();
 
-        $breakdown = CourseTopic::targetBreakdown($assignment->course_id, $request->grading_period, (int) $request->total_items);
+        $breakdown = CourseTopic::targetBreakdown($assignment->course_id, $request->grading_period, (int) $request->total_items, $request->input('parts'));
 
         $this->persistTos($assignment, $request->grading_period, $breakdown);
 
@@ -293,6 +305,7 @@ class ExamGeneratorController extends Controller
                 'total_hours'  => $breakdown['total_hours'] ?? 0,
                 'total_items'  => $breakdown['total_items'] ?? 0,
                 'total_points' => $breakdown['total_points'] ?? 0,
+                'parts'        => $breakdown['parts'] ?? null,
                 'created_by'   => auth()->id(),
             ]
         );
@@ -355,6 +368,19 @@ class ExamGeneratorController extends Controller
         $breakdown['total_hours'] = (int) ($breakdown['total_hours'] ?? 0);
         $breakdown['total_items'] = (int) ($breakdown['total_items'] ?? 0);
         $breakdown['total_points'] = (int) ($breakdown['total_points'] ?? array_sum(array_column($breakdown['topics'], 'topic_points')));
+
+        // Re-derive the tests from their type + starting level, and recount their items
+        // from the (possibly edited) cells.
+        $breakdown['parts'] = array_map(function ($part) use ($breakdown) {
+            $part['items'] = 0;
+            foreach ($breakdown['topics'] as $topic) {
+                foreach ($part['levels'] as $level) {
+                    $part['items'] += (int) $topic['levels'][$level]['count'];
+                }
+            }
+
+            return $part;
+        }, TestParts::normalize(is_array($breakdown['parts'] ?? null) ? $breakdown['parts'] : null));
 
         $this->persistTos($assignment, $request->grading_period, $breakdown);
 

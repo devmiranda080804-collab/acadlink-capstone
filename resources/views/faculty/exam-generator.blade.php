@@ -260,6 +260,26 @@
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
         .form-row .form-group { margin-bottom: 0; }
 
+        /* Exam parts (tests) in TOS Configuration */
+        .tos-parts { margin-bottom: 14px; }
+        .tos-parts-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .tos-parts-head label { font-size: 11.5px; font-weight: 600; color: #333; }
+        .tos-part { border: 1px solid #e3e6ee; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; background: #fafbfd; }
+        .tos-part-top { display: flex; align-items: center; gap: 8px; }
+        .tos-part-name { font-size: 12px; font-weight: 700; color: #0f2557; white-space: nowrap; min-width: 46px; }
+        .tos-part select { flex: 1; min-width: 0; height: 30px; padding: 0 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; color: #333; background: #fff; }
+        .tos-part-levels { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; font-size: 11px; color: #666; }
+        .tos-part-levels select { flex: 0 0 auto; width: auto; height: 26px; font-size: 11px; }
+        .tos-part-remove { border: none; background: none; color: #999; cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+        .tos-part-remove:hover { color: #ef4444; background: #fee2e2; }
+        .btn-add-part { border: 1px dashed #9aa6c2; background: #fff; color: #0f2557; font-size: 11.5px; font-weight: 600; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+        .btn-add-part:disabled { opacity: 0.5; cursor: not-allowed; }
+        .tos-parts-hint { font-size: 10.5px; color: #888; margin-top: 2px; line-height: 1.4; }
+        .tos-stale { background: #fff7e6; border: 1px solid #f59e0b; color: #92400e; font-size: 11.5px; padding: 8px 10px; border-radius: 5px; margin-bottom: 10px; }
+        .tos-parts-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .tos-parts-summary span { background: #eef2fb; color: #0f2557; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 12px; }
+        .tos-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
         .btn-generate {
             width: 100%;
             height: 36px;
@@ -784,6 +804,15 @@
                                 </div>
                             </div>
 
+                            <div class="tos-parts">
+                                <div class="tos-parts-head">
+                                    <label>Exam Parts (Tests)</label>
+                                    <button type="button" class="btn-add-part" id="btn-add-part" onclick="addTosPart()">+ Add Test</button>
+                                </div>
+                                <div id="tos-parts-list"></div>
+                                <div class="tos-parts-hint">Each test covers the Bloom's levels from where it starts up to where the next test starts. One test means all items are in a single part.</div>
+                            </div>
+
                             <button class="btn-generate" type="button" onclick="generateTOS()">Generate TOS</button>
                         </div>
 
@@ -981,6 +1010,10 @@
                 <label>Target Items</label>
                 <div class="tos-view-value" id="sev-target-items">—</div>
             </div>
+            <div class="modal-field">
+                <label>Exam Parts</label>
+                <div class="tos-view-value" id="sev-parts">—</div>
+            </div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeStartExamView()">Cancel</button>
                 <button type="button" class="btn-save" onclick="confirmStartExamFromTOS()">Start Exam →</button>
@@ -1177,8 +1210,96 @@
         // TOS GENERATOR
         // ══════════════════════════════
         function onTosSubjectChange() { /* topics are fetched fresh on Generate */ }
+        document.addEventListener('DOMContentLoaded', renderTosParts);
 
         var TOS_BLOOM_LEVELS = ['Remembering', 'Understanding', 'Applying', 'Analyzing', 'Evaluating', 'Creating'];
+        // Exam parts (tests) the instructor chooses — a single Multiple Choice test by
+        // default. Each test covers consecutive Bloom's levels, from where it starts up to
+        // where the next one starts (same rule as App\Support\TestParts on the server).
+        var TOS_ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+        var TOS_DEFAULT_TYPE_FOR = { Remembering: 'identification', Understanding: 'mc-single', Applying: 'problem-solving', Analyzing: 'short-answer', Evaluating: 'short-answer', Creating: 'short-answer' };
+        var tosParts = [{ type: 'mc-single', from: 'Remembering' }];
+        var tosPartsStale = false;
+
+        function normalizeTosParts(parts) {
+            return parts.map(function(p, i) {
+                var start = i === 0 ? 0 : TOS_BLOOM_LEVELS.indexOf(p.from);
+                var end = i + 1 < parts.length ? TOS_BLOOM_LEVELS.indexOf(parts[i + 1].from) : TOS_BLOOM_LEVELS.length;
+                return {
+                    number: i + 1, roman: TOS_ROMAN[i], type: p.type,
+                    label: (QUESTION_TYPES[p.type] || {}).label || p.type,
+                    from: TOS_BLOOM_LEVELS[start], levels: TOS_BLOOM_LEVELS.slice(start, end)
+                };
+            });
+        }
+
+        function levelRangeText(levels) {
+            return levels.length === 1 ? levels[0] : levels[0] + ' to ' + levels[levels.length - 1];
+        }
+
+        function renderTosParts() {
+            var norm = normalizeTosParts(tosParts);
+            var typeOptions = function(selected) {
+                return Object.keys(QUESTION_TYPES).map(function(k) {
+                    return '<option value="' + k + '"' + (k === selected ? ' selected' : '') + '>' + escapeHtml(QUESTION_TYPES[k].label) + '</option>';
+                }).join('');
+            };
+
+            document.getElementById('tos-parts-list').innerHTML = norm.map(function(p, i) {
+                var startHtml;
+                if (i === 0) {
+                    startHtml = 'Starts at <strong>Remembering</strong>';
+                } else {
+                    var prevStart = TOS_BLOOM_LEVELS.indexOf(norm[i - 1].from);
+                    var nextStart = i + 1 < norm.length ? TOS_BLOOM_LEVELS.indexOf(norm[i + 1].from) : TOS_BLOOM_LEVELS.length;
+                    var options = TOS_BLOOM_LEVELS.map(function(l, li) {
+                        if (li <= prevStart || li >= nextStart) return '';
+                        return '<option value="' + l + '"' + (l === p.from ? ' selected' : '') + '>' + l + '</option>';
+                    }).join('');
+                    startHtml = 'Starts at <select aria-label="Test ' + p.roman + ' starting level" onchange="setTosPartFrom(' + i + ', this.value)">' + options + '</select>';
+                }
+                return '<div class="tos-part">' +
+                    '<div class="tos-part-top">' +
+                        '<span class="tos-part-name">Test ' + p.roman + '</span>' +
+                        '<select aria-label="Test ' + p.roman + ' question type" onchange="setTosPartType(' + i + ', this.value)">' + typeOptions(p.type) + '</select>' +
+                        (i > 0 ? '<button type="button" class="tos-part-remove" title="Remove Test ' + p.roman + '" onclick="removeTosPart(' + i + ')">×</button>' : '') +
+                    '</div>' +
+                    '<div class="tos-part-levels">' + startHtml + '<span>· covers ' + levelRangeText(p.levels) + '</span></div>' +
+                '</div>';
+            }).join('');
+
+            var last = norm[norm.length - 1];
+            document.getElementById('btn-add-part').disabled = norm.length >= TOS_ROMAN.length || last.levels.length < 2;
+        }
+
+        // A new test takes over the last level of the previous one; move its start to
+        // give it more levels.
+        function addTosPart() {
+            var norm = normalizeTosParts(tosParts);
+            var last = norm[norm.length - 1];
+            if (norm.length >= TOS_ROMAN.length || last.levels.length < 2) return;
+            var from = last.levels[last.levels.length - 1];
+            tosParts.push({ type: TOS_DEFAULT_TYPE_FOR[from] || 'mc-single', from: from });
+            onTosPartsChanged();
+        }
+        function removeTosPart(i) { tosParts.splice(i, 1); onTosPartsChanged(); }
+        function setTosPartType(i, type) { tosParts[i].type = type; onTosPartsChanged(); }
+        function setTosPartFrom(i, from) { tosParts[i].from = from; onTosPartsChanged(); }
+
+        // A TOS already on screen was numbered for the previous tests — ask for a
+        // regenerate instead of silently renumbering it (and losing any edits).
+        function onTosPartsChanged() {
+            renderTosParts();
+            if (tosTargetCache && tosTargetCache.result && tosTargetCache.result.topics && tosTargetCache.result.topics.length) {
+                tosPartsStale = true;
+                renderTosResult();
+            }
+        }
+
+        function tosPartsPayload() {
+            return tosParts.map(function(p) { return { type: p.type, from: p.from }; });
+        }
+
         var TOS_CELL_STYLE = 'padding:6px 4px;border:1px solid #e0e0e0;text-align:center;vertical-align:top;font-size:10.5px;line-height:1.4;';
 
         async function generateTOS() {
@@ -1198,7 +1319,7 @@
             try {
                 result = await api('/faculty/exam-generator/tos-target', {
                     method: 'POST',
-                    body: { program_assignment_id: assignmentId, grading_period: period, total_items: totalItems }
+                    body: { program_assignment_id: assignmentId, grading_period: period, total_items: totalItems, parts: tosPartsPayload() }
                 });
             } catch (e) {
                 panel.innerHTML =
@@ -1210,6 +1331,7 @@
             tosTargetCache = { assignmentId: assignmentId, period: period, totalItems: totalItems, result: result };
             tosManualNumbering = false;
             tosEditMode = false;
+            tosPartsStale = false;
             document.getElementById('tos-total-hours').textContent = result.total_hours + ' hrs';
 
             if (!result.topics || result.topics.length === 0) {
@@ -1248,11 +1370,14 @@
         }
 
         // Recomputes derived fields (per-topic item total, weight %, grand totals). With
-        // automatic numbering, each cell's count drives sequential I./II. item numbers —
+        // automatic numbering, each cell's count drives sequential item numbers per test —
         // the same rule the backend uses in CourseTopic::targetBreakdown(). With manual
         // numbering, each cell's typed item numbers drive its count instead.
         function recomputeTosBreakdown(topics) {
-            var counterI = 1, counterII = 1;
+            var parts = (tosTargetCache && tosTargetCache.result && tosTargetCache.result.parts) || normalizeTosParts(tosParts);
+            var counters = parts.map(function() { return 1; });
+            var partOf = {};
+            parts.forEach(function(p, pi) { p.levels.forEach(function(l) { partOf[l] = pi; }); });
             var totalHours = 0;
             topics.forEach(function(t) { totalHours += t.hours; });
 
@@ -1268,13 +1393,9 @@
                         if (!cell.range) cell.range = null;
                     } else if (cell.count > 0) {
                         cell.invalid = false;
-                        if (l === 'Creating') {
-                            var start = counterII; counterII += cell.count; var end = counterII - 1;
-                            cell.range = 'II.' + (cell.count === 1 ? start : start + '-' + end);
-                        } else {
-                            var start2 = counterI; counterI += cell.count; var end2 = counterI - 1;
-                            cell.range = 'I.' + (cell.count === 1 ? start2 : start2 + '-' + end2);
-                        }
+                        var pi = partOf[l];
+                        var start = counters[pi]; counters[pi] += cell.count; var end = counters[pi] - 1;
+                        cell.range = (parts.length > 1 ? parts[pi].roman + '.' : '') + (cell.count === 1 ? start : start + '-' + end);
                     } else {
                         cell.invalid = false;
                         cell.range = null;
@@ -1289,7 +1410,13 @@
                 totalItems += topicItems;
             });
 
-            return { total_hours: totalHours, total_items: totalItems, total_points: totalItems, topics: topics };
+            var partsOut = parts.map(function(p) {
+                var items = 0;
+                topics.forEach(function(t) { p.levels.forEach(function(l) { items += t.levels[l].count; }); });
+                return Object.assign({}, p, { items: items });
+            });
+
+            return { total_hours: totalHours, total_items: totalItems, total_points: totalItems, topics: topics, parts: partsOut };
         }
 
         function onTosInputChange(e) {
@@ -1369,6 +1496,10 @@
 
             panel.innerHTML =
                 '<div class="tos-panel-title">Generated Table of Specifications' + (editable ? ' <span style="font-weight:400;font-size:11px;color:#f59e0b;">(editing — click a cell to change it)</span>' : '') + '</div>' +
+                (tosPartsStale ? '<div class="tos-stale">The exam parts changed. Click <strong>Generate TOS</strong> again to apply them before downloading or starting the exam.</div>' : '') +
+                '<div class="tos-parts-summary">' + (result.parts || []).map(function(p) {
+                    return '<span>Test ' + p.roman + ' · ' + escapeHtml(p.label) + ' · ' + p.items + ' item' + (p.items === 1 ? '' : 's') + '</span>';
+                }).join('') + '</div>' +
                 '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11.5px;">' +
                 '<thead><tr style="background:#f5f5f5;">' +
                 '<th style="padding:8px;border:1px solid #e0e0e0;text-align:left;">Topics</th>' +
@@ -1387,15 +1518,15 @@
                 (editable ? '<div style="font-size:11px;color:#666;margin-top:8px;">Type the item numbers in each cell — e.g. <strong>1, 2, 3</strong>, <strong>6, 8</strong>, or <strong>1-15</strong>. The number of items and totals update automatically.</div>' : '') +
                 '<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">' +
                 '<button class="tos-action-btn" type="button" onclick="toggleTosEdit()">' + (editable ? '💾 Done Editing' : '✏ Edit') + '</button>' +
-                '<button class="tos-action-btn" type="button" onclick="downloadTos()">⬇ Download TOS</button>' +
-                '<button class="tos-action-btn" type="button" onclick="startExamFromTOS()">Start Exam from this TOS →</button>' +
+                '<button class="tos-action-btn" type="button" onclick="downloadTos()"' + (tosPartsStale ? ' disabled' : '') + '>⬇ Download TOS</button>' +
+                '<button class="tos-action-btn" type="button" onclick="startExamFromTOS()"' + (tosPartsStale ? ' disabled' : '') + '>Start Exam from this TOS →</button>' +
                 '</div>';
 
             panel.onchange = onTosInputChange;
         }
 
         async function downloadTos() {
-            if (!tosTargetCache) return;
+            if (!tosTargetCache || tosPartsStale) return;
             try {
                 var res = await fetch('/faculty/exam-generator/tos-download', {
                     method: 'POST',
@@ -1433,7 +1564,7 @@
         var startExamViewData = null;
 
         function startExamFromTOS() {
-            if (!tosTargetCache) return;
+            if (!tosTargetCache || tosPartsStale) return;
             var a = ASSIGNMENTS.find(function(x) { return String(x.id) === String(tosTargetCache.assignmentId); });
             var duration = document.getElementById('tos-duration').value || null;
             var targetItems = tosTargetCache.result.total_items;
@@ -1452,6 +1583,9 @@
             document.getElementById('sev-duration').textContent = duration ? (duration + ' mins') : '— (not set in TOS Configuration)';
             document.getElementById('sev-title').textContent = title;
             document.getElementById('sev-target-items').textContent = targetItems;
+            document.getElementById('sev-parts').textContent = (tosTargetCache.result.parts || []).map(function(p) {
+                return 'Test ' + p.roman + ' – ' + p.label + ' (' + p.items + ')';
+            }).join(', ') || '—';
 
             openStartExamView();
         }
