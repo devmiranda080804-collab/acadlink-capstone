@@ -288,7 +288,8 @@
                                 <div class="submitter-row">
                                     <span class="submitter-name">{{ $sub->faculty->name }}</span>
                                     <div style="display:flex; align-items:center; gap:8px;">
-                                        <a class="submitter-link" href="{{ Storage::url($sub->file_path) }}" target="_blank">View File</a>
+                                        <a class="submitter-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}" target="_blank">View</a>
+                                        <a class="submitter-link" href="{{ \App\Support\FileLinks::download('submission', $sub->id) }}">Download</a>
                                         <span class="submitter-status status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
                                     </div>
                                 </div>

@@ -7,6 +7,7 @@ use App\Models\TemplateDocument;
 use App\Models\CourseMaterial;
 use App\Models\RepositoryDocument;
 use App\Support\AcademicTerm;
+use App\Support\FileLinks;
 use App\Support\Programs;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -54,7 +55,8 @@ class DocumentRepositoryController extends Controller
                         'program'   => $p->program,
                         'uploader'  => $t->creator->name ?? 'Unknown',
                         'file_type' => $t->file_type,
-                        'file_url'  => Storage::url($t->file_path),
+                        'view_url'  => FileLinks::view('template', $t->id),
+                        'download_url' => FileLinks::download('template', $t->id),
                         'version'   => 'v' . $t->version,
                         'date'      => $p->distributed_at,
                         'can_delete'=> false,
@@ -72,7 +74,8 @@ class DocumentRepositoryController extends Controller
                 'program'   => $m->course->program ?? '—',
                 'uploader'  => $m->uploader->name ?? 'Unknown',
                 'file_type' => $m->file_type,
-                'file_url'  => Storage::url($m->file_path),
+                'view_url'  => FileLinks::view('material', $m->id),
+                'download_url' => FileLinks::download('material', $m->id),
                 'version'   => $m->version,
                 'date'      => $m->created_at,
                 'can_delete'=> false,
@@ -89,7 +92,8 @@ class DocumentRepositoryController extends Controller
                 'program'   => $d->program ?? 'General',
                 'uploader'  => $d->uploader->name ?? 'Unknown',
                 'file_type' => $d->file_type,
-                'file_url'  => Storage::url($d->file_path),
+                'view_url'  => FileLinks::view('repository', $d->id),
+                'download_url' => FileLinks::download('repository', $d->id),
                 'version'   => 'v1.0',
                 'date'      => $d->created_at,
                 'can_delete'=> true,

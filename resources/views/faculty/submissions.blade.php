@@ -258,7 +258,8 @@
                         @if($sub)
                             <div class="my-status-row">
                                 <div class="my-status-info">
-                                    You submitted: <a class="file-link" href="{{ Storage::url($sub->file_path) }}" target="_blank">{{ $sub->file_name }}</a>
+                                    You submitted: <a class="file-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}" target="_blank">{{ $sub->file_name }}</a>
+                                    (<a class="file-link" href="{{ \App\Support\FileLinks::download('submission', $sub->id) }}">Download</a>)
                                     <span class="my-status-badge status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
                                 </div>
                             </div>

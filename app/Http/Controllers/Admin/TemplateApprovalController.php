@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\TemplateDocument;
+use App\Support\FileLinks;
 use App\Support\Programs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -33,7 +34,8 @@ class TemplateApprovalController extends Controller
             'version'     => $v->version,
             'created_by'  => $v->creator->name ?? 'Unknown',
             'created_at'  => $v->created_at->format('Y-m-d h:i A'),
-            'file_url'    => Storage::url($v->file_path),
+            'view_url'     => FileLinks::view('template', $v->id),
+            'download_url' => FileLinks::download('template', $v->id),
             'is_current'  => $v->superseded_at === null,
             'status'      => $v->status,
         ]));

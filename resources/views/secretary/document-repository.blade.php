@@ -314,9 +314,13 @@
                                                 <td>{{ $doc['date']->format('M d, Y') }}</td>
                                                 <td>
                                                     <div class="action-buttons">
-                                                        <a class="btn-view" href="{{ $doc['file_url'] }}" target="_blank">
+                                                        <a class="btn-view" href="{{ $doc['view_url'] }}" target="_blank">
                                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                                             View
+                                                        </a>
+                                                        <a class="btn-view" href="{{ $doc['download_url'] }}">
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                                            Download
                                                         </a>
                                                         @if($doc['can_delete'])
                                                             <form method="POST" action="{{ url('/secretary/document-repository/' . $doc['id']) }}" data-confirm="Remove this document from the repository? This cannot be undone." data-confirm-title="Remove Document" data-confirm-button="Remove" style="display:inline;">

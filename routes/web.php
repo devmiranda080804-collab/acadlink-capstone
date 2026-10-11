@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AccountManagementController;
 use App\Http\Controllers\ProgramHead\AccountManagementController as PHAccountManagementController;
 use App\Http\Controllers\Secretary\AccountManagementController as SecAccountManagementController;
 use App\Http\Controllers\ChangePasswordController;
+use App\Http\Controllers\FileController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\Admin\RolesPermissionsController;
@@ -62,6 +63,13 @@ Route::post('/reset-password', [ResetPasswordController::class, 'update'])->name
 Route::get('/change-password', [ChangePasswordController::class, 'show']);
 Route::post('/change-password', [ChangePasswordController::class, 'update']);
 
+// Shared file viewer for every role; access is checked per file in FileController.
+Route::middleware('auth')->prefix('files')->whereIn('source', ['template', 'material', 'topic', 'shared', 'repository', 'submission', 'module'])->group(function () {
+    Route::get('/{source}/{id}', [FileController::class, 'show'])->whereNumber('id');
+    Route::get('/{source}/{id}/raw', [FileController::class, 'raw'])->whereNumber('id');
+    Route::get('/{source}/{id}/download', [FileController::class, 'download'])->whereNumber('id');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Faculty
@@ -88,7 +96,6 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::get('/exam-generator/{exam}/answer-key', [ExamGeneratorController::class, 'answerKey']);
     Route::delete('/exam-generator/{exam}', [ExamGeneratorController::class, 'destroy']);
     Route::get('/shared-library', [SharedLibraryController::class, 'index']);
-    Route::get('/shared-library/file/{source}/{id}', [SharedLibraryController::class, 'file']);
     Route::post('/shared-library', [SharedLibraryController::class, 'store']);
     Route::delete('/shared-library/{resource}', [SharedLibraryController::class, 'destroy']);
     Route::get('/course-coordination', [CourseCoordinationController::class, 'index']);

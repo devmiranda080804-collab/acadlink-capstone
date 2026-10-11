@@ -115,6 +115,7 @@
         .btn-return { display: inline-flex; align-items: center; justify-content: center; background: #fff; color: #b91c1c; border: 1px solid #fca5a5; font-size: 11.5px; font-weight: 600; padding: 8px 10px; border-radius: 5px; cursor: pointer; }
         .btn-return:hover { background: #fef2f2; }
         .btn-icon-del:hover { color: #ef4444; border-color: #fca5a5; }
+        a.btn-icon-sm { text-decoration: none; }
         .alert-error { background: #fee2e2; color: #b91c1c; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #fca5a5; border-radius: 8px; font-size: 13px; }
         .modal-field textarea { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12.5px; outline: none; font-family: Arial, sans-serif; resize: vertical; min-height: 90px; }
         .modal-field textarea:focus { border-color: #0f2557; }
@@ -515,7 +516,10 @@
                             '<div class="history-row-label"><strong>v' + v.version + '</strong>' + (v.is_current ? '<span class="history-current-tag">Current</span>' : '') + '</div>' +
                             '<div class="history-row-meta">' + v.created_by + ' • ' + v.created_at + ' • ' + ({ pending: 'Waiting for approval', approved: 'Approved', returned: 'Returned' }[v.status] || v.status) + '</div>' +
                         '</div>' +
-                        '<a class="btn-view" style="flex:none;" href="' + v.file_url + '" target="_blank">View</a>' +
+                        '<div style="display:flex;gap:6px;">' +
+                            '<a class="btn-view" style="flex:none;" href="' + v.view_url + '" target="_blank">View</a>' +
+                            '<a class="btn-view" style="flex:none;" href="' + v.download_url + '">Download</a>' +
+                        '</div>' +
                     '</div>';
                 }).join('');
             } catch (e) {

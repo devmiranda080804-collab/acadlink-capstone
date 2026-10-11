@@ -277,7 +277,8 @@
                                     </div>
                                 </div>
                                 <div class="file-actions">
-                                    <a class="btn-view" href="{{ Storage::url($material->file_path) }}" target="_blank">View</a>
+                                    <a class="btn-view" href="{{ \App\Support\FileLinks::view('material', $material->id) }}" target="_blank">View</a>
+                                    <a class="btn-view" href="{{ \App\Support\FileLinks::download('material', $material->id) }}">Download</a>
                                     <button type="button" class="btn-del" title="Delete" onclick="openDeleteMaterialModal({{ $material->id }}, @js($material->title))">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
                                     </button>

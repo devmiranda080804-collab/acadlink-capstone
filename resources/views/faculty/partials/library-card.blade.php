@@ -24,9 +24,13 @@
         @endif
     </div>
     <div class="lib-actions">
-        <a class="btn-view" href="{{ $item['file_url'] }}" target="_blank">
+        <a class="btn-view" href="{{ $item['view_url'] }}" target="_blank">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            View / Download
+            View
+        </a>
+        <a class="btn-view" href="{{ $item['download_url'] }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download
         </a>
         @if($item['can_delete'])
             <form method="POST" action="{{ url('/faculty/shared-library/' . $item['id']) }}" data-confirm="Remove this resource from the Shared Library? This cannot be undone." data-confirm-title="Remove Resource" data-confirm-button="Remove" style="display:inline;">

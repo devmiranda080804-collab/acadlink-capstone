@@ -106,6 +106,8 @@
         .btn-withdraw { display: inline-flex; align-items: center; justify-content: center; background: #fff; color: #999; border: 1px solid #d0d0d0; padding: 8px 10px; border-radius: 5px; cursor: pointer; flex-shrink: 0; }
         .btn-withdraw:hover { color: #ef4444; border-color: #fca5a5; background: #fef2f2; }
         .btn-withdraw svg { width: 12px; height: 12px; }
+        .btn-withdraw.btn-download-icon { color: #555; text-decoration: none; }
+        .btn-withdraw.btn-download-icon:hover { color: #0f2557; border-color: #0f2557; background: #f0f4ff; }
         .alert-error { background: #fee2e2; color: #b91c1c; padding: 12px 16px; margin-bottom: 16px; border: 1px solid #fca5a5; border-radius: 8px; font-size: 13px; }
         .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
         .btn-create { display: flex; align-items: center; gap: 6px; background: #0f2557; color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; white-space: nowrap; }
