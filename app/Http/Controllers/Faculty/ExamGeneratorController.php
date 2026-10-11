@@ -358,15 +358,13 @@ class ExamGeneratorController extends Controller
 
         $this->persistTos($assignment, $request->grading_period, $breakdown);
 
-        $phpWord = (new TosDocumentBuilder())->build($assignment->course, $request->grading_period, $breakdown, auth()->user());
+        $path = (new TosDocumentBuilder())->build($assignment->course, $request->grading_period, $breakdown, auth()->user());
 
         $filename = 'TOS-' . $assignment->course->code . '-' . $request->grading_period . '.docx';
 
-        return response()->streamDownload(function () use ($phpWord) {
-            IOFactory::createWriter($phpWord, 'Word2007')->save('php://output');
-        }, $filename, [
+        return response()->download($path, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ]);
+        ])->deleteFileAfterSend();
     }
 
     public function finalize(Exam $exam)

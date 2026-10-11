@@ -7,129 +7,116 @@ use App\Models\User;
 use App\Support\AcademicTerm;
 use App\Support\BloomLevels;
 use App\Support\Signatories;
-use PhpOffice\PhpWord\PhpWord;
-use PhpOffice\PhpWord\SimpleType\Jc;
-use PhpOffice\PhpWord\Style\Font;
+use PhpOffice\PhpWord\TemplateProcessor;
 
-// Builds a downloadable, editable .docx replicating the official Table of Specification
-// format (sample provided by the client) — faculty download this to fill in the schedule,
-// sign, or adjust wording; nothing here round-trips back into the app.
+// Fills the official CBMA Table of Specification template (resources/templates/tos-template.docx,
+// made from the college's own sample, with its UCU/CBMA header and footer) with the course,
+// the computed breakdown and the signatories. Returns the path of a temporary .docx file.
 class TosDocumentBuilder
 {
-    public function build(Course $course, string $gradingPeriod, array $breakdown, User $faculty): PhpWord
+    public const TEMPLATE = 'templates/tos-template.docx';
+
+    protected const LEVEL_KEYS = [
+        'Remembering'   => 'rem',
+        'Understanding' => 'und',
+        'Applying'      => 'app',
+        'Analyzing'     => 'ana',
+        'Evaluating'    => 'eva',
+        'Creating'      => 'cre',
+    ];
+
+    protected const BLANK = '______________________';
+
+    public function build(Course $course, string $gradingPeriod, array $breakdown, User $faculty): string
     {
-        $phpWord = new PhpWord();
-        $phpWord->setDefaultFontName('Arial');
-        $phpWord->setDefaultFontSize(10);
+        $doc = new TemplateProcessor(resource_path(self::TEMPLATE));
 
-        $section = $phpWord->addSection(['orientation' => 'landscape', 'marginLeft' => 700, 'marginRight' => 700]);
+        $programHead = Signatories::programHead($course->program);
+        $dean = Signatories::dean();
 
-        $center = ['alignment' => Jc::CENTER];
-        $section->addText('URDANETA CITY UNIVERSITY', ['bold' => true, 'size' => 13], $center);
-        $section->addText('College of Business Management and Accountancy', ['size' => 10], $center);
-        $section->addTextBreak(1);
-        $section->addText('TABLE OF SPECIFICATION', ['bold' => true, 'size' => 14], $center);
-        $section->addText(AcademicTerm::currentSemester() . ' AY ' . AcademicTerm::currentSchoolYear(), ['size' => 10], $center);
-        $section->addText(strtoupper($gradingPeriod), ['bold' => true, 'size' => 10], $center);
-        $section->addTextBreak(1);
-
-        $section->addText(
-            'Subject: ' . $course->code . '    Course Title: ' . $course->title . '    Day/s and Time: ___________________',
-            ['size' => 10]
-        );
-        $section->addTextBreak(1);
-
-        $this->addTable($section, $breakdown);
-
-        $section->addTextBreak(1);
-        $section->addText('Date Submitted: ___________________', ['size' => 10]);
-        $section->addTextBreak(1);
-
-        $this->addSignOffBlock($section, $faculty, Signatories::programHead($course->program), Signatories::dean());
-
-        return $phpWord;
-    }
-
-    protected function addTable(\PhpOffice\PhpWord\Element\Section $section, array $breakdown): void
-    {
-        $table = $section->addTable([
-            'borderSize' => 6,
-            'borderColor' => '999999',
-            'cellMargin' => 60,
+        $doc->setValues([
+            'term'               => mb_strtoupper(AcademicTerm::currentSemester()) . ', A.Y. ' . AcademicTerm::currentSchoolYear(),
+            'subject'            => $course->title,
+            'course_code'        => $course->code,
+            'program'            => $course->program ?: self::BLANK,
+            'schedule'           => self::BLANK,
+            'prelim_mark'        => $this->periodMark($gradingPeriod, 'Prelim'),
+            'midterm_mark'       => $this->periodMark($gradingPeriod, 'Midterm'),
+            'finals_mark'        => $this->periodMark($gradingPeriod, 'Final'),
+            'instructor'         => mb_strtoupper($faculty->name),
+            'date_submitted'     => now()->format('F j, Y'),
+            'program_head'       => $programHead['name'] ? mb_strtoupper($programHead['name']) : self::BLANK,
+            'program_head_title' => $programHead['title'],
+            'dean'               => $dean['name'] ? mb_strtoupper($dean['name']) : self::BLANK,
+            'dean_title'         => $dean['title'],
         ]);
 
-        $headerStyle = ['bgColor' => 'F0F0F0'];
-        $headerFont = ['bold' => true, 'size' => 8];
-        $bodyFont = ['size' => 8];
-        $center = ['alignment' => Jc::CENTER];
+        $this->fillTable($doc, $breakdown);
 
-        $widths = array_merge([2600], array_fill(0, 6, 1000), [700, 500, 900]);
-        $headers = array_merge(['Topics'], BloomLevels::LEVELS, ['No. of Hours', '%', 'No. of Items']);
+        $path = tempnam(sys_get_temp_dir(), 'tos');
+        $doc->saveAs($path);
 
-        $table->addRow();
-        foreach ($headers as $i => $h) {
-            $table->addCell($widths[$i], $headerStyle)->addText($h, $headerFont, $center);
-        }
-
-        foreach ($breakdown['topics'] as $topic) {
-            $table->addRow();
-            $table->addCell($widths[0])->addText($topic['topic'], $bodyFont);
-
-            foreach (BloomLevels::LEVELS as $i => $level) {
-                $cell = $table->addCell($widths[$i + 1]);
-                $data = $topic['levels'][$level];
-                if ($data['count'] > 0) {
-                    $cell->addText($data['range'], $bodyFont, $center);
-                    $cell->addText('(' . $data['count'] . ')', $bodyFont, $center);
-                } else {
-                    $cell->addText('', $bodyFont, $center);
-                }
-            }
-
-            $table->addCell($widths[7])->addText((string) $topic['hours'], $bodyFont, $center);
-            $table->addCell($widths[8])->addText($topic['weight_percent'] . '%', $bodyFont, $center);
-            $table->addCell($widths[9])->addText((string) $topic['target_items'], array_merge($bodyFont, ['bold' => true]), $center);
-        }
-
-        // TOTAL row
-        $totalsByLevel = array_fill_keys(BloomLevels::LEVELS, 0);
-        foreach ($breakdown['topics'] as $topic) {
-            foreach (BloomLevels::LEVELS as $level) {
-                $totalsByLevel[$level] += $topic['levels'][$level]['count'];
-            }
-        }
-
-        $table->addRow();
-        $table->addCell($widths[0], $headerStyle)->addText('TOTAL', $headerFont);
-        foreach (BloomLevels::LEVELS as $i => $level) {
-            $table->addCell($widths[$i + 1], $headerStyle)->addText((string) $totalsByLevel[$level], $headerFont, $center);
-        }
-        $table->addCell($widths[7], $headerStyle)->addText((string) $breakdown['total_hours'], $headerFont, $center);
-        $table->addCell($widths[8], $headerStyle)->addText('100%', $headerFont, $center);
-        $table->addCell($widths[9], $headerStyle)->addText((string) $breakdown['total_items'], $headerFont, $center);
+        return $path;
     }
 
-    // Names come from the accounts/settings; an unknown signatory gets a blank line to sign on.
-    protected function addSignOffBlock(\PhpOffice\PhpWord\Element\Section $section, User $faculty, array $programHead, array $dean): void
+    protected function fillTable(TemplateProcessor $doc, array $breakdown): void
     {
-        $nameStyle = ['bold' => true, 'underline' => Font::UNDERLINE_SINGLE, 'size' => 10];
-        $blank = '___________________________';
-        $nameOrBlank = fn(?string $name) => $name ? mb_strtoupper($name) : $blank;
+        $topics = $breakdown['topics'];
+        $totals = array_fill_keys(BloomLevels::LEVELS, 0);
 
-        $table = $section->addTable();
-        $table->addRow();
-        $table->addCell(4500)->addText('Prepared by:', ['size' => 10]);
-        $table->addCell(4500)->addText('Checked and Reviewed:', ['size' => 10]);
-        $table->addCell(5000)->addText('Approved:', ['size' => 10]);
+        $doc->cloneRow('t_topic', max(count($topics), 1));
 
-        $table->addRow();
-        $table->addCell(4500)->addText(mb_strtoupper($faculty->name), $nameStyle);
-        $table->addCell(4500)->addText($nameOrBlank($programHead['name']), $programHead['name'] ? $nameStyle : ['size' => 10]);
-        $table->addCell(5000)->addText($nameOrBlank($dean['name']), $dean['name'] ? $nameStyle : ['size' => 10]);
+        foreach (array_values($topics) as $i => $topic) {
+            $n = $i + 1;
+            $doc->setValue("t_topic#{$n}", $topic['topic']);
 
-        $table->addRow();
-        $table->addCell(4500)->addText('Faculty In-Charge', ['italic' => true, 'size' => 9]);
-        $table->addCell(4500)->addText($programHead['title'], ['italic' => true, 'size' => 9]);
-        $table->addCell(5000)->addText($dean['title'], ['italic' => true, 'size' => 9]);
+            foreach (self::LEVEL_KEYS as $level => $key) {
+                $data = $topic['levels'][$level];
+                $totals[$level] += (int) $data['count'];
+                $doc->setValue("t_{$key}#{$n}", $data['count'] > 0 ? $this->itemNumbers($data['range'], $level) : '');
+            }
+
+            $doc->setValue("t_hours#{$n}", (string) $topic['hours']);
+            $doc->setValue("t_pct#{$n}", $this->percent($topic['weight_percent']));
+            $doc->setValue("t_items#{$n}", (string) $topic['target_items']);
+        }
+
+        if (empty($topics)) {
+            foreach (['t_topic', 't_rem', 't_und', 't_app', 't_ana', 't_eva', 't_cre', 't_hours', 't_pct', 't_items'] as $name) {
+                $doc->setValue("{$name}#1", '');
+            }
+        }
+
+        foreach (self::LEVEL_KEYS as $level => $key) {
+            $doc->setValue("tot_{$key}", (string) $totals[$level]);
+        }
+        $doc->setValue('tot_hours', (string) $breakdown['total_hours']);
+        $doc->setValue('tot_items', (string) $breakdown['total_items']);
+    }
+
+    // "I.1-3" -> "1, 2, 3" like the college's sample; Creating items belong to Test II,
+    // so they keep a "II." prefix. Long runs stay as a range, and anything the faculty
+    // typed by hand in Edit mode is printed as-is.
+    protected function itemNumbers(?string $range, string $level): string
+    {
+        if (!$range || !preg_match('/^(I{1,2})\.(\d+)(?:-(\d+))?$/', trim($range), $m)) {
+            return (string) $range;
+        }
+
+        $start = (int) $m[2];
+        $end = isset($m[3]) ? (int) $m[3] : $start;
+        $numbers = $end - $start >= 8 ? "{$start}-{$end}" : implode(', ', range($start, max($start, $end)));
+
+        return $m[1] === 'II' ? 'II. ' . $numbers : $numbers;
+    }
+
+    protected function percent($value): string
+    {
+        return rtrim(rtrim(number_format((float) $value, 1, '.', ''), '0'), '.') . '%';
+    }
+
+    protected function periodMark(string $selected, string $period): string
+    {
+        return $selected === $period ? '__✓__' : '_____';
     }
 }
