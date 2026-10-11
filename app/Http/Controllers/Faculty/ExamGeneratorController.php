@@ -287,7 +287,16 @@ class ExamGeneratorController extends Controller
             ->where('faculty_id', auth()->id())
             ->firstOrFail();
 
-        $breakdown = CourseTopic::targetBreakdown($assignment->course_id, $request->grading_period, (int) $request->total_items, $request->input('parts'));
+        // The Exam Builder asks without parts (it only needs the per-topic targets) — keep
+        // the tests already saved for this TOS instead of resetting them to the default.
+        $parts = $request->input('parts') ?? Tos::where('program_assignment_id', $assignment->id)
+            ->where('grading_period', $request->grading_period)
+            ->value('parts');
+        if (is_string($parts)) {
+            $parts = json_decode($parts, true);
+        }
+
+        $breakdown = CourseTopic::targetBreakdown($assignment->course_id, $request->grading_period, (int) $request->total_items, $parts);
 
         $this->persistTos($assignment, $request->grading_period, $breakdown);
 
