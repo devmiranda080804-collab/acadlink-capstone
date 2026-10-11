@@ -171,6 +171,17 @@ class ExamGeneratorController extends Controller
             'sections.*.questions.*.children'      => 'array',
         ]);
 
+        // No topic may get more items than its TOS sets (a draft can still be short).
+        $counts = [];
+        $untagged = 0;
+        foreach ($request->input('sections', []) as $sectionData) {
+            Exam::tallyTopics($sectionData['questions'] ?? [], $counts, $untagged);
+        }
+        $issues = $exam->tosCountIssues($counts, $untagged, false);
+        if (!empty($issues)) {
+            return response()->json(['message' => "The exam doesn't match its TOS:\n" . implode("\n", $issues)], 422);
+        }
+
         DB::transaction(function () use ($request, $exam) {
             $exam->update([
                 'title'            => $request->title,
@@ -407,7 +418,7 @@ class ExamGeneratorController extends Controller
         abort_unless($exam->faculty_id === auth()->id(), 403);
         abort_if($exam->isFinalized(), 422, 'This exam is already finalized.');
 
-        $exam->load('sections.questions');
+        $exam->load('sections.questions.children', 'programAssignment');
         $reasons = $exam->incompletenessReasons();
         if (!empty($reasons)) {
             abort(422, "This exam isn't finished yet:\n" . implode("\n", $reasons));
@@ -527,6 +538,21 @@ class ExamGeneratorController extends Controller
         $existingCount = (int) ($request->existing_count ?? 0);
         $count = (int) $request->count;
 
+        // The AI only fills what the TOS still needs for this topic.
+        if ($topicRow) {
+            $remaining = max(0, (int) $topicRow['target_items'] - $existingCount);
+            if ($remaining === 0) {
+                return response()->json([
+                    'message' => "\"{$topic->topic}\" already has all {$topicRow['target_items']} questions set in the TOS.",
+                ], 422);
+            }
+            if ($count > $remaining) {
+                return response()->json([
+                    'message' => "\"{$topic->topic}\" needs only {$remaining} more " . ($remaining === 1 ? 'question' : 'questions') . " to reach the {$topicRow['target_items']} set in the TOS. Generate {$remaining} or fewer.",
+                ], 422);
+            }
+        }
+
         // Resolve each new question's Bloom's Level from its position within the topic,
         // continuing after whatever's already been added for it.
         $levels = [];
@@ -599,6 +625,29 @@ class ExamGeneratorController extends Controller
         // The target section must also belong to one of this faculty's own exams
         $targetSection = ExamSection::findOrFail($request->exam_section_id);
         abort_unless($targetSection->exam->faculty_id === auth()->id(), 403);
+
+        // Adding this item must not push any topic past its TOS count.
+        $exam = $targetSection->exam->load('sections.questions.children', 'programAssignment');
+        $counts = [];
+        $untagged = 0;
+        foreach ($exam->sections as $section) {
+            Exam::tallyTopics($section->questions, $counts, $untagged);
+        }
+        $adding = [];
+        $none = 0;
+        Exam::tallyTopics([$question->load('children')], $adding, $none);
+        $targets = $exam->topicTargets();
+        foreach ($targets ? $adding : [] as $topic => $n) {
+            if (!array_key_exists($topic, $targets)) {
+                return response()->json(['message' => "This question can't be added: \"{$topic}\" is not one of the topics in this exam's TOS."], 422);
+            }
+            if (($counts[$topic] ?? 0) + $n > $targets[$topic]) {
+                $left = max(0, $targets[$topic] - ($counts[$topic] ?? 0));
+                return response()->json(['message' => $left === 0
+                    ? "This question can't be added: \"{$topic}\" already has all {$targets[$topic]} questions set in the TOS."
+                    : "This question can't be added: it has {$n} items for \"{$topic}\", but the TOS has room for only {$left} more."], 422);
+            }
+        }
 
         $clone = $this->cloneQuestion($question, $targetSection->id, null);
 

@@ -1031,6 +1031,7 @@
                     <option value="" disabled selected>Select topic</option>
                 </select>
             </div>
+            <div id="ai-gen-remaining" style="display:none;font-size:11.5px;padding:8px 10px;border-radius:6px;margin-bottom:12px;"></div>
             <div id="ai-gen-no-content-warning" style="display:none;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;font-size:11.5px;padding:8px 10px;border-radius:6px;margin-bottom:12px;">
                 ⚠️ This topic has no Teaching Notes or uploaded Module yet — the AI has nothing to base questions on. Add one first under Course Coordination → Topics & Hours.
             </div>
@@ -1063,7 +1064,7 @@
     <div class="modal-overlay" id="save-result-overlay">
         <div class="modal" style="width:360px;">
             <div class="modal-title" id="save-result-title">Exam saved</div>
-            <div id="save-result-message" style="font-size:12.5px;color:#444;margin-bottom:18px;"></div>
+            <div id="save-result-message" style="font-size:12.5px;color:#444;margin-bottom:18px;white-space:pre-line;"></div>
             <div class="modal-actions">
                 <button type="button" class="btn-save" onclick="closeSaveResult()">OK</button>
             </div>
@@ -1080,7 +1081,7 @@
             <div class="modal-error" id="finalize-error" style="white-space:pre-line;"></div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeFinalizeConfirm()">Cancel</button>
-                <button type="button" class="btn-save" onclick="confirmFinalize()">Finalize</button>
+                <button type="button" class="btn-save" id="finalize-confirm-btn" onclick="confirmFinalize()">Finalize</button>
             </div>
         </div>
     </div>
@@ -1870,6 +1871,7 @@
             if (!currentExam) return;
             renderSectionsBar();
             renderSectionsContent(opts);
+            renderTosProgress();
         }
 
         function renderSectionsBar() {
@@ -2056,9 +2058,19 @@
         function topicOptionsHtml(selected) {
             var byAssignment = (currentExam && TOPICS_BY_ASSIGNMENT[currentExam.program_assignment_id]) || {};
             var topics = byAssignment[currentExam.grading_period] || [];
+            var targets = topicTargetMap();
+            var counts = targets ? liveTopicCounts().counts : {};
             var html = '<option value="">— No topic —</option>';
             topics.forEach(function(t) {
-                html += '<option value="' + escapeAttr(t.topic) + '" ' + (selected === t.topic ? 'selected' : '') + '>' + escapeHtml(t.topic) + ' (' + t.hours + ' hrs)</option>';
+                var isSelected = selected === t.topic;
+                var label = escapeHtml(t.topic) + ' (' + t.hours + ' hrs)';
+                var full = false;
+                if (targets && targets.hasOwnProperty(t.topic)) {
+                    var have = counts[t.topic] || 0;
+                    full = have >= targets[t.topic];
+                    label += ' — ' + have + '/' + targets[t.topic] + (full ? ' full' : '');
+                }
+                html += '<option value="' + escapeAttr(t.topic) + '"' + (isSelected ? ' selected' : '') + (full && !isSelected ? ' disabled' : '') + '>' + label + '</option>';
             });
             return html;
         }
@@ -2201,7 +2213,17 @@
 
         // ── field mutators (all mutate currentExam in place) ──
         function setQuestionText(secId, qi, ci, value) { var q = findQuestion(secId, qi, ci); if (q) q.question_text = value; }
-        function setQuestionTopic(secId, qi, ci, value) { var q = findQuestion(secId, qi, ci); if (q) { q.topic = value || null; renderEB(); } }
+        function setQuestionTopic(secId, qi, ci, value) {
+            var q = findQuestion(secId, qi, ci);
+            if (!q) return;
+            if (value && value !== q.topic && topicRemaining(value) === 0) {
+                showToast('"' + value + '" already has all ' + topicTargetMap()[value] + ' questions set in the TOS.', 'error');
+                renderEB();
+                return;
+            }
+            q.topic = value || null;
+            renderEB();
+        }
         // Manually setting a question's Bloom's Level pins it — it's saved as-is (see
         // serializeQuestion()) and won't be silently recomputed on later renders/saves,
         // though it still shifts where the question sorts among its topic's others.
@@ -2269,8 +2291,30 @@
             var opt = select.options[select.selectedIndex];
             var hasContent = opt ? opt.dataset.hasContent === '1' : true;
             document.getElementById('ai-gen-no-content-warning').style.display = hasContent ? 'none' : 'block';
-            document.getElementById('ai-gen-submit').disabled = !hasContent;
+
+            // Cap the item count at what this topic still needs in the TOS.
+            var box = document.getElementById('ai-gen-remaining');
+            var countInput = document.getElementById('ai-gen-count');
+            var topicName = opt ? (TOPICS_BY_ASSIGNMENT[currentExam.program_assignment_id] || {})[currentExam.grading_period]
+                .filter(function(t) { return String(t.id) === String(opt.value); }).map(function(t) { return t.topic; })[0] : null;
+            var remaining = topicName ? topicRemaining(topicName) : null;
+            countInput.max = 10;
+            if (remaining === null) {
+                box.style.display = 'none';
+            } else if (remaining === 0) {
+                box.style.display = 'block';
+                box.style.background = '#fef2f2'; box.style.border = '1px solid #fca5a5'; box.style.color = '#991b1b';
+                box.textContent = 'This topic already has all ' + topicTargetMap()[topicName] + ' questions set in the TOS.';
+            } else {
+                box.style.display = 'block';
+                box.style.background = '#eff6ff'; box.style.border = '1px solid #bfdbfe'; box.style.color = '#1e40af';
+                box.textContent = 'The TOS needs ' + remaining + ' more ' + (remaining === 1 ? 'question' : 'questions') + ' for this topic (' + countExistingForTopic(topicName) + ' of ' + topicMapTarget(topicName) + ' added).';
+                countInput.max = Math.min(10, remaining);
+                countInput.value = Math.min(parseInt(countInput.value, 10) || remaining, remaining, 10);
+            }
+            document.getElementById('ai-gen-submit').disabled = !hasContent || remaining === 0;
         }
+        function topicMapTarget(topicName) { var t = topicTargetMap(); return t ? t[topicName] : null; }
 
         function openAiGenModal(secId) {
             if (!currentExam) return;
@@ -2278,6 +2322,8 @@
             document.getElementById('ai-gen-topic').innerHTML = '<option value="" disabled selected>Select topic</option>' + aiGenTopicOptionsHtml();
             document.getElementById('ai-gen-error').style.display = 'none';
             document.getElementById('ai-gen-no-content-warning').style.display = 'none';
+            document.getElementById('ai-gen-remaining').style.display = 'none';
+            document.getElementById('ai-gen-count').max = 10;
             document.getElementById('ai-gen-submit').disabled = false;
             document.getElementById('ai-gen-overlay').classList.add('open');
         }
@@ -2288,13 +2334,66 @@
         // from that position so the TOS/Bloom's-level split (server-side) picks up where
         // the existing questions left off instead of always starting back at Remembering.
         function countExistingForTopic(topicName) {
-            var count = 0;
+            return liveTopicCounts().counts[topicName] || 0;
+        }
+
+        // ── TOS item counts ──
+        // One set of rules, mirrored from Exam::tosCountIssues() on the server: a topic may
+        // never get more items than the TOS sets for it (adding, AI generating, Item Bank,
+        // saving), and the exam can't be finalized until every topic has exactly its count
+        // and every question has a topic.
+
+        // Items the TOS sets per topic, or null when this exam has no target to check.
+        function topicTargetMap() {
+            if (!examTosTargetCache || !examTosTargetCache.topics) return null;
+            var map = {};
+            examTosTargetCache.topics.forEach(function(t) { map[t.topic] = t.target_items; });
+            return map;
+        }
+
+        // Items per topic in the builder right now (saved or not). Every real question
+        // counts, Case Analysis sub-questions included; the container itself does not.
+        function liveTopicCounts() {
+            var counts = {}, untagged = 0;
             function walk(q) {
-                if (q.type !== 'case-analysis' && q.topic === topicName) count++;
+                if (q.type !== 'case-analysis') {
+                    if (q.topic) counts[q.topic] = (counts[q.topic] || 0) + 1; else untagged++;
+                }
                 (q.children || []).forEach(walk);
             }
-            currentExam.sections.forEach(function(sec) { (sec.questions || []).forEach(walk); });
-            return count;
+            if (currentExam) currentExam.sections.forEach(function(sec) { (sec.questions || []).forEach(walk); });
+            return { counts: counts, untagged: untagged };
+        }
+
+        function tosCountIssues(forFinalize) {
+            var targets = topicTargetMap();
+            if (!targets) return [];
+            var live = liveTopicCounts(), issues = [];
+            Object.keys(live.counts).forEach(function(topic) {
+                var have = live.counts[topic];
+                if (!targets.hasOwnProperty(topic)) {
+                    issues.push('"' + topic + '" is not one of the topics in this exam\'s TOS. Choose a TOS topic for its ' + (have === 1 ? 'question' : have + ' questions') + '.');
+                } else if (have > targets[topic]) {
+                    issues.push('"' + topic + '" has ' + have + ' questions, but the TOS sets ' + targets[topic] + '. Remove ' + (have - targets[topic]) + '.');
+                }
+            });
+            if (forFinalize) {
+                Object.keys(targets).forEach(function(topic) {
+                    var have = live.counts[topic] || 0;
+                    if (have < targets[topic]) issues.push('"' + topic + '" has ' + have + ' of ' + targets[topic] + ' questions. Add ' + (targets[topic] - have) + ' more.');
+                });
+                if (live.untagged > 0) {
+                    issues.push(live.untagged === 1 ? '1 question has no topic yet. Choose its topic.' : live.untagged + ' questions have no topic yet. Choose a topic for each one.');
+                }
+            }
+            return issues;
+        }
+
+        // How many more items a topic can take, or null when there's no TOS target.
+        function topicRemaining(topicName) {
+            var targets = topicTargetMap();
+            if (!targets || !targets.hasOwnProperty(topicName)) return null;
+            return Math.max(0, targets[topicName] - countExistingForTopic(topicName));
         }
 
         async function submitAiGen() {
@@ -2314,6 +2413,14 @@
             var topics = byAssignment[currentExam.grading_period] || [];
             var topicRow = topics.find(function(t) { return String(t.id) === String(topicId); });
             var existingCount = topicRow ? countExistingForTopic(topicRow.topic) : 0;
+            var remaining = topicRow ? topicRemaining(topicRow.topic) : null;
+            if (remaining !== null && count > remaining) {
+                errBox.textContent = remaining === 0
+                    ? 'This topic already has all its questions set in the TOS.'
+                    : 'This topic needs only ' + remaining + ' more ' + (remaining === 1 ? 'question' : 'questions') + '. Generate ' + remaining + ' or fewer.';
+                errBox.style.display = 'block';
+                return;
+            }
 
             var btn = document.getElementById('ai-gen-submit');
             btn.disabled = true;
@@ -2393,6 +2500,11 @@
 
         async function saveExam() {
             if (!currentExam) return;
+            var overIssues = tosCountIssues(false);
+            if (overIssues.length) {
+                openSaveResult(false, "The exam doesn't match its TOS:\n" + overIssues.join('\n'));
+                return;
+            }
             var body = {
                 title: document.getElementById('eb-title-input').value,
                 duration_minutes: currentExam.duration_minutes || null,
@@ -2492,7 +2604,11 @@
 
         function finalizeExam() {
             if (!currentExam) return;
-            document.getElementById('finalize-error').style.display = 'none';
+            var errorEl = document.getElementById('finalize-error');
+            var issues = tosCountIssues(true);
+            errorEl.style.display = issues.length ? 'block' : 'none';
+            errorEl.textContent = issues.length ? 'This exam doesn\'t match its TOS yet:\n' + issues.join('\n') : '';
+            document.getElementById('finalize-confirm-btn').disabled = issues.length > 0;
             document.getElementById('finalize-confirm-overlay').classList.add('open');
         }
         function closeFinalizeConfirm() { document.getElementById('finalize-confirm-overlay').classList.remove('open'); }
@@ -2525,48 +2641,71 @@
         // ══════════════════════════════
         // LIVE TOS PROGRESS (actual vs. target)
         // ══════════════════════════════
-        async function refreshTosProgress() {
+        // Live: counted from the builder as it is now (saved or not), so it updates the
+        // moment a question is added, removed, or moved to another topic.
+        async function refreshTosProgress() { renderTosProgress(); }
+
+        function renderTosProgress() {
             var container = document.getElementById('eb-tos-progress');
-            if (!currentExam || !currentExam.target_items) { container.innerHTML = ''; return; }
-
+            if (!container) return;
             var target = examTosTargetCache;
-            if (!target) { container.innerHTML = ''; return; }
-
-            var actual;
-            try {
-                actual = await api('/faculty/exam-generator/' + currentExam.id + '/tos');
-            } catch (e) {
-                container.innerHTML = '';
-                return;
-            }
+            if (!currentExam || !currentExam.target_items || !target) { container.innerHTML = ''; return; }
 
             var LEVEL_ABBR = { Remembering: 'Rem', Understanding: 'Und', Applying: 'App', Analyzing: 'Ana', Evaluating: 'Eval', Creating: 'Create' };
+            var live = liveTopicCounts();
+            var byLevel = {};
+            function walk(q) {
+                if (q.type !== 'case-analysis' && q.topic) {
+                    var l = q._displayBloom;
+                    byLevel[q.topic] = byLevel[q.topic] || {};
+                    if (l) byLevel[q.topic][l] = (byLevel[q.topic][l] || 0) + 1;
+                }
+                (q.children || []).forEach(walk);
+            }
+            currentExam.sections.forEach(function(sec) { (sec.questions || []).forEach(walk); });
+
+            var total = 0;
+            Object.keys(live.counts).forEach(function(k) { total += live.counts[k]; });
+            total += live.untagged;
 
             var rows = (target.topics || []).map(function(t) {
-                var a = actual.topics[t.topic] || { items: 0, bloom_breakdown: {} };
+                var have = live.counts[t.topic] || 0;
+                var over = have - t.target_items;
+                var color = over > 0 ? '#dc2626' : (have === t.target_items ? '#16a34a' : '#888');
+                var status = have + ' / ' + t.target_items + ' items' + (over > 0 ? ' — ' + over + ' over' : '');
                 var levelBits = TOS_BLOOM_LEVELS.map(function(l) {
                     var need = t.levels[l].count;
                     if (need === 0) return '';
-                    var have = (a.bloom_breakdown[l] || {}).count || 0;
-                    var ok = have >= need;
-                    return '<span style="display:inline-block;margin-right:10px;color:' + (ok ? '#16a34a' : '#c2410c') + ';">' +
-                        LEVEL_ABBR[l] + ' ' + have + '/' + need +
+                    var got = (byLevel[t.topic] || {})[l] || 0;
+                    return '<span style="display:inline-block;margin-right:10px;color:' + (got === need ? '#16a34a' : (got > need ? '#dc2626' : '#c2410c')) + ';">' +
+                        LEVEL_ABBR[l] + ' ' + got + '/' + need +
                     '</span>';
                 }).join('');
 
                 return '<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;">' +
-                    '<div style="display:flex;justify-content:space-between;font-size:11.5px;">' +
+                    '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;">' +
                         '<span>' + escapeHtml(t.topic) + '</span>' +
-                        '<span style="color:' + (a.items >= t.target_items ? '#16a34a' : '#888') + ';">' + a.items + ' / ' + t.target_items + ' items</span>' +
+                        '<span style="color:' + color + ';white-space:nowrap;font-weight:' + (over > 0 ? '700' : '400') + ';">' + status + '</span>' +
                     '</div>' +
                     '<div style="margin-top:3px;font-size:10.5px;">' + levelBits + '</div>' +
                 '</div>';
             }).join('');
 
+            var extra = '';
+            if (live.untagged > 0) {
+                extra += '<div style="padding:6px 0;font-size:11px;color:#c2410c;">' + live.untagged + (live.untagged === 1 ? ' question has' : ' questions have') + ' no topic yet — it isn\'t counted toward the TOS.</div>';
+            }
+            Object.keys(live.counts).forEach(function(topic) {
+                if (!(target.topics || []).some(function(t) { return t.topic === topic; })) {
+                    extra += '<div style="padding:6px 0;font-size:11px;color:#dc2626;">"' + escapeHtml(topic) + '" is not a topic in this TOS (' + live.counts[topic] + ').</div>';
+                }
+            });
+
+            var totalColor = total === currentExam.target_items ? '#16a34a' : (total > currentExam.target_items ? '#dc2626' : 'inherit');
             container.innerHTML = '<div class="obe-section" style="margin-bottom:12px;">' +
-                '<div class="obe-header"><span class="obe-title">TOS Progress — ' + actual.total_items + ' / ' + currentExam.target_items + ' total items</span></div>' +
-                '<div style="font-size:10.5px;color:#888;margin:4px 0 6px;">Questions are auto-ordered per topic, Remembering → Creating, to match the TOS.</div>' +
-                rows +
+                '<div class="obe-header"><span class="obe-title">TOS Progress — <span style="color:' + totalColor + ';">' + total + ' / ' + currentExam.target_items + ' total items</span></span></div>' +
+                '<div style="font-size:10.5px;color:#888;margin:4px 0 6px;">Updates as you add questions. Each topic needs exactly its TOS count before the exam can be finalized.</div>' +
+                rows + extra +
             '</div>';
         }
 

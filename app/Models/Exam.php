@@ -63,7 +63,90 @@ class Exam extends Model
             }
         }
 
-        return $reasons;
+        // The exam must match its TOS: every question has a topic, and every topic has
+        // exactly the number of items the TOS sets (Panel: finalize is blocked until the
+        // target item count is met).
+        $counts = [];
+        $untagged = 0;
+        foreach ($this->sections as $section) {
+            self::tallyTopics($section->questions, $counts, $untagged);
+        }
+
+        return array_merge($reasons, $this->tosCountIssues($counts, $untagged, true));
+    }
+
+    // Counts the items per topic in a list of questions (models or the builder's
+    // payload arrays). Every real question counts, Case Analysis sub-questions included;
+    // the Case Analysis container itself is not an item.
+    public static function tallyTopics(iterable $questions, array &$counts, int &$untagged): void
+    {
+        foreach ($questions as $question) {
+            if (data_get($question, 'type') !== 'case-analysis') {
+                $topic = data_get($question, 'topic');
+                if ($topic) {
+                    $counts[$topic] = ($counts[$topic] ?? 0) + 1;
+                } else {
+                    $untagged++;
+                }
+            }
+
+            self::tallyTopics(data_get($question, 'children') ?? [], $counts, $untagged);
+        }
+    }
+
+    // Items the TOS sets for each topic (topic name => count), or [] when the exam has
+    // no target item count to check against.
+    public function topicTargets(): array
+    {
+        if (!$this->target_items) {
+            return [];
+        }
+
+        $breakdown = CourseTopic::targetBreakdown(
+            $this->programAssignment->course_id,
+            $this->grading_period,
+            (int) $this->target_items
+        );
+
+        return collect($breakdown['topics'])->mapWithKeys(fn($t) => [$t['topic'] => (int) $t['target_items']])->all();
+    }
+
+    // Plain-language problems with the item count per topic. Too many items, or a
+    // topic outside the TOS, is never allowed; missing items and questions without a
+    // topic only block finalizing, so a draft can still be saved while in progress.
+    public function tosCountIssues(array $counts, int $untagged, bool $forFinalize): array
+    {
+        $targets = $this->topicTargets();
+        if (empty($targets)) {
+            return [];
+        }
+
+        $issues = [];
+        foreach ($counts as $topic => $have) {
+            if (!array_key_exists($topic, $targets)) {
+                $issues[] = "\"{$topic}\" is not one of the topics in this exam's TOS. Choose a TOS topic for its " . ($have === 1 ? 'question' : "{$have} questions") . '.';
+            } elseif ($have > $targets[$topic]) {
+                $extra = $have - $targets[$topic];
+                $issues[] = "\"{$topic}\" has {$have} questions, but the TOS sets {$targets[$topic]}. Remove {$extra}.";
+            }
+        }
+
+        if ($forFinalize) {
+            foreach ($targets as $topic => $need) {
+                $have = $counts[$topic] ?? 0;
+                if ($have < $need) {
+                    $missing = $need - $have;
+                    $issues[] = "\"{$topic}\" has {$have} of {$need} questions. Add {$missing} more.";
+                }
+            }
+            if ($untagged > 0) {
+                $issues[] = $untagged === 1
+                    ? '1 question has no topic yet. Choose its topic.'
+                    : "{$untagged} questions have no topic yet. Choose a topic for each one.";
+            }
+        }
+
+        return $issues;
     }
 
     protected function questionIncompletenessReasons(ExamQuestion $question, string $label): array
