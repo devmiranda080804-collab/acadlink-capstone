@@ -279,6 +279,9 @@
         .tos-parts-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
         .tos-parts-summary span { background: #eef2fb; color: #0f2557; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 12px; }
         .tos-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .q-dup-badge span { display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 10px; vertical-align: middle; }
+        .q-dup-badge .dup-exact { background: #fee2e2; color: #b91c1c; }
+        .q-dup-badge .dup-similar { background: #fef3c7; color: #92400e; }
 
         .btn-generate {
             width: 100%;
@@ -1872,6 +1875,7 @@
             renderSectionsBar();
             renderSectionsContent(opts);
             renderTosProgress();
+            refreshDuplicateBadges();
         }
 
         function renderSectionsBar() {
@@ -2174,7 +2178,7 @@
 
             var body = '<div class="question-card" id="' + idAttr + '" style="' + indent + '">' +
                 '<div class="q-header">' +
-                    '<div class="q-num" style="flex:1;">' + num + '.</div>' +
+                    '<div class="q-num" style="flex:1;">' + num + '. <span class="q-dup-badge" id="dup-' + idAttr + '"></span></div>' +
                     '<div class="q-actions">' +
                         (ci === null ? '<button class="btn-q-action" onclick="copyQuestion(\'' + secId + '\',' + qi + ')" title="Copy">⧉</button>' : '') +
                         '<button class="btn-q-action del" onclick="deleteQuestion(\'' + secId + '\',' + qi + ',' + ciArg + ')" title="Delete">🗑</button>' +
@@ -2212,7 +2216,7 @@
         }
 
         // ── field mutators (all mutate currentExam in place) ──
-        function setQuestionText(secId, qi, ci, value) { var q = findQuestion(secId, qi, ci); if (q) q.question_text = value; }
+        function setQuestionText(secId, qi, ci, value) { var q = findQuestion(secId, qi, ci); if (q) { q.question_text = value; scheduleDuplicateBadges(); } }
         function setQuestionTopic(secId, qi, ci, value) {
             var q = findQuestion(secId, qi, ci);
             if (!q) return;
@@ -2389,6 +2393,97 @@
             return issues;
         }
 
+        // ── Duplicate questions ──
+        // Same rules as App\Support\QuestionSimilarity on the server: the same wording
+        // (ignoring case, punctuation and spacing) is never allowed; nearly the same
+        // wording is flagged as a warning only.
+        var DUP_SIMILAR_THRESHOLD = 0.87, DUP_MIN_WORDS = 4;
+
+        function normalizeQuestionText(text) {
+            var div = document.createElement('div');
+            div.innerHTML = String(text || '');
+            return (div.textContent || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        function bigramCounts(normalized) {
+            var chars = Array.from(normalized.replace(/ /g, '')), out = {}, total = 0;
+            for (var i = 0; i < chars.length - 1; i++) {
+                var pair = chars[i] + chars[i + 1];
+                out[pair] = (out[pair] || 0) + 1;
+                total++;
+            }
+            return { map: out, total: total };
+        }
+
+        function compareQuestionTexts(a, b) {
+            if (!a.norm || !b.norm) return null;
+            if (a.norm === b.norm) return 'exact';
+            if (Math.min(a.words, b.words) < DUP_MIN_WORDS) return null;
+            if (!a.grams) a.grams = bigramCounts(a.norm);
+            if (!b.grams) b.grams = bigramCounts(b.norm);
+            var total = a.grams.total + b.grams.total;
+            if (!total) return null;
+            var shared = 0;
+            Object.keys(a.grams.map).forEach(function(k) { shared += Math.min(a.grams.map[k], b.grams.map[k] || 0); });
+            return (2 * shared / total) >= DUP_SIMILAR_THRESHOLD ? 'similar' : null;
+        }
+
+        // Every question with the label the builder shows ("Item 7", "Item 7b") and its card id.
+        function liveExamItems() {
+            var items = [], number = 1;
+            if (!currentExam) return items;
+            currentExam.sections.forEach(function(sec) {
+                (sec.questions || []).forEach(function(q, qi) {
+                    var norm = normalizeQuestionText(q.question_text);
+                    items.push({ label: 'Item ' + number, cardId: 'q-' + sec.id + '-' + qi, q: q, norm: norm, words: norm ? norm.split(' ').length : 0 });
+                    (q.children || []).forEach(function(c, ci) {
+                        var cn = normalizeQuestionText(c.question_text);
+                        items.push({ label: 'Item ' + number + String.fromCharCode(97 + ci), cardId: 'q-' + sec.id + '-' + qi + '-' + ci, q: c, norm: cn, words: cn ? cn.split(' ').length : 0 });
+                    });
+                    number++;
+                });
+            });
+            return items;
+        }
+
+        function exactDuplicateIssues() {
+            var groups = {}, order = [];
+            liveExamItems().forEach(function(item) {
+                if (!item.norm) return;
+                if (!groups[item.norm]) { groups[item.norm] = []; order.push(item.norm); }
+                groups[item.norm].push(item.label);
+            });
+            return order.filter(function(k) { return groups[k].length > 1; }).map(function(k) {
+                var labels = groups[k].slice(), last = labels.pop();
+                return labels.join(', ') + ' and ' + last + ' are the same question. Change or remove the extra ' + (labels.length > 1 ? 'copies' : 'copy') + '.';
+            });
+        }
+
+        // Marks each card that repeats another: red when it's the same question, amber when nearly.
+        function refreshDuplicateBadges() {
+            var items = liveExamItems();
+            items.forEach(function(item, i) {
+                var el = document.getElementById('dup-' + item.cardId);
+                if (!el) return;
+                var exact = null, similar = null;
+                for (var j = 0; j < items.length && !exact; j++) {
+                    if (j === i) continue;
+                    var kind = compareQuestionTexts(item, items[j]);
+                    if (kind === 'exact') exact = items[j].label;
+                    else if (kind === 'similar' && !similar) similar = items[j].label;
+                }
+                el.innerHTML = exact
+                    ? '<span class="dup-exact" title="The exam can\'t be saved or finalized with the same question twice.">Same as ' + exact + '</span>'
+                    : (similar ? '<span class="dup-similar" title="Nearly the same wording. Check that this isn\'t a repeat.">Similar to ' + similar + '</span>' : '');
+            });
+        }
+
+        var duplicateBadgeTimer = null;
+        function scheduleDuplicateBadges() {
+            clearTimeout(duplicateBadgeTimer);
+            duplicateBadgeTimer = setTimeout(refreshDuplicateBadges, 300);
+        }
+
         // How many more items a topic can take, or null when there's no TOS target.
         function topicRemaining(topicName) {
             var targets = topicTargetMap();
@@ -2434,7 +2529,11 @@
                         type: type,
                         count: count,
                         existing_count: existingCount,
-                        target_items: currentExam.target_items || null
+                        target_items: currentExam.target_items || null,
+                        existing_questions: liveExamItems()
+                            .filter(function(i) { return i.norm; })
+                            .sort(function(a, b) { return (b.q.topic === (topicRow && topicRow.topic)) - (a.q.topic === (topicRow && topicRow.topic)); })
+                            .map(function(i) { return i.q.question_text; })
                     }
                 });
                 var sec = findSection(aiGenTarget);
@@ -2448,6 +2547,9 @@
                     renderEB();
                 }
                 closeAiGenModal();
+                if (result.skipped > 0) {
+                    showToast(result.skipped + ' generated ' + (result.skipped === 1 ? 'question was' : 'questions were') + ' skipped because ' + (result.skipped === 1 ? 'it repeats' : 'they repeat') + ' a question already in the exam.', 'info');
+                }
             } catch (e) {
                 errBox.textContent = e.message;
                 errBox.style.display = 'block';
@@ -2503,6 +2605,11 @@
             var overIssues = tosCountIssues(false);
             if (overIssues.length) {
                 openSaveResult(false, "The exam doesn't match its TOS:\n" + overIssues.join('\n'));
+                return;
+            }
+            var repeated = exactDuplicateIssues();
+            if (repeated.length) {
+                openSaveResult(false, 'The exam has repeated questions:\n' + repeated.join('\n'));
                 return;
             }
             var body = {
@@ -2605,9 +2712,9 @@
         function finalizeExam() {
             if (!currentExam) return;
             var errorEl = document.getElementById('finalize-error');
-            var issues = tosCountIssues(true);
+            var issues = tosCountIssues(true).concat(exactDuplicateIssues());
             errorEl.style.display = issues.length ? 'block' : 'none';
-            errorEl.textContent = issues.length ? 'This exam doesn\'t match its TOS yet:\n' + issues.join('\n') : '';
+            errorEl.textContent = issues.length ? 'This exam isn\'t ready to finalize yet:\n' + issues.join('\n') : '';
             document.getElementById('finalize-confirm-btn').disabled = issues.length > 0;
             document.getElementById('finalize-confirm-overlay').classList.add('open');
         }

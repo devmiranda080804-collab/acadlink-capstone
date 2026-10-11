@@ -15,6 +15,7 @@ use App\Services\QuestionGeneratorService;
 use App\Services\TosDocumentBuilder;
 use App\Support\AcademicTerm;
 use App\Support\BloomLevels;
+use App\Support\QuestionSimilarity;
 use App\Support\TestParts;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -180,6 +181,12 @@ class ExamGeneratorController extends Controller
         $issues = $exam->tosCountIssues($counts, $untagged, false);
         if (!empty($issues)) {
             return response()->json(['message' => "The exam doesn't match its TOS:\n" . implode("\n", $issues)], 422);
+        }
+
+        // The same question twice is never allowed (nearly-same is only flagged in the builder).
+        $duplicates = QuestionSimilarity::exactDuplicateIssues(QuestionSimilarity::examItems($request->input('sections', [])));
+        if (!empty($duplicates)) {
+            return response()->json(['message' => "The exam has repeated questions:\n" . implode("\n", $duplicates)], 422);
         }
 
         DB::transaction(function () use ($request, $exam) {
@@ -510,6 +517,8 @@ class ExamGeneratorController extends Controller
             'count'           => 'required|integer|min:1|max:10',
             'existing_count'  => 'nullable|integer|min:0',
             'target_items'    => 'nullable|integer|min:0',
+            'existing_questions'   => 'nullable|array|max:500',
+            'existing_questions.*' => 'nullable|string|max:5000',
         ]);
 
         $topic = CourseTopic::whereIn('course_id', $this->assignedCourseIds())
@@ -537,6 +546,10 @@ class ExamGeneratorController extends Controller
 
         $existingCount = (int) ($request->existing_count ?? 0);
         $count = (int) $request->count;
+        $existingTexts = array_values(array_filter(
+            $request->input('existing_questions', []),
+            fn($t) => is_string($t) && QuestionSimilarity::normalize($t) !== ''
+        ));
 
         // The AI only fills what the TOS still needs for this topic.
         if ($topicRow) {
@@ -563,7 +576,7 @@ class ExamGeneratorController extends Controller
 
         try {
             $drafts = (new QuestionGeneratorService())->generate(
-                $request->type, $topic->topic, $topic->notes ?? '', $count, $modulePath, $bloomLevelsForPrompt
+                $request->type, $topic->topic, $topic->notes ?? '', $count, $modulePath, $bloomLevelsForPrompt, $existingTexts
             );
         } catch (\RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
@@ -571,9 +584,30 @@ class ExamGeneratorController extends Controller
             return response()->json(['message' => 'AI generation failed: ' . $e->getMessage()], 502);
         }
 
+        // AI check: drop any generated question that repeats (exactly or nearly) one
+        // already in the exam or another one from this same batch.
+        $known = array_map(fn($t) => ['label' => '', 'text' => $t], $existingTexts);
+        $kept = [];
+        foreach ($drafts as $draft) {
+            if (QuestionSimilarity::findMatch($draft['question_text'] ?? '', $known)) {
+                continue;
+            }
+            $kept[] = $draft;
+            $known[] = ['label' => '', 'text' => $draft['question_text'] ?? ''];
+        }
+        $skipped = count($drafts) - count($kept);
+        $drafts = $kept;
+
+        if (empty($drafts) && $skipped > 0) {
+            return response()->json([
+                'message' => 'Every generated question repeated one already in the exam, so none were added. Try again, or add more teaching notes for this topic.',
+            ], 422);
+        }
+
         $fallbackBloom = BloomLevels::bloomFor($request->type);
 
         return response()->json([
+            'skipped'   => $skipped,
             'questions' => collect($drafts)->values()->map(fn($d, $i) => [
                 'type'          => $request->type,
                 'topic'         => $topic->topic,
@@ -633,6 +667,14 @@ class ExamGeneratorController extends Controller
         foreach ($exam->sections as $section) {
             Exam::tallyTopics($section->questions, $counts, $untagged);
         }
+        $match = QuestionSimilarity::findMatch($question->question_text, array_filter(
+            QuestionSimilarity::examItems($exam->sections),
+            fn($item) => QuestionSimilarity::normalize($item['text']) === QuestionSimilarity::normalize($question->question_text)
+        ));
+        if ($match) {
+            return response()->json(['message' => "This question is already in the exam ({$match[0]})."], 422);
+        }
+
         $adding = [];
         $none = 0;
         Exam::tallyTopics([$question->load('children')], $adding, $none);

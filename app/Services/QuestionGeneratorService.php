@@ -52,8 +52,18 @@ class QuestionGeneratorService
     // $bloomLevels: the Bloom's Taxonomy level(s) this batch must be written for (per the
     // TOS's own per-topic breakdown — see ExamGeneratorController::generateQuestions()) so
     // the questions are genuinely aligned to that cognitive demand, not just labeled as such.
-    public function generate(string $type, string $topicName, string $topicNotes, int $count, ?string $modulePdfAbsolutePath = null, array $bloomLevels = []): array
+    public function generate(string $type, string $topicName, string $topicNotes, int $count, ?string $modulePdfAbsolutePath = null, array $bloomLevels = [], array $avoidQuestions = []): array
     {
+        // Questions already in the exam, so the AI writes new ones instead of repeats
+        // (capped to keep the prompt small; the caller still filters the results).
+        $avoidHint = '';
+        if ($avoidQuestions) {
+            $list = collect($avoidQuestions)->take(60)
+                ->map(fn($q, $i) => ($i + 1) . '. ' . mb_substr(trim(preg_replace('/\s+/', ' ', $q)), 0, 300))
+                ->implode("\n");
+            $avoidHint = "\n\nThese questions are already in the exam. Do not repeat them, reword them, or ask the same thing in a different way:\n{$list}";
+        }
+
         $itemSchema = $this->itemSchemaFor($type);
 
         $levelHint = '';
@@ -72,7 +82,8 @@ class QuestionGeneratorService
             . "Write exactly {$count} question(s) of this type based strictly on the content "
             . ($modulePdfAbsolutePath ? 'in the attached document' : 'above') . '.'
             . ($type === 'mc-single' ? ' Each question must have exactly 4 answer choices.' : '')
-            . $levelHint;
+            . $levelHint
+            . $avoidHint;
 
         $content = [];
         if ($modulePdfAbsolutePath) {

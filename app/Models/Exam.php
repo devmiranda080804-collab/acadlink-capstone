@@ -72,7 +72,11 @@ class Exam extends Model
             self::tallyTopics($section->questions, $counts, $untagged);
         }
 
-        return array_merge($reasons, $this->tosCountIssues($counts, $untagged, true));
+        return array_merge(
+            $reasons,
+            $this->tosCountIssues($counts, $untagged, true),
+            \App\Support\QuestionSimilarity::exactDuplicateIssues(\App\Support\QuestionSimilarity::examItems($this->sections))
+        );
     }
 
     // Counts the items per topic in a list of questions (models or the builder's
