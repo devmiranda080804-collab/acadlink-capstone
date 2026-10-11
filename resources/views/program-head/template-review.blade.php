@@ -209,7 +209,7 @@
             </div>
 
             @php
-                $typeFolders = $rows->groupBy(fn($r) => $r['template']->type)->map(function ($group, $type) {
+                $typeFolders = $rows->groupBy(fn($r) => $r['template']->type)->map(function ($group, $type) use ($isRecent) {
                     return [
                         'key'     => 'type-' . $type,
                         'label'   => \App\Models\TemplateDocument::typeLabel($type) . ' Templates',
