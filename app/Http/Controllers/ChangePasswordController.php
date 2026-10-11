@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\AccountNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -25,6 +26,8 @@ class ChangePasswordController extends Controller
             'password'             => Hash::make($request->password),
             'must_change_password' => false,
         ]);
+
+        AccountNotifier::send($user, 'password_changed');
 
         return redirect($this->dashboardFor($user->role))
             ->with('success', 'Password updated successfully.');

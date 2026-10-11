@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\AccountNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -39,6 +40,8 @@ class ResetPasswordController extends Controller
                 $user->setRememberToken(Str::random(60));
 
                 event(new PasswordReset($user));
+
+                AccountNotifier::send($user, 'password_reset');
             }
         );
 

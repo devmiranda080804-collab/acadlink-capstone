@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\NewAccountCredentials;
 use App\Models\User;
+use App\Support\AccountNotifier;
 use App\Support\AcademicTerm;
 use App\Support\Programs;
 use Illuminate\Http\Request;
@@ -112,6 +113,8 @@ class AccountManagementController extends Controller
             'academic_year' => $request->academic_year,
         ]);
 
+        AccountNotifier::sendDetailChanges($user);
+
         if ($roleChanged) {
             \DB::table('sessions')->where('user_id', $user->id)->delete();
         }
@@ -130,6 +133,8 @@ class AccountManagementController extends Controller
 
         AuditLog::record('Account Archived', "Archived account: {$user->name} ({$user->email})");
 
+        AccountNotifier::send($user, 'archived');
+
         return back()->with('success', 'Account archived successfully.');
     }
 
@@ -141,6 +146,8 @@ class AccountManagementController extends Controller
             'is_active'   => true,
             'archived_at' => null,
         ]);
+
+        AccountNotifier::send($user, 'restored');
 
         return back()->with('success', 'Account restored successfully.');
     }

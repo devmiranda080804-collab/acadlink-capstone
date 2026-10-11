@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Secretary;
 use App\Http\Controllers\Controller;
 use App\Mail\NewAccountCredentials;
 use App\Models\User;
+use App\Support\AccountNotifier;
 use App\Support\AcademicTerm;
 use App\Support\Programs;
 use Illuminate\Http\Request;
@@ -102,6 +103,8 @@ class AccountManagementController extends Controller
             'academic_year' => $request->academic_year,
         ]);
 
+        AccountNotifier::sendDetailChanges($user);
+
         return back()->with('success', 'Account updated successfully.');
     }
 
@@ -114,6 +117,8 @@ class AccountManagementController extends Controller
             'archived_at' => now(),
         ]);
 
+        AccountNotifier::send($user, 'archived');
+
         return back()->with('success', 'Faculty account archived successfully.');
     }
 
@@ -125,6 +130,8 @@ class AccountManagementController extends Controller
             'is_active'   => true,
             'archived_at' => null,
         ]);
+
+        AccountNotifier::send($user, 'restored');
 
         return back()->with('success', 'Faculty account restored successfully.');
     }
