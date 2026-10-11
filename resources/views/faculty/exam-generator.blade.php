@@ -976,7 +976,7 @@
                 <input type="text" id="ne-title" placeholder="e.g. Midterm Examination" required>
             </div>
             <div class="modal-field">
-                <label>Target Items <span style="font-size:10px;color:#999;">(optional — from TOS Generator)</span></label>
+                <label>Target Items <span style="font-size:10px;color:#999;">(optional — leave blank to use the TOS total)</span></label>
                 <input type="number" id="ne-target-items" min="1" placeholder="e.g. 50">
             </div>
             <div class="modal-actions">
@@ -1957,35 +1957,41 @@
                 examTosTargetCache.topics.forEach(function(t) { levelsByTopic[t.topic] = t.levels; });
             }
             var topicPositions = {};
+            var partLevels = sectionPartLevels();
 
-            function resolveLevel(topic) {
+            // Within a TOS test (one section per test), positions count only that test's
+            // questions and resolve within that test's levels — same as the server.
+            function resolveLevel(topic, si) {
                 var levels = levelsByTopic[topic];
                 if (!levels) return null;
-                topicPositions[topic] = (topicPositions[topic] || 0) + 1;
-                var position = topicPositions[topic];
+                var only = partLevels ? partLevels[si] : TOS_BLOOM_LEVELS;
+                var key = partLevels ? topic + '|' + si : topic;
+                topicPositions[key] = (topicPositions[key] || 0) + 1;
+                var position = topicPositions[key];
                 var cursor = 0, lastLevel = null;
-                for (var i = 0; i < TOS_BLOOM_LEVELS.length; i++) {
-                    var l = TOS_BLOOM_LEVELS[i];
+                for (var i = 0; i < only.length; i++) {
+                    var l = only[i];
                     var count = levels[l].count;
                     if (count > 0) lastLevel = l;
                     if (position <= cursor + count) return l;
                     cursor += count;
                 }
-                return lastLevel;
+                // A topic with no items in this test's levels still belongs to the test.
+                return lastLevel || (partLevels ? only[only.length - 1] : null);
             }
 
-            function walk(q) {
+            function walk(q, si) {
                 if (q.type === 'case-analysis') {
                     q._displayBloom = null;
-                    (q.children || []).forEach(walk);
+                    (q.children || []).forEach(function(c) { walk(c, si); });
                     return;
                 }
-                var positional = q.topic ? resolveLevel(q.topic) : null;
+                var positional = q.topic ? resolveLevel(q.topic, si) : null;
                 q._displayBloom = q.bloom_level || positional || (QUESTION_TYPES[q.type] || {}).bloom || null;
             }
 
-            currentExam.sections.forEach(function(sec) {
-                (sec.questions || []).forEach(walk);
+            currentExam.sections.forEach(function(sec, si) {
+                (sec.questions || []).forEach(function(q) { walk(q, si); });
             });
         }
 
@@ -2347,6 +2353,14 @@
         // saving), and the exam can't be finalized until every topic has exactly its count
         // and every question has a topic.
 
+        // Bloom's levels per section index when the sections line up with the TOS tests
+        // (one section per test), else null — mirrors Exam::sectionLevels().
+        function sectionPartLevels() {
+            var parts = examTosTargetCache && examTosTargetCache.parts;
+            if (!currentExam || !parts || parts.length < 2 || parts.length !== currentExam.sections.length) return null;
+            return parts.map(function(p) { return p.levels; });
+        }
+
         // Items the TOS sets per topic, or null when this exam has no target to check.
         function topicTargetMap() {
             if (!examTosTargetCache || !examTosTargetCache.topics) return null;
@@ -2517,6 +2531,17 @@
                 return;
             }
 
+            // The TOS test this section stands for, and this topic's questions already in it.
+            var aiPartLevels = { levels: null, existing: 0 };
+            var partLevelsBySection = sectionPartLevels();
+            if (partLevelsBySection && topicRow) {
+                var secIndex = currentExam.sections.findIndex(function(sct) { return String(sct.id) === String(aiGenTarget); });
+                if (secIndex >= 0) {
+                    aiPartLevels.levels = partLevelsBySection[secIndex];
+                    (function walk(list) { (list || []).forEach(function(q) { if (q.type !== 'case-analysis' && q.topic === topicRow.topic) aiPartLevels.existing++; walk(q.children); }); })(currentExam.sections[secIndex].questions);
+                }
+            }
+
             var btn = document.getElementById('ai-gen-submit');
             btn.disabled = true;
             btn.textContent = 'Generating…';
@@ -2530,6 +2555,8 @@
                         count: count,
                         existing_count: existingCount,
                         target_items: currentExam.target_items || null,
+                        part_levels: aiPartLevels.levels,
+                        part_existing_count: aiPartLevels.existing,
                         existing_questions: liveExamItems()
                             .filter(function(i) { return i.norm; })
                             .sort(function(a, b) { return (b.q.topic === (topicRow && topicRow.topic)) - (a.q.topic === (topicRow && topicRow.topic)); })
@@ -2808,11 +2835,23 @@
                 }
             });
 
+            var partsHtml = '';
+            var parts = target.parts || [];
+            if (parts.length > 1 && parts.length === currentExam.sections.length) {
+                partsHtml = '<div style="padding:6px 0 8px;border-bottom:1px solid #f0f0f0;font-size:11px;">' + parts.map(function(p, i) {
+                    var sec = currentExam.sections[i], have = 0;
+                    (function walk(list) { (list || []).forEach(function(q) { if (q.type !== 'case-analysis') have++; walk(q.children); }); })(sec.questions);
+                    var color = have === p.items ? '#16a34a' : (have > p.items ? '#dc2626' : '#555');
+                    return '<div style="display:flex;justify-content:space-between;gap:8px;"><span>Test ' + p.roman + ' – ' + escapeHtml(p.label) + '</span>' +
+                        '<span style="color:' + color + ';white-space:nowrap;">' + have + ' / ' + p.items + ' items</span></div>';
+                }).join('') + '</div>';
+            }
+
             var totalColor = total === currentExam.target_items ? '#16a34a' : (total > currentExam.target_items ? '#dc2626' : 'inherit');
             container.innerHTML = '<div class="obe-section" style="margin-bottom:12px;">' +
                 '<div class="obe-header"><span class="obe-title">TOS Progress — <span style="color:' + totalColor + ';">' + total + ' / ' + currentExam.target_items + ' total items</span></span></div>' +
-                '<div style="font-size:10.5px;color:#888;margin:4px 0 6px;">Updates as you add questions. Each topic needs exactly its TOS count before the exam can be finalized.</div>' +
-                rows + extra +
+                '<div style="font-size:10.5px;color:#888;margin:4px 0 6px;">Updates as you build — unsaved questions are counted too. Each topic needs exactly its TOS count before the exam can be finalized.</div>' +
+                partsHtml + rows + extra +
             '</div>';
         }
 

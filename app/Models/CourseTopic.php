@@ -157,7 +157,9 @@ class CourseTopic extends Model
     // items stay aligned to both the TOS and Bloom's Taxonomy). Positions beyond the
     // topic's own target extend into the last level that had any items, so extra
     // questions still get classified instead of being left blank.
-    public static function resolveBloomLevelForPosition(?array $topicBreakdownRow, int $position): ?string
+    // With $onlyLevels (the Bloom's levels of the test the question sits in), the position
+    // counts only that test's questions for the topic and resolves within those levels.
+    public static function resolveBloomLevelForPosition(?array $topicBreakdownRow, int $position, ?array $onlyLevels = null): ?string
     {
         if (!$topicBreakdownRow) {
             return null;
@@ -165,7 +167,7 @@ class CourseTopic extends Model
 
         $cursor = 0;
         $lastLevel = null;
-        foreach (BloomLevels::LEVELS as $level) {
+        foreach ($onlyLevels ?: BloomLevels::LEVELS as $level) {
             $count = $topicBreakdownRow['levels'][$level]['count'] ?? 0;
             if ($count > 0) {
                 $lastLevel = $level;

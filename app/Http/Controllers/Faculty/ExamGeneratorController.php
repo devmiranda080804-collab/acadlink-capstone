@@ -118,7 +118,9 @@ class ExamGeneratorController extends Controller
             'title'                 => $request->title,
             'grading_period'        => $request->grading_period,
             'duration_minutes'      => $request->duration_minutes,
-            'target_items'          => $request->target_items,
+            // Left blank, it follows the TOS — so TOS Progress and the count checks always
+            // have a target to measure against.
+            'target_items'          => $request->target_items ?: $tos->total_items,
         ]);
 
         // One section per test the instructor chose in the TOS (e.g. "Test I – Multiple
@@ -146,6 +148,16 @@ class ExamGeneratorController extends Controller
         abort_unless($exam->faculty_id === auth()->id(), 403);
 
         $exam->load(['sections.questions.children', 'programAssignment.course']);
+
+        // Older exams created without a target take their TOS's total, so TOS Progress shows.
+        if (!$exam->target_items) {
+            $tosTotal = Tos::where('program_assignment_id', $exam->program_assignment_id)
+                ->where('grading_period', $exam->grading_period)
+                ->value('total_items');
+            if ($tosTotal) {
+                $exam->update(['target_items' => $tosTotal]);
+            }
+        }
 
         return response()->json($exam);
     }
@@ -212,8 +224,9 @@ class ExamGeneratorController extends Controller
                 $levelsByTopic = collect($breakdown['topics'])->keyBy('topic');
             }
             $topicPositions = [];
+            $sectionLevels = $exam->sectionLevels(count($request->input('sections', [])));
 
-            foreach ($request->input('sections', []) as $sectionIndex => $sectionData) {
+            foreach (array_values($request->input('sections', [])) as $sectionIndex => $sectionData) {
                 $section = $exam->sections()->create([
                     'title'        => $sectionData['title'],
                     'instructions' => $sectionData['instructions'] ?? null,
@@ -221,7 +234,7 @@ class ExamGeneratorController extends Controller
                 ]);
 
                 foreach ($sectionData['questions'] ?? [] as $questionIndex => $questionData) {
-                    $this->createQuestion($section->id, null, $questionData, $questionIndex, $levelsByTopic, $topicPositions);
+                    $this->createQuestion($section->id, null, $questionData, $questionIndex, $levelsByTopic, $topicPositions, $sectionLevels[$sectionIndex] ?? null, $sectionIndex);
                 }
             }
         });
@@ -229,7 +242,7 @@ class ExamGeneratorController extends Controller
         return response()->json($exam->load('sections.questions.children'));
     }
 
-    protected function createQuestion(int $sectionId, ?int $parentId, array $data, int $order, $levelsByTopic, array &$topicPositions): void
+    protected function createQuestion(int $sectionId, ?int $parentId, array $data, int $order, $levelsByTopic, array &$topicPositions, ?array $partLevels = null, int $sectionIndex = 0): void
     {
         // Bloom's Level: a value the faculty explicitly picked (validated above as one of
         // the 6 real levels — never free text) is trusted and kept as-is, so a manual
@@ -247,14 +260,18 @@ class ExamGeneratorController extends Controller
             $topic = $data['topic'] ?? null;
             $position = null;
             if ($topic) {
-                $topicPositions[$topic] = ($topicPositions[$topic] ?? 0) + 1;
-                $position = $topicPositions[$topic];
+                // Within a TOS test, positions count only that test's questions.
+                $key = $partLevels ? $topic . '|' . $sectionIndex : $topic;
+                $topicPositions[$key] = ($topicPositions[$key] ?? 0) + 1;
+                $position = $topicPositions[$key];
             }
 
             if (!empty($data['bloom_level'])) {
                 $bloomLevel = $data['bloom_level'];
             } elseif ($topic && $levelsByTopic->has($topic)) {
-                $bloomLevel = CourseTopic::resolveBloomLevelForPosition($levelsByTopic->get($topic), $position);
+                // A topic with no items in this test's levels still belongs to the test.
+                $bloomLevel = CourseTopic::resolveBloomLevelForPosition($levelsByTopic->get($topic), $position, $partLevels)
+                    ?? ($partLevels ? end($partLevels) : BloomLevels::bloomFor($data['type']));
             } else {
                 // No topic assigned, or the topic has no TOS data (e.g. exam wasn't
                 // started from a TOS target) — fall back to the type's own default level.
@@ -275,7 +292,7 @@ class ExamGeneratorController extends Controller
         ]);
 
         foreach ($data['children'] ?? [] as $childIndex => $childData) {
-            $this->createQuestion($sectionId, $question->id, $childData, $childIndex, $levelsByTopic, $topicPositions);
+            $this->createQuestion($sectionId, $question->id, $childData, $childIndex, $levelsByTopic, $topicPositions, $partLevels, $sectionIndex);
         }
     }
 
@@ -519,6 +536,11 @@ class ExamGeneratorController extends Controller
             'target_items'    => 'nullable|integer|min:0',
             'existing_questions'   => 'nullable|array|max:500',
             'existing_questions.*' => 'nullable|string|max:5000',
+            // The Bloom's levels of the TOS test the questions go into, and how many of this
+            // topic's questions that test already has.
+            'part_levels'          => 'nullable|array',
+            'part_levels.*'        => ['string', Rule::in(BloomLevels::LEVELS)],
+            'part_existing_count'  => 'nullable|integer|min:0',
         ]);
 
         $topic = CourseTopic::whereIn('course_id', $this->assignedCourseIds())
@@ -569,8 +591,10 @@ class ExamGeneratorController extends Controller
         // Resolve each new question's Bloom's Level from its position within the topic,
         // continuing after whatever's already been added for it.
         $levels = [];
-        for ($p = $existingCount + 1; $p <= $existingCount + $count; $p++) {
-            $levels[] = CourseTopic::resolveBloomLevelForPosition($topicRow, $p);
+        $partLevels = $request->input('part_levels') ?: null;
+        $start = $partLevels ? (int) ($request->part_existing_count ?? 0) : $existingCount;
+        for ($p = $start + 1; $p <= $start + $count; $p++) {
+            $levels[] = CourseTopic::resolveBloomLevelForPosition($topicRow, $p, $partLevels);
         }
         $bloomLevelsForPrompt = array_values(array_unique(array_filter($levels)));
 

@@ -98,6 +98,23 @@ class Exam extends Model
         }
     }
 
+    // The Bloom's levels each section covers, by section index, when the exam's sections
+    // line up with its TOS tests (one section per test, as "Start Exam from this TOS"
+    // creates them). Empty when they don't, so levels resolve across the whole topic.
+    public function sectionLevels(int $sectionCount): array
+    {
+        $parts = Tos::where('program_assignment_id', $this->program_assignment_id)
+            ->where('grading_period', $this->grading_period)
+            ->value('parts');
+        $parts = is_string($parts) ? json_decode($parts, true) : $parts;
+
+        if (!is_array($parts) || count($parts) < 2 || count($parts) !== $sectionCount) {
+            return [];
+        }
+
+        return array_map(fn($part) => $part['levels'] ?? null, array_values($parts));
+    }
+
     // Items the TOS sets for each topic (topic name => count), or [] when the exam has
     // no target item count to check against.
     public function topicTargets(): array
