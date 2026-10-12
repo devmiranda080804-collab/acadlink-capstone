@@ -47,6 +47,10 @@
         .settings-field label { display: block; font-size: 12px; font-weight: 700; color: #333; margin-bottom: 5px; }
         .settings-field input { width: 100%; padding: 9px 11px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; font-family: Arial, sans-serif; outline: none; }
         .settings-field input:focus { border-color: #0f2557; }
+        .settings-field select { width: 100%; padding: 9px 11px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; font-family: Arial, sans-serif; background: #fff; outline: none; }
+        .settings-field select:focus { border-color: #0f2557; }
+        .settings-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        @media (max-width: 640px) { .settings-row { grid-template-columns: 1fr; } }
         .settings-hint { font-size: 11px; color: #999; margin-top: 4px; }
         .preview { background: #f7f8fb; border: 1px dashed #cfd5e3; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; font-size: 12.5px; color: #333; }
         .preview-label { font-size: 10.5px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
@@ -164,6 +168,58 @@
                     <button type="submit" class="btn-save">Save</button>
                 </form>
             </div>
+
+            <div class="settings-card">
+                <div class="settings-card-title">Exam Printing</div>
+                <div class="settings-card-sub">
+                    The default font, size and paper of downloaded exams and answer keys. Faculty can still change these per exam in Download Options.
+                </div>
+
+                <form method="POST" action="{{ url('/admin/settings') }}">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="section" value="exam_print">
+                    <div class="settings-row">
+                        <div class="settings-field">
+                            <label for="exam_font">Font style</label>
+                            <select id="exam_font" name="exam_font" onchange="updatePrintPreview()">
+                                @foreach(\App\Support\ExamPrintOptions::FONTS as $font)
+                                    <option value="{{ $font }}" @selected(old('exam_font', $examPrint['font']) === $font)>{{ $font }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="settings-field">
+                            <label for="exam_font_size">Font size</label>
+                            <select id="exam_font_size" name="exam_font_size" onchange="updatePrintPreview()">
+                                @foreach(\App\Support\ExamPrintOptions::SIZES as $size)
+                                    <option value="{{ $size }}" @selected((int) old('exam_font_size', $examPrint['size']) === $size)>{{ $size }} pt</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="settings-field">
+                            <label for="exam_paper">Paper size</label>
+                            <select id="exam_paper" name="exam_paper">
+                                @foreach(\App\Support\ExamPrintOptions::PAPERS as $key => $paper)
+                                    <option value="{{ $key }}" @selected(old('exam_paper', $examPrint['paper']) === $key)>{{ $paper['label'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="preview">
+                        <div class="preview-label">Preview</div>
+                        <div id="print-preview">
+                            <div style="font-weight:700;">TEST I – MULTIPLE CHOICE</div>
+                            <div style="font-style:italic;">Directions: Choose the letter of the best answer.</div>
+                            <div style="margin-top:6px;">1. Which of the following is an asset of the business? (1 pt)</div>
+                            <div style="padding-left:22px;">a. Cash</div>
+                            <div style="padding-left:22px;">b. Accounts payable</div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-save">Save</button>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -175,6 +231,14 @@
             document.getElementById('preview-dean-title').textContent = title || @json(\App\Support\Signatories::DEFAULT_DEAN_TITLE);
         }
         updateDeanPreview();
+
+        // Points are shown at their printed size (1pt = 1.333px).
+        function updatePrintPreview() {
+            var box = document.getElementById('print-preview');
+            box.style.fontFamily = '"' + document.getElementById('exam_font').value + '", sans-serif';
+            box.style.fontSize = (parseInt(document.getElementById('exam_font_size').value, 10) * 4 / 3) + 'px';
+        }
+        updatePrintPreview();
     </script>
 
     <div id="logout-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">

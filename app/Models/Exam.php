@@ -10,6 +10,7 @@ class Exam extends Model
         'program_assignment_id', 'faculty_id', 'title', 'grading_period',
         'duration_minutes', 'target_items', 'status', 'finalized_at',
         'export_file_path', 'export_file_type',
+        'print_font', 'print_font_size', 'print_paper',
     ];
 
     protected function casts(): array

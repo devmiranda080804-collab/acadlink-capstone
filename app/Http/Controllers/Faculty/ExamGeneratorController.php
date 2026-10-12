@@ -15,6 +15,7 @@ use App\Services\QuestionGeneratorService;
 use App\Services\TosDocumentBuilder;
 use App\Support\AcademicTerm;
 use App\Support\BloomLevels;
+use App\Support\ExamPrintOptions;
 use App\Support\QuestionSimilarity;
 use App\Support\TestParts;
 use Illuminate\Http\Request;
@@ -459,14 +460,14 @@ class ExamGeneratorController extends Controller
     // Generated fresh on every request (not a stored file) so an edit made after
     // finalizing — finalized exams stay fully editable — is always reflected,
     // instead of serving a stale export from whenever it was first finalized.
-    public function download(Exam $exam)
+    public function download(Request $request, Exam $exam)
     {
         abort_unless($exam->faculty_id === auth()->id(), 403);
         abort_unless($exam->isFinalized(), 422, 'Finalize this exam first before downloading it.');
 
         $exam->load(['programAssignment.course', 'sections.questions.children']);
 
-        $phpWord = (new ExamDocumentBuilder())->build($exam);
+        $phpWord = (new ExamDocumentBuilder($this->printOptions($request, $exam)))->build($exam);
 
         $filename = $exam->programAssignment->course->code . '-' . $exam->grading_period . '-Exam.docx';
 
@@ -486,16 +487,34 @@ class ExamGeneratorController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
+    // Font, size and paper from Download Options — remembered on the exam so the exam and
+    // its answer key (and later downloads) match. Without a choice, the exam's saved one
+    // or the college default (Admin → Settings) is used.
+    protected function printOptions(Request $request, Exam $exam): array
+    {
+        $request->validate(ExamPrintOptions::rules());
+
+        if ($request->hasAny(['font', 'size', 'paper'])) {
+            $exam->update(array_filter([
+                'print_font'      => $request->query('font'),
+                'print_font_size' => $request->query('size') ? (int) $request->query('size') : null,
+                'print_paper'     => $request->query('paper'),
+            ]));
+        }
+
+        return ExamPrintOptions::forExam($exam);
+    }
+
     // Separate file from download() on purpose — a faculty member should be able to hand
     // out the student copy without ever risking the answers riding along on a trailing page.
-    public function answerKey(Exam $exam)
+    public function answerKey(Request $request, Exam $exam)
     {
         abort_unless($exam->faculty_id === auth()->id(), 403);
         abort_unless($exam->isFinalized(), 422, 'Finalize this exam first before downloading its answer key.');
 
         $exam->load(['programAssignment.course', 'sections.questions.children']);
 
-        $phpWord = (new ExamDocumentBuilder())->buildAnswerKey($exam);
+        $phpWord = (new ExamDocumentBuilder($this->printOptions($request, $exam)))->buildAnswerKey($exam);
 
         $filename = $exam->programAssignment->course->code . '-' . $exam->grading_period . '-AnswerKey.docx';
 

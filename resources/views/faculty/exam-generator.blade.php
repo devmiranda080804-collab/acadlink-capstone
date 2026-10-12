@@ -874,8 +874,8 @@
                         <button class="btn-eb-save" onclick="saveExam()" id="btn-save-exam" disabled>💾 Save</button>
                         <button class="btn-eb-preview" onclick="previewExam()" id="btn-preview-exam" disabled>👁 Preview</button>
                         <button class="btn-eb-preview" onclick="finalizeExam()" id="btn-finalize-exam" disabled>🔒 Finalize</button>
-                        <a class="btn-eb-preview" href="#" id="btn-download-exam" disabled style="display:none;pointer-events:none;opacity:0.5;">⬇ Download</a>
-                        <a class="btn-eb-preview" href="#" id="btn-download-answer-key" disabled style="display:none;pointer-events:none;opacity:0.5;">🔑 Answer Key</a>
+                        <a class="btn-eb-preview" href="#" id="btn-download-exam" onclick="openDownloadOptions('exam'); return false;" disabled style="display:none;pointer-events:none;opacity:0.5;">⬇ Download</a>
+                        <a class="btn-eb-preview" href="#" id="btn-download-answer-key" onclick="openDownloadOptions('answer-key'); return false;" disabled style="display:none;pointer-events:none;opacity:0.5;">🔑 Answer Key</a>
                         <button class="btn-eb-preview" onclick="openDeleteExamModal()" id="btn-delete-exam" disabled style="color:#ef4444;border-color:#fca5a5;">🗑 Delete</button>
                     </div>
                 </div>
@@ -1074,6 +1074,53 @@
         </div>
     </div>
 
+    {{-- ════════════ DOWNLOAD OPTIONS MODAL ════════════ --}}
+    <div class="modal-overlay" id="download-options-overlay">
+        <div class="modal" style="width:440px;">
+            <div class="modal-title" id="download-options-title">Download Options</div>
+            <div style="font-size:12px;color:#666;margin-bottom:14px;">The file comes with the CBMA header and footer. Your choice is saved for this exam, so the exam and its answer key match.</div>
+            <div class="modal-row">
+                <div class="modal-field">
+                    <label for="dl-font">Font style</label>
+                    <select id="dl-font" onchange="updateDownloadPreview()">
+                        @foreach(\App\Support\ExamPrintOptions::FONTS as $font)
+                            <option value="{{ $font }}">{{ $font }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="modal-field">
+                    <label for="dl-size">Font size</label>
+                    <select id="dl-size" onchange="updateDownloadPreview()">
+                        @foreach(\App\Support\ExamPrintOptions::SIZES as $size)
+                            <option value="{{ $size }}">{{ $size }} pt</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div class="modal-field">
+                <label for="dl-paper">Paper size</label>
+                <select id="dl-paper">
+                    @foreach(\App\Support\ExamPrintOptions::PAPERS as $key => $paper)
+                        <option value="{{ $key }}">{{ $paper['label'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div style="background:#f7f8fb;border:1px dashed #cfd5e3;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+                <div style="font-size:10.5px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Preview</div>
+                <div id="dl-preview" style="color:#222;line-height:1.35;">
+                    <div style="font-weight:700;">TEST I – MULTIPLE CHOICE</div>
+                    <div style="font-style:italic;">Directions: Choose the letter of the best answer.</div>
+                    <div style="margin-top:4px;">1. Which of the following is an asset? (1 pt)</div>
+                    <div style="padding-left:20px;">a. Cash</div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeDownloadOptions()">Cancel</button>
+                <button type="button" class="btn-save" id="download-options-submit" onclick="confirmDownload()">⬇ Download</button>
+            </div>
+        </div>
+    </div>
+
     {{-- ════════════ FINALIZE CONFIRM MODAL ════════════ --}}
     <div class="modal-overlay" id="finalize-confirm-overlay">
         <div class="modal" style="width:420px;">
@@ -1162,6 +1209,7 @@
     <script>
         const CSRF = document.querySelector('meta[name="csrf-token"]').content;
         const QUESTION_TYPES = @json(\App\Support\BloomLevels::TYPES);
+        const EXAM_PRINT_DEFAULTS = @json(\App\Support\ExamPrintOptions::collegeDefaults());
         const TOPICS_BY_ASSIGNMENT = @json($topicsByAssignment);
         const TOS_BY_ASSIGNMENT = @json($tosByAssignment);
         const ASSIGNMENTS = @json($assignments->map(fn($a) => ['id' => $a->id, 'label' => $a->course->code . ' — ' . $a->course->title]));
@@ -2735,6 +2783,41 @@
         }
         function closePreview() { document.getElementById('preview-overlay').classList.remove('open'); }
         document.getElementById('preview-overlay').addEventListener('click', function(e) { if (e.target === this) closePreview(); });
+
+        // ── Download Options (font, size, paper) ──
+        var downloadKind = 'exam';
+
+        function openDownloadOptions(kind) {
+            if (!currentExam || !currentExam.finalized_at && currentExam.status !== 'finalized') return;
+            downloadKind = kind;
+            document.getElementById('download-options-title').textContent = kind === 'exam' ? 'Download Exam' : 'Download Answer Key';
+            document.getElementById('dl-font').value = currentExam.print_font || EXAM_PRINT_DEFAULTS.font;
+            document.getElementById('dl-size').value = String(currentExam.print_font_size || EXAM_PRINT_DEFAULTS.size);
+            document.getElementById('dl-paper').value = currentExam.print_paper || EXAM_PRINT_DEFAULTS.paper;
+            updateDownloadPreview();
+            document.getElementById('download-options-overlay').classList.add('open');
+        }
+        function closeDownloadOptions() { document.getElementById('download-options-overlay').classList.remove('open'); }
+        document.getElementById('download-options-overlay').addEventListener('click', function(e) { if (e.target === this) closeDownloadOptions(); });
+
+        // Points are shown at their printed size (1pt = 1.333px).
+        function updateDownloadPreview() {
+            var box = document.getElementById('dl-preview');
+            box.style.fontFamily = '"' + document.getElementById('dl-font').value + '", sans-serif';
+            box.style.fontSize = (parseInt(document.getElementById('dl-size').value, 10) * 4 / 3) + 'px';
+        }
+
+        function confirmDownload() {
+            var font = document.getElementById('dl-font').value;
+            var size = document.getElementById('dl-size').value;
+            var paper = document.getElementById('dl-paper').value;
+            currentExam.print_font = font;
+            currentExam.print_font_size = parseInt(size, 10);
+            currentExam.print_paper = paper;
+            closeDownloadOptions();
+            window.location.href = '/faculty/exam-generator/' + currentExam.id + '/' + downloadKind +
+                '?font=' + encodeURIComponent(font) + '&size=' + encodeURIComponent(size) + '&paper=' + encodeURIComponent(paper);
+        }
 
         function finalizeExam() {
             if (!currentExam) return;
