@@ -51,6 +51,11 @@
         .settings-field select:focus { border-color: #0f2557; }
         .settings-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
         @media (max-width: 640px) { .settings-row { grid-template-columns: 1fr; } }
+        .term-modes { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+        .term-mode { display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px; color: #333; cursor: pointer; }
+        .term-mode input { margin-top: 2px; accent-color: #0f2557; }
+        .term-fields { grid-template-columns: repeat(2, 1fr); }
+        .term-fields.is-disabled { opacity: .5; }
         .settings-hint { font-size: 11px; color: #999; margin-top: 4px; }
         .preview { background: #f7f8fb; border: 1px dashed #cfd5e3; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; font-size: 12.5px; color: #333; }
         .preview-label { font-size: 10.5px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 8px; }
@@ -136,6 +141,52 @@
                     <div class="page-title">Settings</div>
                     <div class="page-sub">System-wide details used across the CBMA System.</div>
                 </div>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-card-title">Academic Term</div>
+                <div class="settings-card-sub">
+                    The semester and academic year the whole system works in: the subjects faculty see, submissions, exams, the TOS and downloaded documents.
+                    Now in use: <strong>{{ $term['current'] }}</strong>.
+                </div>
+
+                <form method="POST" action="{{ url('/admin/settings') }}" id="term-form">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="section" value="term">
+                    <div class="term-modes">
+                        <label class="term-mode">
+                            <input type="radio" name="term_mode" value="auto" @checked(old('term_mode', $term['manual'] ? 'manual' : 'auto') === 'auto') onchange="updateTermForm()">
+                            <span><strong>Automatic</strong> — follows the calendar ({{ $term['calendar'] }})</span>
+                        </label>
+                        <label class="term-mode">
+                            <input type="radio" name="term_mode" value="manual" @checked(old('term_mode', $term['manual'] ? 'manual' : 'auto') === 'manual') onchange="updateTermForm()">
+                            <span><strong>Set manually</strong> — use when a semester starts early or runs late</span>
+                        </label>
+                    </div>
+
+                    <div class="settings-row term-fields" id="term-fields">
+                        <div class="settings-field">
+                            <label for="term_semester">Semester</label>
+                            <select id="term_semester" name="term_semester">
+                                @foreach(\App\Support\AcademicTerm::SEMESTERS as $semester)
+                                    <option value="{{ $semester }}" @selected(old('term_semester', $term['semester']) === $semester)>{{ $semester }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="settings-field">
+                            <label for="term_school_year">Academic year</label>
+                            <select id="term_school_year" name="term_school_year">
+                                @foreach(\App\Support\AcademicTerm::settingsSchoolYearOptions() as $year)
+                                    <option value="{{ $year }}" @selected(old('term_school_year', $term['school_year']) === $year)>A.Y. {{ $year }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-hint" style="margin:-4px 0 14px;">Changing the term changes what everyone sees right away. Records from other terms are kept and come back when that term is set again.</div>
+
+                    <button type="submit" class="btn-save">Save</button>
+                </form>
             </div>
 
             <div class="settings-card">
@@ -239,6 +290,15 @@
             box.style.fontSize = (parseInt(document.getElementById('exam_font_size').value, 10) * 4 / 3) + 'px';
         }
         updatePrintPreview();
+
+        // The semester/year pickers only apply when the term is set manually.
+        function updateTermForm() {
+            var manual = document.querySelector('input[name="term_mode"][value="manual"]').checked;
+            document.getElementById('term-fields').classList.toggle('is-disabled', !manual);
+            document.getElementById('term_semester').disabled = !manual;
+            document.getElementById('term_school_year').disabled = !manual;
+        }
+        updateTermForm();
     </script>
 
     <div id="logout-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
