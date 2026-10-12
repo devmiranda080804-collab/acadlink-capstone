@@ -8,13 +8,14 @@ class ExamQuestion extends Model
 {
     protected $fillable = [
         'exam_section_id', 'parent_id', 'type', 'topic', 'bloom_level',
-        'question_text', 'points', 'options', 'order',
+        'question_text', 'points', 'options', 'order', 'bank_archived_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'options' => 'array',
+            'options'          => 'array',
+            'bank_archived_at' => 'datetime',
         ];
     }
 

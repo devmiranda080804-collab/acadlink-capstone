@@ -89,6 +89,7 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::post('/exam-generator/generate-questions', [ExamGeneratorController::class, 'generateQuestions']);
     Route::get('/exam-generator/item-bank', [ExamGeneratorController::class, 'bankItems']);
     Route::post('/exam-generator/item-bank/{question}/reuse', [ExamGeneratorController::class, 'reuseItem']);
+    Route::post('/exam-generator/item-bank/archive', [ExamGeneratorController::class, 'archiveBankItems']);
     Route::get('/exam-generator/{exam}', [ExamGeneratorController::class, 'show']);
     Route::put('/exam-generator/{exam}', [ExamGeneratorController::class, 'update']);
     Route::get('/exam-generator/{exam}/tos', [ExamGeneratorController::class, 'tos']);

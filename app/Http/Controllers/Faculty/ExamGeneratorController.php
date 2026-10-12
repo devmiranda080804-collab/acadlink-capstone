@@ -183,6 +183,7 @@ class ExamGeneratorController extends Controller
             'sections.*.questions.*.options'       => 'nullable|array',
             'sections.*.questions.*.bloom_level'   => ['nullable', Rule::in(BloomLevels::LEVELS)],
             'sections.*.questions.*.children'      => 'array',
+            'sections.*.questions.*.bank_archived_at' => 'nullable|date',
         ]);
 
         // No topic may get more items than its TOS sets (a draft can still be short).
@@ -290,6 +291,7 @@ class ExamGeneratorController extends Controller
             'points'          => $data['points'],
             'options'         => $data['options'] ?? null,
             'order'           => $order,
+            'bank_archived_at' => $data['bank_archived_at'] ?? null,
         ]);
 
         foreach ($data['children'] ?? [] as $childIndex => $childData) {
@@ -678,9 +680,10 @@ class ExamGeneratorController extends Controller
 
     public function bankItems(Request $request)
     {
-        $request->validate(['course_id' => 'required|exists:courses,id']);
+        $request->validate(['course_id' => 'required|exists:courses,id', 'archived' => 'nullable|boolean']);
 
         $items = ExamQuestion::whereNull('parent_id')
+            ->when($request->boolean('archived'), fn($q) => $q->whereNotNull('bank_archived_at'), fn($q) => $q->whereNull('bank_archived_at'))
             ->whereHas('section.exam', function ($q) use ($request) {
                 $q->where('faculty_id', auth()->id())
                     ->whereHas('programAssignment', fn($pa) => $pa->where('course_id', $request->course_id));
@@ -690,6 +693,31 @@ class ExamGeneratorController extends Controller
             ->get();
 
         return response()->json($items);
+    }
+
+    // Bulk Archive / Restore in the Item Bank. Archiving only hides questions from the
+    // Item Bank — they stay in the exams they belong to, finalized ones included.
+    public function archiveBankItems(Request $request)
+    {
+        $request->validate([
+            'ids'      => 'required|array|min:1|max:500',
+            'ids.*'    => 'integer',
+            'archived' => 'required|boolean',
+        ], ['ids.required' => 'Select at least one question first.', 'ids.min' => 'Select at least one question first.']);
+
+        $count = ExamQuestion::whereIn('id', $request->ids)
+            ->whereNull('parent_id')
+            ->whereHas('section.exam', fn($q) => $q->where('faculty_id', auth()->id()))
+            ->update(['bank_archived_at' => $request->boolean('archived') ? now() : null]);
+
+        $noun = $count === 1 ? 'question' : 'questions';
+
+        return response()->json([
+            'count'   => $count,
+            'message' => $request->boolean('archived')
+                ? "{$count} {$noun} archived. They no longer appear in the Item Bank but stay in their exams."
+                : "{$count} {$noun} restored to the Item Bank.",
+        ]);
     }
 
     public function reuseItem(Request $request, ExamQuestion $question)

@@ -488,6 +488,21 @@
         }
 
         .q-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+        .q-select { width: 15px; height: 15px; margin: 1px 8px 0 0; cursor: pointer; accent-color: #0f2557; flex-shrink: 0; }
+        .question-card.is-selected { border-color: #93a5d6; background: #f5f7fd; }
+        .sec-select { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #555; white-space: nowrap; margin-right: 8px; cursor: pointer; }
+        .sec-select input { width: 14px; height: 14px; accent-color: #0f2557; cursor: pointer; }
+        .bulk-bar { display: none; align-items: center; gap: 10px; flex-wrap: wrap; background: #0f2557; color: #fff; border-radius: 8px; padding: 9px 14px; margin-bottom: 12px; font-size: 12.5px; position: sticky; top: 8px; z-index: 5; }
+        .bulk-bar.show { display: flex; }
+        .bulk-bar .bulk-count { font-weight: 700; margin-right: auto; }
+        .bulk-bar button { border: 1px solid rgba(255,255,255,.45); background: transparent; color: #fff; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 5px; cursor: pointer; }
+        .bulk-bar button:hover { background: rgba(255,255,255,.12); }
+        .bulk-bar button.bulk-danger { background: #ef4444; border-color: #ef4444; }
+        .bulk-bar button.bulk-danger:hover { background: #dc2626; }
+        .bank-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; font-size: 12px; color: #444; }
+        .bank-toolbar label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+        .bank-toolbar input { accent-color: #0f2557; }
+        .bank-archived-tag { background: #eef0f4; color: #666; font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 10px; }
         .q-num { font-size: 12.5px; font-weight: 600; color: #333; flex: 1; }
         .q-actions { display: flex; gap: 6px; }
 
@@ -890,6 +905,12 @@
                 </div>
 
                 {{-- Sections content --}}
+                <div class="bulk-bar" id="eb-bulk-bar" role="region" aria-label="Selected questions">
+                    <span class="bulk-count" id="eb-bulk-count">0 selected</span>
+                    <button type="button" onclick="selectAllQuestions(true)">Select all</button>
+                    <button type="button" onclick="selectAllQuestions(false)">Clear</button>
+                    <button type="button" class="bulk-danger" onclick="deleteSelectedQuestions()">🗑 Delete selected</button>
+                </div>
                 <div id="eb-sections-content"></div>
                 <div class="tab-empty" id="eb-no-exam-notice">
                     <div class="empty-icon">📝</div>
@@ -930,6 +951,12 @@
                             @endforeach
                         </select>
                     </div>
+                </div>
+                <div class="bank-toolbar" id="bank-toolbar" style="display:none;">
+                    <label><input type="checkbox" id="bank-select-all" onchange="selectAllBankItems(this.checked)"> Select all shown</label>
+                    <span id="bank-selected-count" style="color:#888;">0 selected</span>
+                    <button type="button" class="tos-action-btn" id="bank-archive-btn" onclick="archiveSelectedBankItems()" disabled>📦 Archive selected</button>
+                    <label style="margin-left:auto;"><input type="checkbox" id="bank-show-archived" onchange="loadItemBank()"> Show archived</label>
                 </div>
                 <div id="bank-items-container">
                     <div class="tab-empty">
@@ -1924,6 +1951,7 @@
             renderSectionsContent(opts);
             renderTosProgress();
             refreshDuplicateBadges();
+            refreshBulkBar();
         }
 
         function renderSectionsBar() {
@@ -2079,6 +2107,8 @@
 
                 div.innerHTML =
                     '<div class="section-header">' +
+                        ((sec.questions || []).length ? '<label class="sec-select" title="Select every question in this test"><input type="checkbox" onchange="selectSectionQuestions(\'' + sec.id + '\', this.checked)"' +
+                            ((sec.questions || []).every(function(q) { return q._selected; }) ? ' checked' : '') + '> All</label>' : '') +
                         '<input class="section-title-input" value="' + escapeAttr(sec.title) + '" ' + disabled +
                             ' onchange="updateSectionTitle(\'' + sec.id + '\', this.value)">' +
                         '<button class="btn-del-section" onclick="deleteSection(\'' + sec.id + '\')" title="Delete section" ' + disabled + '>🗑</button>' +
@@ -2230,8 +2260,9 @@
                   '</select>'
                 : '<span class="q-blooms-badge" style="background:#eee;color:#888;">Container</span>';
 
-            var body = '<div class="question-card" id="' + idAttr + '" style="' + indent + '">' +
+            var body = '<div class="question-card' + (ci === null && q._selected ? ' is-selected' : '') + '" id="' + idAttr + '" style="' + indent + '">' +
                 '<div class="q-header">' +
+                    (ci === null ? '<input type="checkbox" class="q-select" aria-label="Select question ' + num + '"' + (q._selected ? ' checked' : '') + ' onchange="toggleQuestionSelect(\'' + secId + '\',' + qi + ',this.checked)">' : '') +
                     '<div class="q-num" style="flex:1;">' + num + '. <span class="q-dup-badge" id="dup-' + idAttr + '"></span></div>' +
                     '<div class="q-actions">' +
                         (ci === null ? '<button class="btn-q-action" onclick="copyQuestion(\'' + secId + '\',' + qi + ')" title="Copy">⧉</button>' : '') +
@@ -2298,6 +2329,45 @@
             q.options.choices.splice(idx, 1);
             if (q.options.correct >= q.options.choices.length) q.options.correct = 0;
             renderEB();
+        }
+
+        // ── Bulk select / delete (questions carry a _selected flag that survives re-renders) ──
+        function selectedQuestionCount() {
+            var n = 0;
+            if (currentExam) currentExam.sections.forEach(function(sec) { (sec.questions || []).forEach(function(q) { if (q._selected) n++; }); });
+            return n;
+        }
+        function refreshBulkBar() {
+            var n = selectedQuestionCount();
+            document.getElementById('eb-bulk-bar').classList.toggle('show', n > 0);
+            document.getElementById('eb-bulk-count').textContent = n + (n === 1 ? ' question selected' : ' questions selected');
+        }
+        function toggleQuestionSelect(secId, qi, checked) {
+            var sec = findSection(secId);
+            if (!sec || !sec.questions[qi]) return;
+            sec.questions[qi]._selected = checked;
+            renderEB({ skipSort: true });
+        }
+        function selectSectionQuestions(secId, checked) {
+            var sec = findSection(secId);
+            if (!sec) return;
+            (sec.questions || []).forEach(function(q) { q._selected = checked; });
+            renderEB({ skipSort: true });
+        }
+        function selectAllQuestions(checked) {
+            currentExam.sections.forEach(function(sec) { (sec.questions || []).forEach(function(q) { q._selected = checked; }); });
+            renderEB({ skipSort: true });
+        }
+        function deleteSelectedQuestions() {
+            var n = selectedQuestionCount();
+            if (!n) return;
+            confirmAction('Delete ' + n + (n === 1 ? ' question' : ' questions') + ' from this exam? Click Save afterwards to keep the change.', function() {
+                currentExam.sections.forEach(function(sec) {
+                    sec.questions = (sec.questions || []).filter(function(q) { return !q._selected; });
+                });
+                renderEB();
+                showToast(n + (n === 1 ? ' question' : ' questions') + ' deleted. Save the exam to keep the change.', 'success');
+            }, { title: 'Delete selected questions?', confirmText: 'Delete' });
         }
 
         function deleteQuestion(secId, qi, ci) {
@@ -2671,6 +2741,7 @@
                 // instead of silently re-derived. A genuinely new/never-classified question
                 // has none yet, so the server auto-resolves it from the TOS the first time.
                 bloom_level: q.bloom_level || null,
+                bank_archived_at: q.bank_archived_at || null,
                 children: (q.children || []).map(serializeQuestion)
             };
         }
@@ -2956,7 +3027,8 @@
             bloomSelect.value = '';
 
             try {
-                allBankItems = await api('/faculty/exam-generator/item-bank?course_id=' + courseId);
+                allBankItems = await api('/faculty/exam-generator/item-bank?course_id=' + courseId + (bankShowingArchived() ? '&archived=1' : ''));
+                bankSelected = {};
             } catch (e) {
                 container.innerHTML = '<div class="tab-empty" style="color:#ef4444;">' + escapeHtml(e.message) + '</div>';
                 return;
@@ -2975,38 +3047,109 @@
             renderBankItems();
         }
 
-        function renderBankItems() {
-            var container = document.getElementById('bank-items-container');
+        // ── Item Bank bulk Archive / Restore ──
+        var bankSelected = {};
+
+        function bankShowingArchived() { return document.getElementById('bank-show-archived').checked; }
+
+        function shownBankItems() {
             var topicFilter = document.getElementById('bank-topic-select').value;
             var bloomFilter = document.getElementById('bank-bloom-select').value;
+            return allBankItems.filter(function(item) {
+                return (!topicFilter || item.topic === topicFilter) && (!bloomFilter || item.bloom_level === bloomFilter);
+            });
+        }
+
+        function refreshBankToolbar() {
+            var shown = shownBankItems();
+            var ids = Object.keys(bankSelected).filter(function(id) { return bankSelected[id]; });
+            var archived = bankShowingArchived();
+            document.getElementById('bank-selected-count').textContent = ids.length + ' selected';
+            var btn = document.getElementById('bank-archive-btn');
+            btn.textContent = archived ? '↩ Restore selected' : '📦 Archive selected';
+            btn.disabled = ids.length === 0;
+            var all = document.getElementById('bank-select-all');
+            all.checked = shown.length > 0 && shown.every(function(i) { return bankSelected[i.id]; });
+            all.disabled = shown.length === 0;
+        }
+
+        function toggleBankItem(id, checked) {
+            bankSelected[id] = checked;
+            var card = document.querySelector('[data-bank-card="' + id + '"]');
+            if (card) card.classList.toggle('is-selected', checked);
+            refreshBankToolbar();
+        }
+
+        function selectAllBankItems(checked) {
+            shownBankItems().forEach(function(i) { bankSelected[i.id] = checked; });
+            renderBankItems();
+        }
+
+        function archiveSelectedBankItems() {
+            var ids = Object.keys(bankSelected).filter(function(id) { return bankSelected[id]; }).map(Number);
+            if (!ids.length) return;
+            var archive = !bankShowingArchived();
+            var noun = ids.length === 1 ? 'question' : 'questions';
+            var message = archive
+                ? 'Archive ' + ids.length + ' ' + noun + '? ' + (ids.length === 1 ? 'It' : 'They') + ' will no longer appear in the Item Bank, but will stay in ' + (ids.length === 1 ? 'its exam' : 'their exams') + '.'
+                : 'Restore ' + ids.length + ' ' + noun + ' to the Item Bank?';
+            confirmAction(message, async function() {
+                try {
+                    var result = await api('/faculty/exam-generator/item-bank/archive', { method: 'POST', body: { ids: ids, archived: archive } });
+                    // The open exam may hold these same questions — keep its copy in step so
+                    // saving it later doesn't undo the archive.
+                    if (currentExam) {
+                        var stamp = archive ? new Date().toISOString() : null;
+                        currentExam.sections.forEach(function(sec) {
+                            (sec.questions || []).forEach(function(q) { if (ids.indexOf(q.id) !== -1) q.bank_archived_at = stamp; });
+                        });
+                    }
+                    showToast(result.message, 'success');
+                    await loadItemBank();
+                } catch (e) {
+                    showToast(e.message, 'error');
+                }
+            }, { title: archive ? 'Archive selected questions?' : 'Restore selected questions?', confirmText: archive ? 'Archive' : 'Restore' });
+        }
+
+        function renderBankItems() {
+            var container = document.getElementById('bank-items-container');
+            document.getElementById('bank-toolbar').style.display = document.getElementById('bank-course-select').value ? 'flex' : 'none';
 
             if (allBankItems.length === 0) {
-                container.innerHTML = '<div class="tab-empty"><div class="empty-icon">🗃️</div>No reusable items yet for this subject. Add questions in the Exam Builder first.</div>';
+                container.innerHTML = bankShowingArchived()
+                    ? '<div class="tab-empty"><div class="empty-icon">📦</div>No archived items for this subject.</div>'
+                    : '<div class="tab-empty"><div class="empty-icon">🗃️</div>No reusable items yet for this subject. Add questions in the Exam Builder first.</div>';
+                refreshBankToolbar();
                 return;
             }
 
-            var items = allBankItems.filter(function(item) {
-                var matchesTopic = !topicFilter || item.topic === topicFilter;
-                var matchesBloom = !bloomFilter || item.bloom_level === bloomFilter;
-                return matchesTopic && matchesBloom;
-            });
+            var items = shownBankItems();
 
             if (items.length === 0) {
                 container.innerHTML = '<div class="tab-empty">No items match this filter.</div>';
+                refreshBankToolbar();
                 return;
             }
 
             container.innerHTML = items.map(function(item) {
                 var ct = QUESTION_TYPES[item.type] || {};
                 var bloomLabel = item.bloom_level || ct.bloom;
-                return '<div class="question-card" style="margin-bottom:10px;">' +
-                    '<div class="q-header"><div class="q-num" style="flex:1;">' + escapeHtml(item.question_text || '(Case Analysis scenario)') + '</div>' +
-                    '<button class="btn-q-action" data-bank-id="' + item.id + '" onclick="reuseBankItem(' + item.id + ')" title="Add to current exam" ' + (currentExam ? '' : 'disabled') + '>+ Add</button></div>' +
+                var archived = !!item.bank_archived_at;
+                return '<div class="question-card' + (bankSelected[item.id] ? ' is-selected' : '') + '" data-bank-card="' + item.id + '" style="margin-bottom:10px;">' +
+                    '<div class="q-header">' +
+                    '<input type="checkbox" class="q-select" aria-label="Select this question"' + (bankSelected[item.id] ? ' checked' : '') + ' onchange="toggleBankItem(' + item.id + ', this.checked)">' +
+                    '<div class="q-num" style="flex:1;">' + escapeHtml(item.question_text || '(Case Analysis scenario)') + '</div>' +
+                    (archived
+                        ? '<span class="bank-archived-tag">Archived</span>'
+                        : '<button class="btn-q-action" data-bank-id="' + item.id + '" onclick="reuseBankItem(' + item.id + ')" title="Add to current exam" ' + (currentExam ? '' : 'disabled') + '>+ Add</button>') +
+                    '</div>' +
                     '<div class="q-footer"><span class="q-type-label">' + (ct.label || item.type) + '</span>' +
                     (bloomLabel ? '<span class="q-blooms-badge">' + bloomLabel + '</span>' : '') +
                     (item.topic ? '<span class="q-type-label">' + escapeHtml(item.topic) + '</span>' : '') + '</div>' +
                 '</div>';
             }).join('');
+            refreshBankToolbar();
         }
 
         var bankAddQuestionId = null;
