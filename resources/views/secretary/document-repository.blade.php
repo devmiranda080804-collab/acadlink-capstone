@@ -81,20 +81,37 @@
         .repo-filter { padding: 7px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; color: #333; background: #fff; outline: none; }
         .repo-filter:focus { border-color: #0f2557; }
 
-        /* Fixed column widths so the table keeps the same shape on every page; long text is cut with "…" (full text on hover). */
+        /* Columns get a fixed share of the table so it keeps the same shape on every page and
+           scales with the screen; long text is cut with "…" (full text on hover). */
         .files-table-wrap { overflow-x: auto; }
-        .files-table { width: 100%; min-width: 860px; table-layout: fixed; border-collapse: collapse; font-size: 12.5px; }
+        .files-table { width: 100%; min-width: 980px; table-layout: fixed; border-collapse: collapse; font-size: 12.5px; }
         .files-table thead tr { background: #fff; border-bottom: 1px solid #eee; }
         .files-table th { padding: 11px 12px; text-align: left; font-size: 11.5px; font-weight: 700; color: #666; white-space: nowrap; }
-        .files-table td { padding: 12px 12px; height: 50px; box-sizing: border-box; border-bottom: 1px solid #f5f5f5; color: #333; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .files-table td { padding: 12px 12px; height: 54px; box-sizing: border-box; border-bottom: 1px solid #f5f5f5; color: #333; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .files-table tbody tr:hover { background: #fafbff; }
-        .files-table .col-folder { width: 114px; }
-        .files-table .col-source { width: 86px; }
-        .files-table .col-type { width: 120px; }
-        .files-table .col-program { width: 62px; }
-        .files-table .col-uploader { width: 124px; }
-        .files-table .col-date { width: 110px; }
-        .files-table .col-actions { width: 118px; }
+        .files-table .col-name { width: 26%; }
+        .files-table .col-folder { width: 14%; }
+        .files-table .col-source { width: 9%; }
+        .files-table .col-type { width: 11%; }
+        .files-table .col-program { width: 8%; }
+        .files-table .col-uploader { width: 11%; }
+        .files-table .col-date { width: 8%; }
+        .files-table .col-actions { width: 13%; }
+        .doc-name .dsub { display: none; font-size: 11px; color: #888; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .doc-name .dtext { min-width: 0; }
+        /* Laptop screens: the Folder column moves under the name so everything fits without scrolling. */
+        @media (max-width: 1600px) {
+            .files-table { min-width: 820px; }
+            .files-table .col-folder, .files-table th:nth-child(2), .files-table td:nth-child(2) { display: none; }
+            .doc-name .dsub { display: block; }
+            .files-table .col-name { width: 22%; }
+            .files-table .col-program { width: 10%; }
+            .files-table .col-source { width: 10%; }
+            .files-table .col-type { width: 13%; }
+            .files-table .col-uploader { width: 12%; }
+            .files-table .col-date { width: 11%; }
+            .files-table .col-actions { width: 15%; }
+        }
 
         .doc-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
         .doc-name .ficon { font-size: 15px; flex-shrink: 0; }
@@ -108,13 +125,13 @@
         .program-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f0f4ff; color: #0f2557; }
 
         .action-buttons { display: flex; gap: 6px; align-items: center; }
-        .btn-icon-only { padding: 6px 9px; }
-        .action-buttons .btn-icon-only svg { width: 14px; height: 14px; }
-        .btn-view { display: inline-flex; align-items: center; gap: 4px; background: #fff; color: #444; border: 1px solid #d0d0d0; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 5px; text-decoration: none; }
-        .btn-view:hover { background: #f5f5f5; }
-        .btn-del { background: none; border: none; color: #ccc; cursor: pointer; padding: 5px 8px; border-radius: 4px; }
-        .btn-del:hover { color: #ef4444; background: #fee2e2; }
-        .action-buttons svg { width: 12px; height: 12px; }
+        .action-buttons form { display: flex; margin: 0; }
+        .btn-view, .btn-del { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; box-sizing: border-box; border-radius: 6px; cursor: pointer; text-decoration: none; transition: background 0.15s, color 0.15s, border-color 0.15s; }
+        .btn-view { background: #fff; color: #0f2557; border: 1px solid #d5dbe8; }
+        .btn-view:hover { background: #eef2ff; border-color: #0f2557; }
+        .btn-del { background: #fff; color: #dc2626; border: 1px solid #f3c4c4; }
+        .btn-del:hover { background: #fee2e2; border-color: #dc2626; }
+        .action-buttons svg { width: 15px; height: 15px; }
 
         .files-empty { text-align: center; padding: 50px 20px; color: #bbb; font-size: 12.5px; }
 
@@ -285,7 +302,7 @@
                         <div class="files-table-wrap">
                         <table class="files-table">
                             <colgroup>
-                                <col>
+                                <col class="col-name">
                                 <col class="col-folder">
                                 <col class="col-source">
                                 <col class="col-type">
@@ -318,7 +335,10 @@
                                                 <td>
                                                     <div class="doc-name">
                                                         <span class="ficon">@if($doc['file_type'] == 'pdf') 📄 @elseif(in_array($doc['file_type'], ['xls','xlsx'])) 📊 @else 📝 @endif</span>
-                                                        <span class="dtitle" title="{{ $doc['title'] }}">{{ $doc['title'] }}</span>
+                                                        <div class="dtext">
+                                                            <div class="dtitle" title="{{ $doc['title'] }}">{{ $doc['title'] }}</div>
+                                                            <div class="dsub">{{ $sy }} · {{ $sem }}</div>
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td><span class="folder-tag" title="{{ $sy }} · {{ $sem }}">{{ $sy }} · {{ $sem }}</span></td>
@@ -334,17 +354,17 @@
                                                 <td title="{{ $doc['type'] }}">{{ $doc['type'] }}</td>
                                                 <td><span class="program-tag" title="{{ \App\Support\Programs::label($doc['program']) }}">{{ $doc['program'] }}</span></td>
                                                 <td title="{{ $doc['uploader'] }}">{{ $doc['uploader'] }}</td>
-                                                <td>{{ $doc['date']->format('M d, Y') }}</td>
+                                                <td title="{{ $doc['date']->format('M d, Y') }}">{{ $doc['date']->format('M d, Y') }}</td>
                                                 <td>
                                                     <div class="action-buttons">
-                                                        <a class="btn-view btn-icon-only" href="{{ $doc['view_url'] }}" target="_blank" title="View" aria-label="View">
+                                                        <a class="btn-view" href="{{ $doc['view_url'] }}" target="_blank" title="View" aria-label="View">
                                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                                         </a>
-                                                        <a class="btn-view btn-icon-only" href="{{ $doc['download_url'] }}" title="Download" aria-label="Download">
+                                                        <a class="btn-view" href="{{ $doc['download_url'] }}" title="Download" aria-label="Download">
                                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                                         </a>
                                                         @if($doc['can_delete'])
-                                                            <form method="POST" action="{{ url('/secretary/document-repository/' . $doc['id']) }}" data-confirm="Remove this document from the repository? This cannot be undone." data-confirm-title="Remove Document" data-confirm-button="Remove" style="display:inline;">
+                                                            <form method="POST" action="{{ url('/secretary/document-repository/' . $doc['id']) }}" data-confirm="Remove this document from the repository? This cannot be undone." data-confirm-title="Remove Document" data-confirm-button="Remove">
                                                                 @csrf
                                                                 @method('DELETE')
                                                                 <button type="submit" class="btn-del" title="Delete">
