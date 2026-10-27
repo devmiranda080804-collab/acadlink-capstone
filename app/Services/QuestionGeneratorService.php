@@ -25,9 +25,10 @@ class QuestionGeneratorService
         $apiKey = config('services.anthropic.api_key');
 
         if (! $apiKey) {
+            // The setup detail (ANTHROPIC_API_KEY in .env) goes to the log, not to the faculty.
+            report(new RuntimeException('AI question generation is not configured: ANTHROPIC_API_KEY is missing from .env.'));
             throw new RuntimeException(
-                'AI question generation is not configured yet. Set ANTHROPIC_API_KEY in .env '
-                . '(get a key from console.anthropic.com).'
+                'AI question generation isn\'t available yet. Please contact the administrator. You can still add questions by hand.'
             );
         }
 

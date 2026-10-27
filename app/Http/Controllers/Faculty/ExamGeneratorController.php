@@ -626,7 +626,11 @@ class ExamGeneratorController extends Controller
         } catch (\RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         } catch (\Anthropic\Core\Exceptions\AnthropicException $e) {
-            return response()->json(['message' => 'AI generation failed: ' . $e->getMessage()], 502);
+            report($e);
+
+            return response()->json([
+                'message' => 'The AI couldn\'t create questions right now. Please try again in a minute. If it keeps happening, contact the administrator.',
+            ], 502);
         }
 
         // AI check: drop any generated question that repeats (exactly or nearly) one

@@ -159,8 +159,36 @@
     };
     var MAX_TOASTS = 4;
 
+    // Technical text that can still reach a toast (a dropped connection, or a page's own
+    // "Request failed (500)" fallback) is reworded so the user knows what to do next.
+    var STATUS_MESSAGES = {
+        401: 'You have been signed out. Please log in again.',
+        403: 'You don\'t have permission to do that.',
+        404: 'This item could not be found. It may have been removed, so please refresh the page.',
+        413: 'The file is too large to upload.',
+        419: 'Your session timed out. Please refresh the page and try again.',
+        429: 'Too many requests at once. Please wait a moment and try again.'
+    };
+    function humanizeMessage(message) {
+        var text = String(message == null ? '' : message).trim();
+        if (/^(Failed to fetch|NetworkError|Load failed|Network request failed)/i.test(text)) {
+            return 'Can\'t reach the server. Please check your internet connection and try again.';
+        }
+        var code = text.match(/^(?:Request failed \((\d{3})\)|HTTP (\d{3}))\.?$/i);
+        if (code) {
+            var status = Number(code[1] || code[2]);
+            return STATUS_MESSAGES[status] || (status >= 500
+                ? 'Something went wrong on our side. Please try again in a moment.'
+                : 'Your request couldn\'t be completed. Please refresh the page and try again.');
+        }
+        return text || 'Something went wrong. Please try again.';
+    }
+
+    window.humanizeMessage = humanizeMessage;
+
     window.showToast = function (message, type, timeout) {
         type = TOAST_TYPES[type] ? type : 'info';
+        if (type === 'error') message = humanizeMessage(message);
         var duration = timeout || (type === 'error' ? 8000 : 4500); // errors stay longer so they can be read
 
         // Keep the stack short: drop the oldest when too many pile up.
@@ -371,7 +399,8 @@
         var shownOnPage = document.querySelector('.alert-error, .error-msg[style*="block"]')
             || Array.from(document.querySelectorAll('.modal-error')).some(function (el) { return el.textContent.trim() !== ''; });
         if (!shownOnPage) {
-            showToast(@json($errors->first()), 'error');
+            // A form that needs fixing, not a system failure: "Please check", not "Something went wrong".
+            showToast(@json($errors->first() . ($errors->count() > 1 ? ' (and ' . ($errors->count() - 1) . ' more to fix)' : '')), 'warning', 8000);
         }
     @endif
 })();

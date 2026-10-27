@@ -26,8 +26,14 @@ class ForgotPasswordController extends Controller
             return back()->with('success', 'The password reset link has been sent to your email. Please check your inbox.');
         }
 
+        if ($status === Password::RESET_THROTTLED) {
+            return back()->withErrors([
+                'email' => 'A reset link was just sent. Please wait a minute before asking for another one, and check your spam folder.'
+            ])->onlyInput('email');
+        }
+
         return back()->withErrors([
             'email' => 'No account found with that email address.'
-        ]);
+        ])->onlyInput('email');
     }
 }

@@ -1748,7 +1748,7 @@
                 switchTab('exam-builder');
                 await loadExam(exam.id);
             } catch (e) {
-                if (errorEl) { errorEl.textContent = e.message; errorEl.style.display = 'block'; }
+                if (errorEl) { errorEl.textContent = window.humanizeMessage(e.message); errorEl.style.display = 'block'; }
                 else showToast(e.message, 'error');
             }
         }
@@ -1882,7 +1882,7 @@
                     throw new Error(err.message || ('Request failed (' + res.status + ')'));
                 }
             } catch (e) {
-                errorEl.textContent = e.message;
+                errorEl.textContent = window.humanizeMessage(e.message);
                 errorEl.style.display = 'block';
                 return;
             }
@@ -2696,7 +2696,7 @@
                     showToast(result.skipped + ' generated ' + (result.skipped === 1 ? 'question was' : 'questions were') + ' skipped because ' + (result.skipped === 1 ? 'it repeats' : 'they repeat') + ' a question already in the exam.', 'info');
                 }
             } catch (e) {
-                errBox.textContent = e.message;
+                errBox.textContent = window.humanizeMessage(e.message);
                 errBox.style.display = 'block';
             } finally {
                 btn.disabled = false;
@@ -2917,7 +2917,7 @@
                     throw new Error(err.message || ('Request failed (' + res.status + ')'));
                 }
             } catch (e) {
-                errorEl.textContent = e.message;
+                errorEl.textContent = window.humanizeMessage(e.message);
                 errorEl.style.display = 'block';
                 return;
             }
