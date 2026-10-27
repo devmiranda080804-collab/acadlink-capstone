@@ -19,7 +19,7 @@ class NewAccountCredentials extends Mailable
     public function build()
     {
         return $this->subject('Your CBMA System Account')
-            ->markdown('emails.new-account', [
+            ->view('emails.new-account', [
                 'name'     => $this->user->name,
                 'email'    => $this->user->email,
                 'password' => $this->temporaryPassword,

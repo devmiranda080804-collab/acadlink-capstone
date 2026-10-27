@@ -33,7 +33,7 @@ class AccountUpdated extends Mailable
     public function build()
     {
         return $this->subject(self::SUBJECTS[$this->event])
-            ->markdown('emails.account-updated', [
+            ->view('emails.account-updated', [
                 'name'      => $this->user->name,
                 'event'     => $this->event,
                 'changes'   => $this->changes,
