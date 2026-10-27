@@ -69,6 +69,87 @@
         .completion-text { font-size: 10.5px; color: #888; font-weight: 600; }
 
         svg { display: inline-block; vertical-align: middle; }
+
+        /* Summary */
+        .summary-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .summary-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+        .summary-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .summary-icon svg { width: 18px; height: 18px; }
+        .summary-num { font-size: 20px; font-weight: 700; color: #1a1a2e; line-height: 1.1; }
+        .summary-label { font-size: 11.5px; color: #777; margin-top: 2px; }
+
+        /* The two filing columns */
+        .filing-table th.col-split { background: #f3f6fd; color: #0f2557; }
+        .filing-table td.col-split { background: #fbfcff; }
+        .filing-table tbody tr:hover td.col-split { background: #f3f6fd; }
+        .split-count { font-size: 12.5px; font-weight: 700; color: #1a1a2e; }
+        .split-count span { font-weight: 400; color: #888; }
+        .doc-dots { display: flex; gap: 4px; justify-content: center; margin-top: 5px; }
+        .doc-dot { width: 9px; height: 9px; border-radius: 50%; background: #e5e7eb; }
+        .doc-dot.filed { background: #93c5fd; }
+        .doc-dot.validated { background: #10b981; }
+        .doc-dot.returned { background: #ef4444; }
+        .doc-dot.pending { background: #f59e0b; }
+        .mini-badges { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-top: 5px; }
+        .mini-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; white-space: nowrap; }
+        .mini-badge.check { background: #fef3c7; color: #b45309; }
+        .mini-badge.returned { background: #fee2e2; color: #b91c1c; }
+        .btn-review { display: inline-flex; align-items: center; gap: 6px; background: #0f2557; color: #fff; border: none; font-size: 11.5px; font-weight: 600; padding: 7px 13px; border-radius: 6px; cursor: pointer; white-space: nowrap; position: relative; }
+        .btn-review:hover { background: #1b3d7a; }
+        .btn-review svg { width: 13px; height: 13px; }
+        .btn-review .dot { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: #f59e0b; color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+
+        /* Review modal */
+        .cf-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); z-index: 900; align-items: center; justify-content: center; padding: 20px; }
+        .cf-overlay.open { display: flex; }
+        .cf-modal { background: #fff; border-radius: 12px; width: 980px; max-width: 100%; max-height: 92vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.25); overflow: hidden; }
+        .cf-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 22px; border-bottom: 1px solid #eee; }
+        .cf-title { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+        .cf-sub { font-size: 12px; color: #777; margin-top: 3px; }
+        .cf-close { background: none; border: none; font-size: 22px; line-height: 1; color: #999; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+        .cf-close:hover { background: #f3f4f6; color: #333; }
+        .cf-body { overflow-y: auto; padding: 4px 22px 18px; }
+        .cf-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+        .cf-table th { text-align: left; padding: 12px 12px 10px; font-size: 11px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid #eee; position: sticky; top: 0; background: #fff; }
+        .cf-table th.col-split { color: #0f2557; }
+        .cf-table td { padding: 12px; border-bottom: 1px solid #f3f3f3; vertical-align: top; }
+        .cf-table tr:last-child td { border-bottom: none; }
+        .cf-doc { font-weight: 700; color: #1a1a2e; white-space: nowrap; }
+        .cf-file + .cf-file, .cf-check + .cf-check { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee; }
+        .cf-file, .cf-check { min-height: 46px; }
+        .cf-file-name { font-weight: 600; color: #1a1a2e; word-break: break-word; }
+        .cf-file-meta { font-size: 11px; color: #888; margin-top: 3px; }
+        .cf-file-meta a { color: #1f4fbf; font-weight: 600; text-decoration: none; margin-left: 6px; }
+        .cf-file-meta a:hover { text-decoration: underline; }
+        .cf-none { color: #aaa; font-style: italic; }
+        .cf-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .cf-actions form { margin: 0; }
+        .btn-validate { background: #059669; color: #fff; border: none; font-size: 11.5px; font-weight: 600; padding: 7px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-validate:hover { background: #047857; }
+        .btn-return { background: #fff; color: #b91c1c; border: 1px solid #f3c4c4; font-size: 11.5px; font-weight: 600; padding: 7px 12px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-return:hover { background: #fee2e2; border-color: #dc2626; }
+        .btn-validate svg, .btn-return svg { width: 12px; height: 12px; }
+        .cf-status { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+        .cf-status svg { width: 12px; height: 12px; }
+        .cf-status.validated { background: #d1fae5; color: #047857; }
+        .cf-status.returned { background: #fee2e2; color: #b91c1c; }
+        .cf-by { font-size: 11px; color: #888; margin-top: 4px; }
+        .cf-reason { font-size: 12px; color: #7f1d1d; background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 4px; padding: 6px 9px; margin-top: 6px; white-space: pre-wrap; word-break: break-word; }
+        .btn-undo { background: none; border: none; color: #6b7280; font-size: 11px; font-weight: 600; text-decoration: underline; cursor: pointer; padding: 0; margin-left: 6px; }
+        .btn-undo:hover { color: #111827; }
+        .cf-foot { padding: 12px 22px; border-top: 1px solid #eee; background: #fafafa; font-size: 11.5px; color: #777; display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+        .cf-foot .legend { display: inline-flex; align-items: center; gap: 5px; }
+
+        .return-modal { background: #fff; border-radius: 12px; width: 440px; max-width: 100%; padding: 22px 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
+        .return-modal h3 { font-size: 15px; color: #1a1a2e; margin-bottom: 6px; }
+        .return-modal p { font-size: 12.5px; color: #666; margin-bottom: 12px; line-height: 1.5; }
+        .return-modal textarea { width: 100%; min-height: 96px; border: 1px solid #ccc; border-radius: 6px; padding: 9px 10px; font-family: inherit; font-size: 13px; resize: vertical; outline: none; }
+        .return-modal textarea:focus { border-color: #0f2557; }
+        .return-modal .row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+        .btn-cancel { background: #fff; border: 1px solid #ccc; color: #444; font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        .btn-send-return { background: #dc2626; color: #fff; border: none; font-size: 12.5px; font-weight: 600; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        .btn-send-return:hover { background: #b91c1c; }
+        .field-error { color: #b91c1c; font-size: 11.5px; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -132,7 +213,22 @@
 
         <div class="content">
             <div class="page-title">Course Filing</div>
-            <div class="page-sub">Monitor whether each course's documents (Syllabus, TOS, Exam Bank, Materials) and OBE alignment (Course Outcomes mapped to Program Outcomes) are complete</div>
+            <div class="page-sub">Each course's files as filed by the Program Head (Submission), and whether you have checked and validated them (Checked and Validated)</div>
+
+            <div class="summary-row">
+                <div class="summary-card">
+                    <div class="summary-icon" style="background:#eef2ff;color:#0f2557;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
+                    <div><div class="summary-num">{{ $totals['courses'] }}</div><div class="summary-label">Courses</div></div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon" style="background:#fef3c7;color:#b45309;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div><div class="summary-num">{{ $totals['to_check'] }}</div><div class="summary-label">Files waiting for your check</div></div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon" style="background:#d1fae5;color:#047857;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <div><div class="summary-num">{{ $totals['complete'] }}</div><div class="summary-label">Courses complete (all validated)</div></div>
+                </div>
+            </div>
 
             <div class="filters-row">
                 <form method="GET">
@@ -143,8 +239,18 @@
                         @endforeach
                     </select>
                 </form>
+                <select id="cf-show" class="filter-select" onchange="filterCourses(this.value)">
+                    <option value="all">All courses</option>
+                    <option value="check">Has files to check</option>
+                    <option value="returned">Has returned files</option>
+                    <option value="incomplete">Not yet complete</option>
+                    <option value="complete">Complete</option>
+                </select>
             </div>
 
+            @php
+                $docCount = count(\App\Models\CourseMaterial::FILING_DOCUMENTS);
+            @endphp
             <div class="filing-panel">
                 <table class="filing-table">
                     <thead>
@@ -152,50 +258,53 @@
                             <th>Course Code</th>
                             <th>Course Name</th>
                             <th>Program</th>
-                            <th class="center">Syllabus</th>
-                            <th class="center">TOS</th>
-                            <th class="center">Exam Bank</th>
-                            <th class="center">Materials</th>
+                            <th class="center col-split">Submission</th>
+                            <th class="center col-split">Checked and Validated</th>
                             <th class="center">OBE Alignment</th>
                             <th class="center">Completion</th>
+                            <th class="center"></th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($filing as $row)
-                            @php $pct = $row['completion_pct']; @endphp
-                            <tr>
+                            @php
+                                $pct = $row['completion_pct'];
+                                $returnedDocs = collect($row['documents'])->where('status', 'returned')->count();
+                            @endphp
+                            <tr class="cf-row"
+                                data-check="{{ $row['to_check'] > 0 ? 1 : 0 }}"
+                                data-returned="{{ $returnedDocs > 0 ? 1 : 0 }}"
+                                data-complete="{{ $pct == 100 ? 1 : 0 }}">
                                 <td><span class="course-code">{{ $row['code'] }}</span></td>
                                 <td>{{ $row['title'] }}</td>
                                 <td><span class="program-tag" title="{{ \App\Support\Programs::label($row['program']) }}">{{ $row['program'] }}</span></td>
-                                <td class="center">
-                                    @if($row['has_syllabus'])
-                                        <span class="status-icon status-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
-                                    @else
-                                        <span class="status-icon status-no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
-                                    @endif
+                                <td class="center col-split">
+                                    <div class="split-count">{{ $row['submitted'] }} <span>of {{ $docCount }} filed</span></div>
+                                    <div class="doc-dots">
+                                        @foreach($row['documents'] as $doc)
+                                            <span class="doc-dot {{ $doc['status'] === 'missing' ? '' : 'filed' }}" title="{{ $doc['label'] }}: {{ $doc['status'] === 'missing' ? 'not filed yet' : 'filed' }}"></span>
+                                        @endforeach
+                                    </div>
                                 </td>
-                                <td class="center">
-                                    @if($row['has_tos'])
-                                        <span class="status-icon status-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
-                                    @else
-                                        <span class="status-icon status-no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+                                <td class="center col-split">
+                                    <div class="split-count">{{ $row['validated'] }} <span>of {{ $docCount }} validated</span></div>
+                                    <div class="doc-dots">
+                                        @foreach($row['documents'] as $doc)
+                                            <span class="doc-dot {{ $doc['status'] === 'missing' ? '' : $doc['status'] }}" title="{{ $doc['label'] }}: {{ ['missing' => 'not filed yet', 'pending' => 'waiting for your check', 'validated' => 'checked and validated', 'returned' => 'returned'][$doc['status']] }}"></span>
+                                        @endforeach
+                                    </div>
+                                    @if($row['to_check'] > 0 || $returnedDocs > 0)
+                                        <div class="mini-badges">
+                                            @if($row['to_check'] > 0)<span class="mini-badge check">{{ $row['to_check'] }} to check</span>@endif
+                                            @if($returnedDocs > 0)<span class="mini-badge returned">{{ $returnedDocs }} returned</span>@endif
+                                        </div>
                                     @endif
-                                </td>
-                                <td class="center">
-                                    @if($row['has_exam_bank'])
-                                        <span class="status-icon status-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
-                                    @else
-                                        <span class="status-icon status-no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
-                                    @endif
-                                </td>
-                                <td class="center">
-                                    <span class="material-count {{ $row['materials'] == 0 ? 'zero' : '' }}">{{ $row['materials'] }}</span>
                                 </td>
                                 <td class="center">
                                     @if($row['has_obe_alignment'])
-                                        <span class="status-icon status-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+                                        <span class="status-icon status-yes" title="All Course Outcomes are mapped to Program Outcomes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
                                     @else
-                                        <span class="status-icon status-no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
+                                        <span class="status-icon status-no" title="Course Outcomes are missing or not yet mapped"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></span>
                                     @endif
                                 </td>
                                 <td class="center">
@@ -204,16 +313,70 @@
                                         <span class="completion-text">{{ $pct }}%</span>
                                     </div>
                                 </td>
+                                <td class="center">
+                                    <button type="button" class="btn-review" onclick="openReview({{ $row['id'] }})">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+                                        Review
+                                        @if($row['to_check'] > 0)<span class="dot">{{ $row['to_check'] }}</span>@endif
+                                    </button>
+                                </td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" class="empty-row">No courses found.</td></tr>
+                            <tr><td colspan="8" class="empty-row">No courses found.</td></tr>
                         @endforelse
+                        <tr id="cf-no-match" style="display:none;"><td colspan="8" class="empty-row">No courses match this filter.</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
+    {{-- Review one course: Submission (left) and Checked and Validated (right) per document. --}}
+    <div class="cf-overlay" id="cf-review-overlay" role="dialog" aria-modal="true" aria-labelledby="cf-review-title">
+        <div class="cf-modal">
+            <div class="cf-head">
+                <div>
+                    <div class="cf-title" id="cf-review-title"></div>
+                    <div class="cf-sub" id="cf-review-sub"></div>
+                </div>
+                <button type="button" class="cf-close" onclick="closeReview()" aria-label="Close">&times;</button>
+            </div>
+            <div class="cf-body">
+                <table class="cf-table">
+                    <thead>
+                        <tr>
+                            <th style="width:16%;">Document</th>
+                            <th class="col-split" style="width:42%;">Submission</th>
+                            <th class="col-split" style="width:42%;">Checked and Validated</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cf-review-rows"></tbody>
+                </table>
+            </div>
+            <div class="cf-foot">
+                <span class="legend"><span class="doc-dot pending"></span> Waiting for your check</span>
+                <span class="legend"><span class="doc-dot validated"></span> Checked and validated</span>
+                <span class="legend"><span class="doc-dot returned"></span> Returned to the Program Head</span>
+                <span style="margin-left:auto;">A returned file is replaced when the Program Head files a new one in Course Oversight.</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="cf-overlay" id="cf-return-overlay" role="dialog" aria-modal="true" aria-labelledby="cf-return-title" style="z-index:950;">
+        <form class="return-modal" method="POST" id="cf-return-form">
+            @csrf
+            <input type="hidden" name="action" value="return">
+            <input type="hidden" name="material_id" id="cf-return-material" value="{{ old('material_id') }}">
+            <h3 id="cf-return-title">Return file</h3>
+            <p>Return <strong id="cf-return-file"></strong> to <strong id="cf-return-to"></strong>. Tell them what to fix so they can file a corrected copy.</p>
+            <textarea name="reason" id="cf-return-reason" maxlength="500" placeholder="e.g. The syllabus is missing the grading system and the Week 10–18 topics." required>{{ old('reason') }}</textarea>
+            @error('reason')<div class="field-error">{{ $message }}</div>@enderror
+            <div class="row">
+                <button type="button" class="btn-cancel" onclick="closeReturn()">Cancel</button>
+                <button type="submit" class="btn-send-return">Return File</button>
+            </div>
+        </form>
+    </div>
 
     <div id="logout-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
         <div style="background:#fff;border-radius:10px;padding:24px 26px;width:360px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,0.25);font-family:Arial,sans-serif;">
@@ -228,6 +391,150 @@
     <script>
         function openLogoutModal() { document.getElementById('logout-confirm-overlay').style.display = 'flex'; }
         document.getElementById('logout-confirm-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+    </script>
+
+    <script>
+        var CF_COURSES = @json($filing->keyBy('id'));
+        var CF_CSRF = @json(csrf_token());
+        var CF_REVIEW_URL = @json(url('/secretary/course-filing/materials')) ;
+
+        function cfEsc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        var CF_ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+        var CF_ICON_RETURN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 00-4-4H4"/></svg>';
+
+        function cfForm(fileId, action, inner, cls, confirm) {
+            return '<form method="POST" action="' + CF_REVIEW_URL + '/' + fileId + '/review"'
+                + (confirm ? ' data-confirm="' + cfEsc(confirm) + '" data-confirm-title="Undo check" data-confirm-button="Undo"' : '') + '>'
+                + '<input type="hidden" name="_token" value="' + cfEsc(CF_CSRF) + '">'
+                + '<input type="hidden" name="action" value="' + action + '">'
+                + '<button type="submit" class="' + cls + '">' + inner + '</button></form>';
+        }
+
+        function cfCheckCell(f) {
+            if (f.status === 'validated') {
+                return '<span class="cf-status validated">' + CF_ICON_CHECK + 'Checked and Validated</span>'
+                    + '<div class="cf-by">by ' + cfEsc(f.checker || 'Secretary') + ' · ' + cfEsc(f.checked_at)
+                    + ' ' + cfForm(f.id, 'reset', 'Undo', 'btn-undo', 'Move this file back to "waiting for your check"?').replace('<form ', '<form style="display:inline;" ') + '</div>';
+            }
+            if (f.status === 'returned') {
+                return '<span class="cf-status returned">' + CF_ICON_RETURN + 'Returned</span>'
+                    + '<div class="cf-reason">' + cfEsc(f.return_reason) + '</div>'
+                    + '<div class="cf-by">by ' + cfEsc(f.checker || 'Secretary') + ' · ' + cfEsc(f.checked_at)
+                    + ' ' + cfForm(f.id, 'reset', 'Undo', 'btn-undo', 'Cancel the return and move this file back to "waiting for your check"?').replace('<form ', '<form style="display:inline;" ') + '</div>';
+            }
+            return '<div class="cf-actions">'
+                + cfForm(f.id, 'validate', CF_ICON_CHECK + 'Validate', 'btn-validate')
+                + '<button type="button" class="btn-return" onclick="openReturn(' + f.id + ')">' + CF_ICON_RETURN + 'Return</button>'
+                + '</div>';
+        }
+
+        var cfOpenCourse = null;
+
+        function openReview(courseId) {
+            var c = CF_COURSES[courseId];
+            if (!c) return;
+            cfOpenCourse = courseId;
+            document.getElementById('cf-review-title').textContent = c.code + ' — ' + c.title;
+            document.getElementById('cf-review-sub').textContent = c.program + ' · ' + c.submitted + ' of ' + c.documents.length
+                + ' documents filed · ' + c.validated + ' of ' + c.documents.length + ' checked and validated';
+
+            var html = '';
+            c.documents.forEach(function (d) {
+                var sub = '', chk = '';
+                if (!d.files.length) {
+                    sub = '<span class="cf-none">Not filed yet</span>';
+                    chk = '<span class="cf-none">—</span>';
+                } else {
+                    d.files.forEach(function (f) {
+                        sub += '<div class="cf-file"><div class="cf-file-name">' + cfEsc(f.title) + '</div>'
+                            + '<div class="cf-file-meta">' + cfEsc(f.file_type) + ' · ' + cfEsc(f.version) + ' · Filed by '
+                            + cfEsc(f.uploader) + ' on ' + cfEsc(f.uploaded_at)
+                            + '<a href="' + cfEsc(f.view_url) + '" target="_blank">View</a></div></div>';
+                        chk += '<div class="cf-check">' + cfCheckCell(f) + '</div>';
+                    });
+                }
+                html += '<tr><td class="cf-doc">' + cfEsc(d.label) + '</td><td>' + sub + '</td><td>' + chk + '</td></tr>';
+            });
+            document.getElementById('cf-review-rows').innerHTML = html;
+            document.getElementById('cf-review-overlay').classList.add('open');
+        }
+
+        function closeReview() {
+            document.getElementById('cf-review-overlay').classList.remove('open');
+            cfOpenCourse = null;
+        }
+
+        function cfFindFile(fileId) {
+            var c = CF_COURSES[cfOpenCourse];
+            for (var i = 0; c && i < c.documents.length; i++) {
+                for (var j = 0; j < c.documents[i].files.length; j++) {
+                    if (c.documents[i].files[j].id === fileId) return c.documents[i].files[j];
+                }
+            }
+            return null;
+        }
+
+        function openReturn(fileId, keepText) {
+            var f = cfFindFile(fileId);
+            if (!f) return;
+            document.getElementById('cf-return-form').action = CF_REVIEW_URL + '/' + fileId + '/review';
+            document.getElementById('cf-return-file').textContent = '"' + f.title + '"';
+            document.getElementById('cf-return-to').textContent = f.uploader;
+            document.getElementById('cf-return-material').value = fileId;
+            if (!keepText) document.getElementById('cf-return-reason').value = '';
+            document.getElementById('cf-return-overlay').classList.add('open');
+            setTimeout(function () { document.getElementById('cf-return-reason').focus(); }, 30);
+        }
+
+        function closeReturn() {
+            document.getElementById('cf-return-overlay').classList.remove('open');
+        }
+
+        function filterCourses(mode) {
+            var shown = 0;
+            document.querySelectorAll('.cf-row').forEach(function (row) {
+                var ok = mode === 'all'
+                    || (mode === 'check' && row.dataset.check === '1')
+                    || (mode === 'returned' && row.dataset.returned === '1')
+                    || (mode === 'complete' && row.dataset.complete === '1')
+                    || (mode === 'incomplete' && row.dataset.complete === '0');
+                row.style.display = ok ? '' : 'none';
+                if (ok) shown++;
+            });
+            document.getElementById('cf-no-match').style.display = shown || !document.querySelector('.cf-row') ? 'none' : '';
+        }
+
+        ['cf-review-overlay', 'cf-return-overlay'].forEach(function (id) {
+            document.getElementById(id).addEventListener('click', function (e) {
+                if (e.target === this) (id === 'cf-return-overlay' ? closeReturn : closeReview)();
+            });
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') return;
+            if (document.getElementById('cf-return-overlay').classList.contains('open')) closeReturn();
+            else if (cfOpenCourse !== null) closeReview();
+        });
+
+        // After a Validate / Return / Undo, reopen the course that was being reviewed.
+        @if(session('open_course'))
+            openReview({{ (int) session('open_course') }});
+        @elseif($errors->has('reason') && old('material_id'))
+            (function () {
+                var id = {{ (int) old('material_id') }};
+                for (var cid in CF_COURSES) {
+                    if (CF_COURSES[cid].documents.some(function (d) { return d.files.some(function (f) { return f.id === id; }); })) {
+                        openReview(Number(cid));
+                        openReturn(id, true);
+                        break;
+                    }
+                }
+            })();
+        @endif
     </script>
 
     @include('partials.system-feedback')

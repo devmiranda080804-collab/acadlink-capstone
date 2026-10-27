@@ -30,7 +30,7 @@ class CourseOversightController extends Controller
                 ->first();
 
             if ($selectedCourse) {
-                $materials = $selectedCourse->materials()->latest()->get()->groupBy('type');
+                $materials = $selectedCourse->materials()->with('checker:id,name')->latest()->get()->groupBy('type');
                 $courseOutcomes = $selectedCourse->outcomes()->with('programOutcomes')->get();
                 $courseTopics = $selectedCourse->topics()->get()->groupBy('grading_period');
             }

@@ -240,6 +240,7 @@ Route::middleware('role:secretary')->prefix('secretary')->group(function () {
     Route::post('/template-distribution/{template}/new-version', [TemplateDistributionController::class, 'newVersion']);
     Route::delete('/template-distribution/{template}', [TemplateDistributionController::class, 'destroy']);
     Route::get('/course-filing', [CourseFilingController::class, 'index']);
+    Route::post('/course-filing/materials/{material}/review', [CourseFilingController::class, 'review']);
 
     // Account Management
     Route::get('/account-management', [SecAccountManagementController::class, 'index']);

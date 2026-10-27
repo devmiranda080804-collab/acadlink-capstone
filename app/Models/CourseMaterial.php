@@ -16,7 +16,42 @@ class CourseMaterial extends Model
         'file_type',
         'version',
         'file_size',
+        'filing_status',
+        'filing_checked_by',
+        'filing_checked_at',
+        'filing_return_reason',
     ];
+
+    protected $casts = [
+        'filing_checked_at' => 'datetime',
+    ];
+
+    // Course Filing check by the Secretary; a file with no status is still waiting.
+    const FILING_VALIDATED = 'validated';
+    const FILING_RETURNED = 'returned';
+
+    // The documents every course is filed with, in the order Course Filing lists them.
+    const FILING_DOCUMENTS = [
+        'syllabus'          => 'Syllabus',
+        'tos'               => 'TOS',
+        'exam_bank'         => 'Exam Bank',
+        'teaching_material' => 'Teaching Materials',
+    ];
+
+    public function checker()
+    {
+        return $this->belongsTo(User::class, 'filing_checked_by');
+    }
+
+    public function getIsValidatedAttribute(): bool
+    {
+        return $this->filing_status === self::FILING_VALIDATED;
+    }
+
+    public function getIsReturnedAttribute(): bool
+    {
+        return $this->filing_status === self::FILING_RETURNED;
+    }
 
     const TYPES = [
         'syllabus'         => 'Official Syllabus',

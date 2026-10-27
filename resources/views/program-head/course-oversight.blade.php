@@ -65,6 +65,12 @@
         .file-icon { font-size: 18px; margin-top: 1px; flex-shrink: 0; }
         .file-name { font-size: 12.5px; font-weight: 600; color: #1a1a2e; margin-bottom: 2px; }
         .file-meta { font-size: 10.5px; color: #aaa; }
+        /* Secretary's Course Filing check on each file */
+        .filing-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: 1px; white-space: nowrap; }
+        .filing-badge.validated { background: #d1fae5; color: #047857; }
+        .filing-badge.returned { background: #fee2e2; color: #b91c1c; }
+        .filing-badge.pending { background: #f3f4f6; color: #6b7280; }
+        .filing-reason { font-size: 11.5px; color: #7f1d1d; background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 4px; padding: 5px 9px; margin-top: 6px; max-width: 560px; line-height: 1.5; word-break: break-word; }
         .file-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
         .btn-view { background: #fff; border: 1px solid #d0d0d0; color: #333; font-size: 11.5px; font-weight: 600; padding: 5px 16px; border-radius: 4px; cursor: pointer; transition: background 0.15s; text-decoration: none; }
         .btn-view:hover { background: #f5f5f5; }
@@ -270,10 +276,24 @@
                                         @endswitch
                                     </span>
                                     <div>
-                                        <div class="file-name">{{ $material->title }}</div>
+                                        <div class="file-name">
+                                            {{ $material->title }}
+                                            @if(array_key_exists($material->type, \App\Models\CourseMaterial::FILING_DOCUMENTS))
+                                                @if($material->is_validated)
+                                                    <span class="filing-badge validated" title="Checked and validated by {{ $material->checker?->name ?? 'the Secretary' }} on {{ $material->filing_checked_at?->format('M d, Y') }}">✓ Validated by Secretary</span>
+                                                @elseif($material->is_returned)
+                                                    <span class="filing-badge returned">Returned by Secretary</span>
+                                                @else
+                                                    <span class="filing-badge pending">Waiting for Secretary's check</span>
+                                                @endif
+                                            @endif
+                                        </div>
                                         <div class="file-meta">
                                             {{ strtoupper($material->file_type) }} • {{ $material->version }} • {{ $material->readable_size }} • {{ $material->created_at->format('M d, Y') }}
                                         </div>
+                                        @if($material->is_returned)
+                                            <div class="filing-reason"><strong>{{ $material->checker?->name ?? 'Secretary' }}, {{ $material->filing_checked_at?->format('M d, Y') }}:</strong> {{ $material->filing_return_reason }}<br><em>Upload a corrected copy in this folder to replace it.</em></div>
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="file-actions">
