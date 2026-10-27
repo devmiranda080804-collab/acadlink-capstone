@@ -81,15 +81,25 @@
         .repo-filter { padding: 7px 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; color: #333; background: #fff; outline: none; }
         .repo-filter:focus { border-color: #0f2557; }
 
-        .files-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+        /* Fixed column widths so the table keeps the same shape on every page; long text is cut with "…" (full text on hover). */
+        .files-table-wrap { overflow-x: auto; }
+        .files-table { width: 100%; min-width: 860px; table-layout: fixed; border-collapse: collapse; font-size: 12.5px; }
         .files-table thead tr { background: #fff; border-bottom: 1px solid #eee; }
-        .files-table th { padding: 11px 18px; text-align: left; font-size: 11.5px; font-weight: 700; color: #666; }
-        .files-table td { padding: 12px 18px; border-bottom: 1px solid #f5f5f5; color: #333; vertical-align: middle; }
+        .files-table th { padding: 11px 12px; text-align: left; font-size: 11.5px; font-weight: 700; color: #666; white-space: nowrap; }
+        .files-table td { padding: 12px 12px; height: 50px; box-sizing: border-box; border-bottom: 1px solid #f5f5f5; color: #333; vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .files-table tbody tr:hover { background: #fafbff; }
+        .files-table .col-folder { width: 114px; }
+        .files-table .col-source { width: 86px; }
+        .files-table .col-type { width: 120px; }
+        .files-table .col-program { width: 62px; }
+        .files-table .col-uploader { width: 124px; }
+        .files-table .col-date { width: 110px; }
+        .files-table .col-actions { width: 118px; }
 
-        .doc-name { display: flex; align-items: center; gap: 8px; }
-        .doc-name .ficon { font-size: 15px; }
-        .doc-name .dtitle { font-weight: 600; color: #1a1a2e; }
+        .doc-name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .doc-name .ficon { font-size: 15px; flex-shrink: 0; }
+        .doc-name .dtitle { font-weight: 600; color: #1a1a2e; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .folder-tag, .program-tag { max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; box-sizing: border-box; }
         .folder-tag { display: inline-block; font-size: 11px; color: #555; background: #f5f6fa; border: 1px solid #e4e4e4; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
         .source-badge { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 10px; }
         .source-template { background: #dbeafe; color: #1e40af; }
@@ -97,7 +107,9 @@
         .source-upload { background: #ede9fe; color: #6d28d9; }
         .program-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f0f4ff; color: #0f2557; }
 
-        .action-buttons { display: flex; gap: 6px; }
+        .action-buttons { display: flex; gap: 6px; align-items: center; }
+        .btn-icon-only { padding: 6px 9px; }
+        .action-buttons .btn-icon-only svg { width: 14px; height: 14px; }
         .btn-view { display: inline-flex; align-items: center; gap: 4px; background: #fff; color: #444; border: 1px solid #d0d0d0; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 5px; text-decoration: none; }
         .btn-view:hover { background: #f5f5f5; }
         .btn-del { background: none; border: none; color: #ccc; cursor: pointer; padding: 5px 8px; border-radius: 4px; }
@@ -270,7 +282,18 @@
                             </select>
                         </div>
 
+                        <div class="files-table-wrap">
                         <table class="files-table">
+                            <colgroup>
+                                <col>
+                                <col class="col-folder">
+                                <col class="col-source">
+                                <col class="col-type">
+                                <col class="col-program">
+                                <col class="col-uploader">
+                                <col class="col-date">
+                                <col class="col-actions">
+                            </colgroup>
                             <thead>
                                 <tr>
                                     <th>Name</th>
@@ -295,10 +318,10 @@
                                                 <td>
                                                     <div class="doc-name">
                                                         <span class="ficon">@if($doc['file_type'] == 'pdf') 📄 @elseif(in_array($doc['file_type'], ['xls','xlsx'])) 📊 @else 📝 @endif</span>
-                                                        <span class="dtitle">{{ $doc['title'] }}</span>
+                                                        <span class="dtitle" title="{{ $doc['title'] }}">{{ $doc['title'] }}</span>
                                                     </div>
                                                 </td>
-                                                <td><span class="folder-tag">{{ $sy }} · {{ $sem }}</span></td>
+                                                <td><span class="folder-tag" title="{{ $sy }} · {{ $sem }}">{{ $sy }} · {{ $sem }}</span></td>
                                                 <td>
                                                     @if($doc['source'] == 'template')
                                                         <span class="source-badge source-template">Template</span>
@@ -308,19 +331,17 @@
                                                         <span class="source-badge source-upload">Uploaded</span>
                                                     @endif
                                                 </td>
-                                                <td>{{ $doc['type'] }}</td>
+                                                <td title="{{ $doc['type'] }}">{{ $doc['type'] }}</td>
                                                 <td><span class="program-tag" title="{{ \App\Support\Programs::label($doc['program']) }}">{{ $doc['program'] }}</span></td>
-                                                <td>{{ $doc['uploader'] }}</td>
+                                                <td title="{{ $doc['uploader'] }}">{{ $doc['uploader'] }}</td>
                                                 <td>{{ $doc['date']->format('M d, Y') }}</td>
                                                 <td>
                                                     <div class="action-buttons">
-                                                        <a class="btn-view" href="{{ $doc['view_url'] }}" target="_blank">
+                                                        <a class="btn-view btn-icon-only" href="{{ $doc['view_url'] }}" target="_blank" title="View" aria-label="View">
                                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                                                            View
                                                         </a>
-                                                        <a class="btn-view" href="{{ $doc['download_url'] }}">
+                                                        <a class="btn-view btn-icon-only" href="{{ $doc['download_url'] }}" title="Download" aria-label="Download">
                                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                                            Download
                                                         </a>
                                                         @if($doc['can_delete'])
                                                             <form method="POST" action="{{ url('/secretary/document-repository/' . $doc['id']) }}" data-confirm="Remove this document from the repository? This cannot be undone." data-confirm-title="Remove Document" data-confirm-button="Remove" style="display:inline;">
@@ -339,6 +360,7 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        </div>
 
                         <div class="files-empty" id="repo-empty" style="display:none;">📂 No documents match this folder or search.</div>
 
