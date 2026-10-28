@@ -113,6 +113,13 @@ class ExamGeneratorController extends Controller
             return response()->json($existingDraft->load('programAssignment.course'), 200);
         }
 
+        // A test with no items would become an empty "Test IV" on the exam.
+        $emptyTests = collect($tos->parts ?? [])->filter(fn($part) => isset($part['items']) && (int) $part['items'] === 0);
+        abort_if($emptyTests->isNotEmpty(), 422, $emptyTests->map(fn($p) => 'Test ' . $p['roman'])->implode(', ')
+            . ($emptyTests->count() === 1 ? ' has' : ' have') . ' no items in the TOS. In the TOS Generator, move '
+            . ($emptyTests->count() === 1 ? 'its' : 'their') . ' "Starts at" to a lower Bloom\'s level or remove '
+            . ($emptyTests->count() === 1 ? 'it' : 'them') . ', then click Generate TOS again.');
+
         $exam = Exam::create([
             'program_assignment_id' => $assignment->id,
             'faculty_id'            => auth()->id(),

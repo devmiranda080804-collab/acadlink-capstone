@@ -824,11 +824,11 @@
 
                             <div class="tos-parts">
                                 <div class="tos-parts-head">
-                                    <label>Exam Parts (Tests)</label>
+                                    <label>Exam Parts (Tests) <span id="tos-parts-count" style="font-weight:400;color:#888;"></span></label>
                                     <button type="button" class="btn-add-part" id="btn-add-part" onclick="addTosPart()">+ Add Test</button>
                                 </div>
                                 <div id="tos-parts-list"></div>
-                                <div class="tos-parts-hint">Each test covers the Bloom's levels from where it starts up to where the next test starts. One test means all items are in a single part.</div>
+                                <div class="tos-parts-hint">Add up to 6 tests (Test I to Test VI). Each test covers the Bloom's levels from where it starts up to where the next test starts; change "Starts at" to give a test more or fewer levels. One test means all items are in a single part.</div>
                             </div>
 
                             <button class="btn-generate" type="button" onclick="generateTOS()">Generate TOS</button>
@@ -1347,18 +1347,23 @@
                 '</div>';
             }).join('');
 
-            var last = norm[norm.length - 1];
-            document.getElementById('btn-add-part').disabled = norm.length >= TOS_ROMAN.length || last.levels.length < 2;
+            var addBtn = document.getElementById('btn-add-part');
+            addBtn.disabled = norm.length >= TOS_ROMAN.length;
+            addBtn.title = addBtn.disabled ? 'An exam can have up to ' + TOS_ROMAN.length + ' tests, one per Bloom\'s level.' : '';
+            document.getElementById('tos-parts-count').textContent = norm.length + ' of ' + TOS_ROMAN.length + ' tests';
         }
 
-        // A new test takes over the last level of the previous one; move its start to
-        // give it more levels.
+        // A new test splits the test that covers the most Bloom's levels (the earliest one
+        // on a tie), so "+ Add Test" works every time up to Test VI. Change any test's
+        // starting level afterwards to move the split.
         function addTosPart() {
             var norm = normalizeTosParts(tosParts);
-            var last = norm[norm.length - 1];
-            if (norm.length >= TOS_ROMAN.length || last.levels.length < 2) return;
-            var from = last.levels[last.levels.length - 1];
-            tosParts.push({ type: TOS_DEFAULT_TYPE_FOR[from] || 'mc-single', from: from });
+            if (norm.length >= TOS_ROMAN.length) return;
+            var widest = 0;
+            norm.forEach(function(p, i) { if (p.levels.length > norm[widest].levels.length) widest = i; });
+            var split = norm[widest].levels;
+            var from = split[Math.ceil(split.length / 2)];
+            tosParts.splice(widest + 1, 0, { type: TOS_DEFAULT_TYPE_FOR[from] || 'mc-single', from: from });
             onTosPartsChanged();
         }
         function removeTosPart(i) { tosParts.splice(i, 1); onTosPartsChanged(); }
@@ -1373,6 +1378,17 @@
                 tosPartsStale = true;
                 renderTosResult();
             }
+        }
+
+        // A test whose Bloom's levels got no items in this TOS would print as an empty
+        // "Test IV" on the exam; say which ones and how to fix it.
+        function emptyTestsWarning(parts) {
+            var empty = parts.filter(function(p) { return p.items === 0; });
+            if (!empty.length) return '';
+            return '<div class="tos-stale">' + empty.map(function(p) {
+                return '<strong>Test ' + p.roman + '</strong> (' + escapeHtml(levelRangeText(p.levels)) + ')';
+            }).join(', ') + (empty.length === 1 ? ' has' : ' have') + ' no items because this TOS has no questions at ' + (empty.length === 1 ? 'that level' : 'those levels') +
+                '. Move ' + (empty.length === 1 ? 'its' : 'their') + ' "Starts at" to a lower level or remove ' + (empty.length === 1 ? 'it' : 'them') + ', then click <strong>Generate TOS</strong> again.</div>';
         }
 
         function tosPartsPayload() {
@@ -1577,8 +1593,9 @@
                 '<div class="tos-panel-title">Generated Table of Specifications' + (editable ? ' <span style="font-weight:400;font-size:11px;color:#f59e0b;">(editing — click a cell to change it)</span>' : '') + '</div>' +
                 (tosPartsStale ? '<div class="tos-stale">The exam parts changed. Click <strong>Generate TOS</strong> again to apply them before downloading or starting the exam.</div>' : '') +
                 '<div class="tos-parts-summary">' + (result.parts || []).map(function(p) {
-                    return '<span>Test ' + p.roman + ' · ' + escapeHtml(p.label) + ' · ' + p.items + ' item' + (p.items === 1 ? '' : 's') + '</span>';
+                    return '<span' + (p.items === 0 ? ' style="background:#fee2e2;color:#b91c1c;"' : '') + '>Test ' + p.roman + ' · ' + escapeHtml(p.label) + ' · ' + p.items + ' item' + (p.items === 1 ? '' : 's') + '</span>';
                 }).join('') + '</div>' +
+                emptyTestsWarning(result.parts || []) +
                 '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11.5px;">' +
                 '<thead><tr style="background:#f5f5f5;">' +
                 '<th style="padding:8px;border:1px solid #e0e0e0;text-align:left;">Topics</th>' +
