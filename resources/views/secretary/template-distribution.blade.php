@@ -131,7 +131,10 @@
 
         .empty-state { grid-column: 1 / -1; text-align: center; padding: 50px 20px; color: #bbb; font-size: 13px; background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; }
 
-        .action-buttons { display: flex; gap: 6px; margin-top: auto; }
+        /* Card buttons: stacked rows that always stay inside the card. */
+        .action-buttons { display: flex; flex-direction: column; gap: 6px; margin-top: auto; }
+        .action-row { display: flex; gap: 6px; min-width: 0; }
+        .action-row > * { min-width: 0; }
         .btn-distribute { display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: #0f2557; color: #fff; border: none; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; cursor: pointer; flex: 1; }
         .btn-distribute:hover { background: #1a3a7a; }
         .btn-view { display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #fff; color: #444; border: 1px solid #d0d0d0; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; text-decoration: none; flex: 1; }

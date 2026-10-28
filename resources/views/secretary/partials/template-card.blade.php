@@ -34,23 +34,29 @@
         </div>
     @endif
 
+    {{-- Two rows so the buttons always fit inside the card: the main action on top,
+         then View and the small tools. --}}
     <div class="action-buttons">
-        <a class="btn-view" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            View
-        </a>
-        <a class="btn-withdraw btn-download-icon" href="{{ \App\Support\FileLinks::download('template', $template->id) }}" title="Download">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        </a>
         @unless($template->isPending())
-            <button type="button" class="btn-distribute" onclick="openNewVersionModal({{ $template->id }}, @js($template->title))">
-                {{ $template->isReturned() ? 'Upload Corrected Version' : 'Upload New Version' }}
-            </button>
+            <div class="action-row">
+                <button type="button" class="btn-distribute" onclick="openNewVersionModal({{ $template->id }}, @js($template->title))">
+                    {{ $template->isReturned() ? 'Upload Corrected Version' : 'Upload New Version' }}
+                </button>
+            </div>
         @endunless
-        @unless($template->isApproved())
-            <button type="button" class="btn-withdraw" title="Withdraw" onclick="openWithdrawModal({{ $template->id }}, @js($template->title))">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-            </button>
-        @endunless
+        <div class="action-row">
+            <a class="btn-view" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                View
+            </a>
+            <a class="btn-withdraw btn-download-icon" href="{{ \App\Support\FileLinks::download('template', $template->id) }}" title="Download">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </a>
+            @unless($template->isApproved())
+                <button type="button" class="btn-withdraw" title="Withdraw" onclick="openWithdrawModal({{ $template->id }}, @js($template->title))">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                </button>
+            @endunless
+        </div>
     </div>
 </div>
