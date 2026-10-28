@@ -448,10 +448,13 @@
 
         .eb-sections-label { font-size: 11.5px; font-weight: 700; color: #555; white-space: nowrap; }
 
+        #eb-section-links { display: flex; flex-wrap: wrap; gap: 8px; }
         .eb-section-link {
-            font-size: 12px; color: #0f2557; cursor: pointer; text-decoration: underline;
-            white-space: nowrap;
+            font-size: 12px; font-weight: 600; color: #0f2557; cursor: pointer; white-space: nowrap;
+            background: #f0f4ff; border: 1px solid #d6def0; border-radius: 999px; padding: 4px 12px;
+            transition: background 0.15s, border-color 0.15s;
         }
+        .eb-section-link:hover { background: #e2e9fb; border-color: #0f2557; }
 
         /* Section panel */
         .section-panel {
@@ -1887,9 +1890,6 @@
             var examId = currentExam.id;
 
             try {
-                // Plain fetch (not the api() JSON helper) — destroy() returns a redirect
-                // on success like finalize() does, not a JSON body, so .json() is only
-                // safe to call on the error path.
                 var res = await fetch('/faculty/exam-generator/' + examId, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }
@@ -1910,6 +1910,7 @@
             if (opt) opt.remove();
             select.value = '';
             clearExamBuilder();
+            showToast('Exam deleted.', 'success');
         }
 
         function findSection(secId) {

@@ -542,6 +542,12 @@ class ExamGeneratorController extends Controller
 
         $exam->delete();
 
+        // The builder deletes with fetch(); a redirect here would be followed with the
+        // same DELETE method and fail, so it gets a plain JSON answer instead.
+        if (request()->expectsJson()) {
+            return response()->json(['message' => 'Exam deleted.']);
+        }
+
         return back()->with('success', 'Exam deleted.');
     }
 
