@@ -22,14 +22,15 @@ class SharedResource extends Model
 
     public static function typeOptions(): array
     {
-        $templateTypes = collect(TemplateDocument::TYPES)->map(fn($meta) => $meta['label'])->all();
+        $templateTypes = collect(TemplateDocument::types())->map(fn($meta) => $meta['label'])->all();
 
         return self::LEGACY_TYPES + $templateTypes;
     }
 
     public function getTypeLabelAttribute(): string
     {
-        return self::typeOptions()[$this->type] ?? 'Lecture Slides';
+        return self::typeOptions()[$this->type]
+            ?? (isset(TemplateType::catalog()[$this->type]) ? TemplateDocument::typeLabel($this->type) : 'Lecture Slides');
     }
 
     public function sharer()

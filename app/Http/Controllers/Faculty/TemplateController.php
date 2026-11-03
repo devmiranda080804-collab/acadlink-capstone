@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Faculty;
 
 use App\Http\Controllers\Controller;
+use App\Models\ContentModule;
 use App\Models\TemplateDocument;
 use App\Models\TemplateDocumentView;
+use Illuminate\Support\Facades\Storage;
 
 class TemplateController extends Controller
 {
@@ -35,6 +37,28 @@ class TemplateController extends Controller
         }
 
         return view('faculty.my-template', compact('templates'));
+    }
+
+    // A personal copy in the faculty member's CMS. The official template stays as it is.
+    public function useTemplate(TemplateDocument $template)
+    {
+        abort_unless($template->isApproved() && $template->superseded_at === null && $template->isDistributedTo((string) auth()->user()->program), 403);
+        abort_unless($template->isEditableFile(), 422, 'Only Word, Excel and PowerPoint templates can be copied for editing.');
+
+        $path = 'content-modules/' . bin2hex(random_bytes(20)) . '.' . $template->extension();
+        Storage::disk('public')->copy($template->file_path, $path);
+
+        $module = ContentModule::create([
+            'created_by'  => auth()->id(),
+            'title'       => $template->title,
+            'description' => 'Copied from the official template (v' . $template->version . ').',
+            'file_path'   => $path,
+            'file_name'   => $template->file_name,
+            'file_type'   => $template->file_type,
+            'file_size'   => $template->file_size,
+        ]);
+
+        return redirect('/faculty/cms/' . $module->id . '/edit');
     }
 
     // Fired (fire-and-forget) when a faculty member clicks View/Download on a

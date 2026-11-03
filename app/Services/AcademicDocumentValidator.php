@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Anthropic\Client;
+use App\Models\TemplateType;
 use PhpOffice\PhpWord\IOFactory;
 
 // Checks whether an uploaded academic document's actual content plausibly
@@ -22,19 +23,12 @@ class AcademicDocumentValidator
 {
     protected ?Client $client;
 
+    // Kinds of document that aren't template types. The rest come from TemplateType, where
+    // the Admin can describe each type.
     const TYPE_DESCRIPTIONS = [
-        'syllabus'    => "an official course Syllabus — normally includes a course description, course outcomes, grading system, and a course outline/schedule of topics",
         'tos'         => "a Table of Specifications (TOS) — normally lists topics with their number of hours, number of items, and a breakdown across Bloom's Taxonomy cognitive levels (Remembering, Understanding, Applying, Analyzing, Evaluating, Creating)",
         'exam_bank'   => "an Exam / Test Question Bank — an actual set of test questions (e.g. multiple choice, identification, essay) used to assess students",
         'obtl'        => "an Outcomes-Based Teaching and Learning plan (OBTL) — normally lists the course's topics together with the number of weeks/hours allocated to each, aligned to course/program learning outcomes",
-        'course_guide' => "a Course Guide — normally includes course objectives, an overview of the subject matter, required readings/materials, and how the course is structured across the term",
-        'module'      => "an instructional Module / Learning Module — normally contains lesson content meant to teach students: explanations, examples, and activities or exercises for a specific topic",
-        'research_template' => "a Research Template — a standardized outline/format for a research or capstone-style paper (e.g. sections for title, background, methodology, references)",
-        'memorandum'  => "an official Memorandum — a formal internal communication with a header (To/From/Date/Subject) and a body conveying an announcement, directive, or information",
-        'request_letter' => "a formal Request Letter — addressed to a specific recipient, stating a clear request/purpose and closing with a signature",
-        'consultation_form' => "a Consultation Form — a structured form for recording a consultation session (names, date, concern/topic discussed, notes or action items)",
-        'activity_proposal' => "an Activity Proposal — proposes an event or activity, normally including objectives, schedule, and budget/resources",
-        'monitoring_sheet' => "a Monitoring Sheet — a tabular form for tracking the status or progress of tasks, submissions, or activities over time",
     ];
 
     public function __construct()
@@ -44,11 +38,11 @@ class AcademicDocumentValidator
     }
 
     // $absolutePath must still exist on disk (validate before deleting any temp file).
-    // Returns ['valid' => bool, 'reason' => ?string]. 'other' and unrecognized
-    // requirement types are never checked — there's nothing to check them against.
+    // Returns ['valid' => bool, 'reason' => ?string]. 'other', and types with no description,
+    // are never checked — there's nothing to check them against.
     public function validate(string $absolutePath, string $extension, string $requirementType): array
     {
-        $expected = self::TYPE_DESCRIPTIONS[$requirementType] ?? null;
+        $expected = self::TYPE_DESCRIPTIONS[$requirementType] ?? TemplateType::catalog()[$requirementType]['description'] ?? null;
 
         if (!$expected || !$this->client) {
             return ['valid' => true, 'reason' => null];

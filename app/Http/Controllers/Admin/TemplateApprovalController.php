@@ -18,6 +18,7 @@ class TemplateApprovalController extends Controller
     {
         // Only the current version of each template; older versions are in versions().
         $templates = TemplateDocument::with(['creator', 'reviewer', 'programs'])
+            ->submitted()
             ->whereNull('superseded_at')
             ->latest()
             ->get();

@@ -120,9 +120,9 @@
 
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
-            <span class="brand">CBMA</span>
-            <span class="brand-sub">Academic Coordination</span>
+            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
+            <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
+            <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
         </div>
         <ul class="nav-list">
             @if($navPermissions['dashboard'] ?? true)
@@ -157,6 +157,9 @@
             <li class="{{ request()->is('admin/analytics*') ? 'active' : '' }}"><a href="{{ url('/admin/analytics') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></li>
             @endif
             <li class="{{ request()->is('admin/settings*') ? 'active' : '' }}"><a href="{{ url('/admin/settings') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</a></li>
+            @if($navPermissions['system-cms'] ?? true)
+            <li class="{{ request()->is('admin/system-cms*') ? 'active' : '' }}"><a href="{{ url('/admin/system-cms') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>System CMS</a></li>
+            @endif
         </ul>
         <div class="sidebar-logout">
             <a href="#" onclick="openLogoutModal()">

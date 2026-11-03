@@ -1,11 +1,13 @@
 @php
-    $statusClass = $template->isPending() ? 'waiting' : ($template->isReturned() ? 'returned' : 'forwarded');
+    $statusClass = ($template->isPending() || $template->isDraft()) ? 'waiting' : ($template->isReturned() ? 'returned' : 'forwarded');
     $sentPrograms = $template->sentPrograms();
 @endphp
 <div class="tmpl-card {{ $statusClass }}" data-status="{{ $template->status }}" data-title="{{ strtolower($template->title) }}" @isset($folderKey) data-folder="{{ $folderKey }}" @endisset>
     <div class="tmpl-card-top">
         <span class="tmpl-card-icon">{{ \App\Models\TemplateDocument::typeIcon($template->type) }}</span>
-        @if($template->isPending())
+        @if($template->isDraft())
+            <span class="dist-status no">Draft</span>
+        @elseif($template->isPending())
             <span class="dist-status no">Waiting for Dean</span>
         @elseif($template->isReturned())
             <span class="dist-status returned">Returned</span>
@@ -37,13 +39,31 @@
     {{-- Two rows so the buttons always fit inside the card: the main action on top,
          then View and the small tools. --}}
     <div class="action-buttons">
-        @unless($template->isPending())
+        @if($template->isDraft())
+            <div class="action-row">
+                <a class="btn-distribute" style="text-decoration:none;" href="{{ url('/secretary/template-distribution/' . $template->id . '/editor') }}">Continue Editing</a>
+            </div>
+            <div class="action-row">
+                <form method="POST" action="{{ url('/secretary/template-distribution/' . $template->id . '/submit') }}" style="flex:1;margin:0;" data-confirm="Close the editor first so your latest changes are saved. Submit version {{ $template->version }} to the Dean?" data-confirm-title="Submit to Dean?" data-confirm-button="Submit">
+                    @csrf
+                    <button type="submit" class="btn-distribute" style="width:100%;">Submit to Dean</button>
+                </form>
+            </div>
+        @elseif(!$template->isPending())
+            @if($template->isEditableFile())
+                <div class="action-row">
+                    <form method="POST" action="{{ url('/secretary/template-distribution/' . $template->id . '/edit') }}" style="flex:1;margin:0;">
+                        @csrf
+                        <button type="submit" class="btn-distribute" style="width:100%;">Edit in System</button>
+                    </form>
+                </div>
+            @endif
             <div class="action-row">
                 <button type="button" class="btn-distribute" onclick="openNewVersionModal({{ $template->id }}, @js($template->title))">
                     {{ $template->isReturned() ? 'Upload Corrected Version' : 'Upload New Version' }}
                 </button>
             </div>
-        @endunless
+        @endif
         <div class="action-row">
             <a class="btn-view" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>

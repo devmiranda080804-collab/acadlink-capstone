@@ -5,13 +5,25 @@ namespace App\Support;
 use Illuminate\Validation\ValidationException;
 
 // The tests (exam parts) an instructor chooses for a TOS — e.g. one 50-item Multiple
-// Choice test, or Test I Multiple Choice + Test II Essay. Each test covers a run of
-// consecutive Bloom's levels, starting where the previous test ends, so the TOS item
-// numbering and the exam's per-topic Bloom's level order stay aligned.
+// Choice test, or Test I Multiple Choice + Test II Essay. The instructor picks how many;
+// each test then covers a run of consecutive Bloom's levels, starting where the previous
+// test ends, so the TOS item numbering and the exam's per-topic Bloom's level order stay
+// aligned.
 class TestParts
 {
-    public const MAX = 6;
+    // How many tests an instructor can choose for a new TOS.
+    public const MAX = 4;
 
+    // Where each test starts, by number of tests. Split under BloomLevels::LEVEL_WEIGHTS so
+    // that every test still gets items on a small exam (four tests share them 30/30/10/30).
+    public const STARTS = [
+        1 => ['Remembering'],
+        2 => ['Remembering', 'Applying'],
+        3 => ['Remembering', 'Understanding', 'Applying'],
+        4 => ['Remembering', 'Understanding', 'Applying', 'Analyzing'],
+    ];
+
+    // Longer than MAX, because a TOS saved earlier can have up to six tests.
     public const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 
     // Starting instructions for the exam section created from each test.
@@ -35,7 +47,7 @@ class TestParts
     {
         $parts = array_values($parts ?: self::defaults());
 
-        if (count($parts) > self::MAX) {
+        if (count($parts) > count(self::ROMAN)) {
             self::fail('An exam can have at most ' . self::MAX . ' tests.');
         }
 

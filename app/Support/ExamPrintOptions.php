@@ -6,7 +6,7 @@ use App\Models\Exam;
 use App\Models\Setting;
 use Illuminate\Validation\Rule;
 
-// Font and paper for the downloaded exam and answer key. The college default is set by
+// Font, paper and layout for the downloaded exam and answer key. The college default is set by
 // the Admin (Settings); each exam keeps the faculty's own choice from Download Options.
 class ExamPrintOptions
 {
@@ -21,11 +21,19 @@ class ExamPrintOptions
         'a4'    => ['label' => 'A4 (8.27 × 11.69 in)', 'width' => 11906, 'height' => 16838],
     ];
 
-    public const DEFAULTS = ['font' => 'Arial', 'size' => 12, 'paper' => 'long'];
+    // How the student copy is arranged. The answer key has one layout.
+    public const LAYOUTS = [
+        'standard'     => ['label' => 'Standard', 'hint' => 'Questions in one column, with answer spaces under each question.'],
+        'answer_sheet' => ['label' => 'With Answer Sheet', 'hint' => 'Questions only, then a separate answer sheet on a new page.'],
+        'two_column'   => ['label' => 'Two-Column', 'hint' => 'Questions in two columns to use less paper.'],
+    ];
+
+    public const DEFAULTS = ['font' => 'Arial', 'size' => 12, 'paper' => 'long', 'layout' => 'standard'];
 
     public const SETTING_FONT = 'exam.font';
     public const SETTING_SIZE = 'exam.font_size';
     public const SETTING_PAPER = 'exam.paper';
+    public const SETTING_LAYOUT = 'exam.layout';
 
     public static function collegeDefaults(): array
     {
@@ -33,6 +41,7 @@ class ExamPrintOptions
             'font'  => Setting::get(self::SETTING_FONT),
             'size'  => Setting::get(self::SETTING_SIZE),
             'paper' => Setting::get(self::SETTING_PAPER),
+            'layout' => Setting::get(self::SETTING_LAYOUT),
         ], self::DEFAULTS);
     }
 
@@ -42,11 +51,12 @@ class ExamPrintOptions
             'font'  => $exam->print_font,
             'size'  => $exam->print_font_size,
             'paper' => $exam->print_paper,
+            'layout' => $exam->print_layout,
         ], self::collegeDefaults());
     }
 
-    // Validation rules for the three fields under the given names.
-    public static function rules(string $font = 'font', string $size = 'size', string $paper = 'paper', bool $required = false): array
+    // Validation rules for the fields under the given names.
+    public static function rules(string $font = 'font', string $size = 'size', string $paper = 'paper', bool $required = false, string $layout = 'layout'): array
     {
         $presence = $required ? 'required' : 'nullable';
 
@@ -54,6 +64,7 @@ class ExamPrintOptions
             $font  => [$presence, Rule::in(self::FONTS)],
             $size  => [$presence, 'integer', Rule::in(self::SIZES)],
             $paper => [$presence, Rule::in(array_keys(self::PAPERS))],
+            $layout => [$presence, Rule::in(array_keys(self::LAYOUTS))],
         ];
     }
 
@@ -64,6 +75,7 @@ class ExamPrintOptions
             'font'  => in_array($values['font'], self::FONTS, true) ? $values['font'] : $fallback['font'],
             'size'  => in_array((int) $values['size'], self::SIZES, true) ? (int) $values['size'] : $fallback['size'],
             'paper' => array_key_exists((string) $values['paper'], self::PAPERS) ? $values['paper'] : $fallback['paper'],
+            'layout' => array_key_exists((string) $values['layout'], self::LAYOUTS) ? $values['layout'] : $fallback['layout'],
         ];
     }
 }

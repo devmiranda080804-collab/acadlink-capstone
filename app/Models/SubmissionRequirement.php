@@ -54,7 +54,7 @@ class SubmissionRequirement extends Model
     public static function typeOptions(): array
     {
         $options = [];
-        foreach (TemplateDocument::TYPES as $key => $meta) {
+        foreach (TemplateDocument::types() as $key => $meta) {
             $options[$key] = $meta['label'];
         }
 
@@ -63,7 +63,7 @@ class SubmissionRequirement extends Model
 
     public static function typeLabel(string $type): string
     {
-        return self::typeOptions()[$type] ?? str_replace('_', ' ', ucfirst($type));
+        return self::typeOptions()[$type] ?? TemplateDocument::typeLabel($type);
     }
 
     public static function typeIcon(string $type): string

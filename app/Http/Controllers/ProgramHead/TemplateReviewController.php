@@ -13,7 +13,7 @@ class TemplateReviewController extends Controller
     {
         $myProgram = auth()->user()->program;
 
-        $templates = TemplateDocument::with(['creator', 'reviewer', 'programs'])
+        $templates = TemplateDocument::submitted()->with(['creator', 'reviewer', 'programs'])
             ->whereNull('superseded_at')
             ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
             ->latest()

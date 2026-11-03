@@ -65,7 +65,7 @@ class SubmissionController extends Controller
         $request->validate([
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'type'        => ['required', Rule::in(array_keys(SubmissionRequirement::typeOptions()))],
+            'type'        => ['required', Rule::in([...array_keys(SubmissionRequirement::typeOptions()), $requirement->type])],
             'priority'    => ['required', Rule::in(array_keys(SubmissionRequirement::PRIORITIES))],
             'deadline'    => $deadlineChanged ? 'required|date|after_or_equal:today' : 'required|date',
         ], [

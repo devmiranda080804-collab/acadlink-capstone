@@ -116,9 +116,7 @@ class ExamGeneratorController extends Controller
         // A test with no items would become an empty "Test IV" on the exam.
         $emptyTests = collect($tos->parts ?? [])->filter(fn($part) => isset($part['items']) && (int) $part['items'] === 0);
         abort_if($emptyTests->isNotEmpty(), 422, $emptyTests->map(fn($p) => 'Test ' . $p['roman'])->implode(', ')
-            . ($emptyTests->count() === 1 ? ' has' : ' have') . ' no items in the TOS. In the TOS Generator, move '
-            . ($emptyTests->count() === 1 ? 'its' : 'their') . ' "Starts at" to a lower Bloom\'s level or remove '
-            . ($emptyTests->count() === 1 ? 'it' : 'them') . ', then click Generate TOS again.');
+            . ($emptyTests->count() === 1 ? ' has' : ' have') . ' no items in the TOS. In the TOS Generator, choose fewer tests or more items, then click Generate TOS again.');
 
         $exam = Exam::create([
             'program_assignment_id' => $assignment->id,
@@ -496,18 +494,19 @@ class ExamGeneratorController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
-    // Font, size and paper from Download Options — remembered on the exam so the exam and
+    // Font, size, paper and layout from Download Options — remembered on the exam so the exam and
     // its answer key (and later downloads) match. Without a choice, the exam's saved one
     // or the college default (Admin → Settings) is used.
     protected function printOptions(Request $request, Exam $exam): array
     {
         $request->validate(ExamPrintOptions::rules());
 
-        if ($request->hasAny(['font', 'size', 'paper'])) {
+        if ($request->hasAny(['font', 'size', 'paper', 'layout'])) {
             $exam->update(array_filter([
                 'print_font'      => $request->query('font'),
                 'print_font_size' => $request->query('size') ? (int) $request->query('size') : null,
                 'print_paper'     => $request->query('paper'),
+                'print_layout'    => $request->query('layout'),
             ]));
         }
 

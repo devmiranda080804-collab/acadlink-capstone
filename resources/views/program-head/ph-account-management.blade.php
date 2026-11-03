@@ -111,9 +111,9 @@
 
     <aside class="sidebar">
     <div class="sidebar-logo">
-        <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
-        <span class="brand">CBMA</span>
-        <span class="brand-sub">Academic Coordination</span>
+        <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
+        <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
+        <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
     </div>
 
     <ul class="nav-list">
@@ -182,6 +182,9 @@
             </a>
         </li>
         @endif
+            @if($navPermissions['official-documents'] ?? true)
+            <li class="{{ request()->is('program-head/official-documents*') ? 'active' : '' }}"><a href="{{ url('/program-head/official-documents') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Official Documents</a></li>
+            @endif
     </ul>
 
     <div class="sidebar-logout">

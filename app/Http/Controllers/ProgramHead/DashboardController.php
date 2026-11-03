@@ -22,7 +22,7 @@ class DashboardController extends Controller
             ->count();
 
         // Templates the Dean sent to this program in the last 30 days
-        $awaitingDistribution = TemplateDocument::whereNull('superseded_at')
+        $awaitingDistribution = TemplateDocument::submitted()->whereNull('superseded_at')
             ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->where('distributed_at', '>=', now()->subDays(30)))
             ->count();
 
@@ -34,7 +34,7 @@ class DashboardController extends Controller
             ->count();
 
         // Templates most recently sent to this program
-        $reviewTemplates = TemplateDocument::with('creator')
+        $reviewTemplates = TemplateDocument::submitted()->with('creator')
             ->whereNull('superseded_at')
             ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
             ->latest()

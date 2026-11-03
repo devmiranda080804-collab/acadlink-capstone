@@ -72,9 +72,9 @@
 
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
-            <span class="brand">CBMA</span>
-            <span class="brand-sub">Academic Coordination</span>
+            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
+            <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
+            <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
         </div>
         <ul class="nav-list">
             @if($navPermissions['dashboard'] ?? true)

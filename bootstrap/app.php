@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserHasRole::class,
         ]);
         $middleware->appendToGroup('web', ForcePasswordChange::class);
+        // The editor service proves itself with a signed token instead of a session.
+        $middleware->validateCsrfTokens(except: ['onlyoffice/*']);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // Background requests (the Exam Generator, Collaboration, …) show the response's

@@ -45,4 +45,11 @@ return [
         'api_key' => env('ANTHROPIC_API_KEY'),
     ],
 
+    // The document editor used by the CMS.
+    'onlyoffice' => [
+        'url'     => env('ONLYOFFICE_URL'),          // where browsers load the editor from
+        'secret'  => env('ONLYOFFICE_JWT_SECRET'),   // shared with the editor service
+        'app_url' => env('ONLYOFFICE_APP_URL'),      // how the editor service reaches AcadLink
+    ],
+
 ];

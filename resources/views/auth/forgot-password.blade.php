@@ -7,7 +7,7 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family: Arial, sans-serif; height:100vh; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-        .bg-blur { position: fixed; inset: 0; background-color: #4a6b4a; background-image: url('{{ asset("images/bg-campus.jpg") }}'); background-size: cover; background-position: center; filter: blur(6px); transform: scale(1.08); z-index: 0; }
+        .bg-blur { position: fixed; inset: 0; background-color: #4a6b4a; background-image: url('{{ \App\Support\SiteContent::imageUrl('login_background') }}'); background-size: cover; background-position: center; filter: blur(6px); transform: scale(1.08); z-index: 0; }
         body::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.28); z-index: 1; }
         .card-wrap { position:relative; z-index: 2; display:flex; align-items:stretch; border-radius:8px; overflow:hidden; box-shadow:0 6px 28px rgba(0,0,0,0.5); width:520px; }
         .logo-panel { width:185px; flex-shrink:0; background-color:#1b3d7a; display:flex; align-items:center; justify-content:center; padding:28px 18px; }
@@ -37,7 +37,7 @@
 
     <div class="card-wrap">
         <div class="logo-panel">
-            <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
+            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
         </div>
 
         <div class="form-panel">

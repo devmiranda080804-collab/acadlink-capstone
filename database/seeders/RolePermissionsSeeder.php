@@ -26,6 +26,7 @@ class RolePermissionsSeeder extends Seeder
                 'account-management',
                 'announcements',
                 'calendar',
+                'official-documents',
             ],
             'secretary' => [
                 'dashboard',
@@ -35,6 +36,7 @@ class RolePermissionsSeeder extends Seeder
                 'account-management',
                 'announcements',
                 'calendar',
+                'system-cms',
             ],
             'faculty' => [
                 'dashboard',

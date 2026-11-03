@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Exam;
 use App\Support\AcademicTerm;
 use App\Support\ExamPrintOptions;
+use App\Support\SiteContent;
 use PhpOffice\PhpWord\Element\Section;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\SimpleType\Jc;
@@ -16,7 +17,8 @@ use PhpOffice\PhpWord\SimpleType\Jc;
 //
 // Both carry the CBMA letterhead (UCU and CBMA logos, contact details) taken from the
 // college's own TOS template, and use the font, size and paper chosen in Download
-// Options (see ExamPrintOptions).
+// Options (see ExamPrintOptions). The student copy also follows the chosen layout:
+// standard, with a separate answer sheet, or in two columns.
 class ExamDocumentBuilder
 {
     protected const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -25,15 +27,32 @@ class ExamDocumentBuilder
     protected const RED = 'C12035';
     protected const BLUE = '273F89';
 
+    // Space between the two columns, in twips.
+    protected const COLUMN_GAP = 360;
+
     protected array $options;
+
+    // Applies to the student copy only; the answer key always has one column.
+    protected string $layout = 'standard';
 
     public function __construct(?array $options = null)
     {
-        $this->options = $options ?? ExamPrintOptions::DEFAULTS;
+        $this->options = ($options ?? []) + ExamPrintOptions::DEFAULTS;
+    }
+
+    protected function isAnswerSheet(): bool
+    {
+        return $this->layout === 'answer_sheet';
+    }
+
+    protected function isTwoColumn(): bool
+    {
+        return $this->layout === 'two_column';
     }
 
     public function build(Exam $exam): PhpWord
     {
+        $this->layout = $this->options['layout'];
         [$phpWord, $section] = $this->newDocument();
         $size = $this->options['size'];
 
@@ -44,16 +63,28 @@ class ExamDocumentBuilder
             . ($exam->duration_minutes ? '      Duration: ' . $exam->duration_minutes . ' minutes' : '')
             . '      Total Points: ' . $totalPoints;
         $section->addText($meta, ['size' => $size - 1]);
-        $section->addText('Name: ____________________________________________     Date: ________________', ['size' => $size - 1], ['spaceAfter' => 60]);
-        $section->addText('Course & Section: _________________________________     Score: _______________', ['size' => $size - 1]);
+        if ($this->isAnswerSheet()) {
+            $section->addText('Write all your answers on the separate answer sheet.', ['italic' => true, 'bold' => true, 'size' => $size - 1]);
+        } else {
+            $this->addStudentLines($section);
+        }
         $section->addTextBreak(1, ['size' => $size - 2]);
+
+        // The title stays across the page; the questions flow into two columns below it.
+        if ($this->isTwoColumn()) {
+            $section = $phpWord->addSection($this->pageStyle() + [
+                'breakType' => 'continuous',
+                'colsNum'   => 2,
+                'colsSpace' => self::COLUMN_GAP,
+            ]);
+        }
 
         $questionNumber = 0;
 
         foreach ($exam->sections as $si => $examSection) {
-            $section->addText($this->sectionHeading($examSection->title, $si), ['bold' => true, 'size' => $size], ['spaceAfter' => 60]);
+            $section->addText($this->sectionHeading($examSection->title, $si), ['bold' => true, 'size' => $size], ['spaceAfter' => 60, 'keepNext' => true]);
             if ($examSection->instructions) {
-                $directions = $section->addTextRun(['spaceAfter' => 120]);
+                $directions = $section->addTextRun(['spaceAfter' => 120, 'keepNext' => true]);
                 $directions->addText('Directions: ', ['bold' => true, 'italic' => true, 'size' => $size - 1]);
                 $directions->addText($examSection->instructions, ['italic' => true, 'size' => $size - 1]);
             }
@@ -66,7 +97,156 @@ class ExamDocumentBuilder
             $section->addTextBreak(1, ['size' => $size - 2]);
         }
 
+        if ($this->isAnswerSheet()) {
+            $this->addAnswerSheet($section, $exam);
+        }
+
         return $phpWord;
+    }
+
+    protected function addStudentLines(Section $section): void
+    {
+        $size = $this->options['size'];
+
+        $section->addText('Name: ____________________________________________     Date: ________________', ['size' => $size - 1], ['spaceAfter' => 60]);
+        $section->addText('Course & Section: _________________________________     Score: _______________', ['size' => $size - 1]);
+    }
+
+    // The last page(s) of the "With Answer Sheet" layout, numbered like the questions.
+    protected function addAnswerSheet(Section $section, Exam $exam): void
+    {
+        $size = $this->options['size'];
+
+        $section->addPageBreak();
+        $section->addText('ANSWER SHEET', ['bold' => true, 'size' => $size + 2], ['alignment' => Jc::CENTER, 'spaceAfter' => 0]);
+        $section->addText(mb_strtoupper($exam->title), ['bold' => true, 'size' => $size], ['alignment' => Jc::CENTER, 'spaceAfter' => 160]);
+        $this->addStudentLines($section);
+        $section->addTextBreak(1, ['size' => $size - 2]);
+
+        $questionNumber = 0;
+
+        foreach ($exam->sections as $si => $examSection) {
+            $section->addText($this->sectionHeading($examSection->title, $si), ['bold' => true, 'size' => $size], ['spaceAfter' => 80, 'keepNext' => true]);
+
+            $short = [];
+            foreach ($examSection->questions as $question) {
+                $questionNumber++;
+
+                if (in_array($question->type, ['mc-single', 'true-false', 'identification'], true) && $question->children->isEmpty()) {
+                    $short[] = $questionNumber;
+                    continue;
+                }
+
+                $this->addShortAnswerGrid($section, $short);
+                $short = [];
+                $this->addLongAnswer($section, $question, $questionNumber);
+            }
+            $this->addShortAnswerGrid($section, $short);
+
+            $section->addTextBreak(1, ['size' => $size - 2]);
+        }
+    }
+
+    // Three answers per row for items that only need a word or a letter.
+    protected function addShortAnswerGrid(Section $section, array $numbers): void
+    {
+        if (!$numbers) {
+            return;
+        }
+
+        $size = $this->options['size'];
+        $cell = (int) floor($this->textWidth() / 3);
+        $table = $section->addTable(['cellMargin' => 40, 'width' => $this->textWidth(), 'unit' => 'dxa']);
+
+        foreach (array_chunk($numbers, 3) as $row) {
+            $table->addRow(420);
+            for ($i = 0; $i < 3; $i++) {
+                $number = $row[$i] ?? null;
+                $table->addCell($cell, ['valign' => 'bottom'])->addText(
+                    $number ? $number . '. ' . $this->blankFor($cell - 160, strlen((string) $number) + 2) : '',
+                    ['size' => $size],
+                    ['spaceAfter' => 0]
+                );
+            }
+        }
+
+        $section->addText('', ['size' => 4], ['spaceAfter' => 0]);
+    }
+
+    protected function addLongAnswer(Section $section, $question, int $number): void
+    {
+        $size = $this->options['size'];
+        $line = ['size' => $size];
+        $indent = ['indentation' => ['left' => 400], 'spaceAfter' => 60, 'keepNext' => true];
+        $width = $this->textWidth() - 400;
+
+        $section->addText($number . '.', ['bold' => true, 'size' => $size], ['spaceAfter' => 40, 'keepNext' => true]);
+
+        if ($question->type === 'enumeration') {
+            $count = max(count($question->options['answers'] ?? ['']), 1);
+            for ($i = 0; $i < $count; $i++) {
+                $section->addText(($i + 1) . '. ' . $this->blankFor($width, strlen((string) ($i + 1)) + 2), $line, $indent);
+            }
+        } elseif ($question->children->isEmpty()) {
+            $lines = $question->type === 'short-answer' ? 8 : 6;
+            for ($i = 0; $i < $lines; $i++) {
+                $section->addText($this->blankFor($width), $line, $indent);
+            }
+        }
+
+        foreach ($question->children as $ci => $child) {
+            $section->addText(chr(97 + $ci) . '. ' . $this->blankFor($width, 3), $line, $indent);
+        }
+
+        $section->addTextBreak(1, ['size' => max(6, $size - 4)]);
+    }
+
+    // A writing line that fits the given width (twips), leaving room for its label. The
+    // widest of the available fonts draws an underscore at about 0.56 of the font size.
+    protected function blankFor(int $width, int $labelChars = 0): string
+    {
+        $characters = (int) floor($width / 20 / ($this->options['size'] * 0.56)) - $labelChars;
+
+        return str_repeat('_', max($characters, 6));
+    }
+
+    // Writing lines keep their usual length unless they'd run past a column.
+    protected function blank(int $length, int $labelChars = 0): string
+    {
+        if (!$this->isTwoColumn()) {
+            return str_repeat('_', $length);
+        }
+
+        $column = (int) (($this->textWidth() - self::COLUMN_GAP) / 2) - 400;
+
+        return substr($this->blankFor($column, $labelChars), 0, $length);
+    }
+
+    protected function paper(): array
+    {
+        return ExamPrintOptions::PAPERS[$this->options['paper']] ?? ExamPrintOptions::PAPERS['long'];
+    }
+
+    // The width between the page margins, in twips.
+    protected function textWidth(): int
+    {
+        return $this->paper()['width'] - 2160;
+    }
+
+    protected function pageStyle(): array
+    {
+        $paper = $this->paper();
+
+        return [
+            'pageSizeW'    => $paper['width'],
+            'pageSizeH'    => $paper['height'],
+            'marginLeft'   => 1080,
+            'marginRight'  => 1080,
+            'marginTop'    => 1080,
+            'marginBottom' => 1000,
+            'headerHeight' => 400,
+            'footerHeight' => 360,
+        ];
     }
 
     // A standalone document — same letterhead, same continuous numbering as the student
@@ -75,6 +255,7 @@ class ExamDocumentBuilder
     // for students never includes it.
     public function buildAnswerKey(Exam $exam): PhpWord
     {
+        $this->layout = 'standard';
         [$phpWord, $section] = $this->newDocument();
         $size = $this->options['size'];
 
@@ -85,7 +266,7 @@ class ExamDocumentBuilder
         $questionNumber = 0;
 
         foreach ($exam->sections as $si => $examSection) {
-            $section->addText($this->sectionHeading($examSection->title, $si), ['bold' => true, 'size' => $size], ['spaceAfter' => 60]);
+            $section->addText($this->sectionHeading($examSection->title, $si), ['bold' => true, 'size' => $size], ['spaceAfter' => 60, 'keepNext' => true]);
 
             foreach ($examSection->questions as $question) {
                 $questionNumber++;
@@ -105,19 +286,9 @@ class ExamDocumentBuilder
         $phpWord->setDefaultFontName($this->options['font']);
         $phpWord->setDefaultFontSize($this->options['size']);
 
-        $paper = ExamPrintOptions::PAPERS[$this->options['paper']] ?? ExamPrintOptions::PAPERS['long'];
-        $section = $phpWord->addSection([
-            'pageSizeW'    => $paper['width'],
-            'pageSizeH'    => $paper['height'],
-            'marginLeft'   => 1080,
-            'marginRight'  => 1080,
-            'marginTop'    => 1080,
-            'marginBottom' => 1000,
-            'headerHeight' => 400,
-            'footerHeight' => 360,
-        ]);
+        $section = $phpWord->addSection($this->pageStyle());
 
-        $width = $paper['width'] - 2160;
+        $width = $this->textWidth();
         $this->addLetterhead($section, $width);
         $this->addFooter($section, $width);
 
@@ -134,17 +305,19 @@ class ExamDocumentBuilder
         $left = $table->addCell((int) ($width * 0.62), ['valign' => 'bottom']);
         $brand = $left->addTable(['cellMargin' => 0]);
         $brand->addRow();
-        $brand->addCell(760, ['valign' => 'center'])->addImage(resource_path('templates/branding/ucu-logo.png'), ['height' => 42]);
+        $brand->addCell(760, ['valign' => 'center'])->addImage(SiteContent::imagePath('letterhead_logo'), ['height' => 42]);
         $words = $brand->addCell(4600, ['valign' => 'center']);
-        $words->addText('URDANETA CITY', ['name' => 'Calibri', 'bold' => true, 'size' => 17, 'color' => self::RED], ['spaceAfter' => 0, 'spacing' => 0, 'lineHeight' => 0.9]);
-        $words->addText('UNIVERSITY', ['name' => 'Calibri', 'bold' => true, 'size' => 17, 'color' => self::RED], ['spaceAfter' => 0, 'spacing' => 0, 'lineHeight' => 0.9]);
-        $words->addText('Owned and operated by the City Government of Urdaneta', ['name' => 'Calibri', 'size' => 6.5, 'color' => self::RED], ['spaceAfter' => 0]);
+        foreach (SiteContent::wrapped('university_name', 14) as $line) {
+            $words->addText($line, ['name' => 'Calibri', 'bold' => true, 'size' => 17, 'color' => self::RED], ['spaceAfter' => 0, 'spacing' => 0, 'lineHeight' => 0.9]);
+        }
+        $words->addText(SiteContent::text('university_note'), ['name' => 'Calibri', 'size' => 6.5, 'color' => self::RED], ['spaceAfter' => 0]);
 
         // CBMA seal + college name on the right.
         $right = $table->addCell((int) ($width * 0.38), ['valign' => 'bottom']);
-        $right->addImage(resource_path('templates/branding/cbma-seal.png'), ['height' => 30, 'alignment' => Jc::RIGHT]);
-        $right->addText('COLLEGE OF BUSINESS', ['name' => 'Tahoma', 'size' => 8], ['alignment' => Jc::RIGHT, 'spaceAfter' => 0]);
-        $right->addText('MANAGEMENT AND ACCOUNTANCY', ['name' => 'Tahoma', 'size' => 8], ['alignment' => Jc::RIGHT, 'spaceAfter' => 0]);
+        $right->addImage(SiteContent::imagePath('letterhead_seal'), ['height' => 30, 'alignment' => Jc::RIGHT]);
+        foreach (SiteContent::wrapped('college_name', 26) as $line) {
+            $right->addText($line, ['name' => 'Tahoma', 'size' => 8], ['alignment' => Jc::RIGHT, 'spaceAfter' => 0]);
+        }
 
         // The blue rule under the letterhead.
         $header->addText('', ['size' => 2], ['borderBottomSize' => 24, 'borderBottomColor' => self::BLUE, 'spaceAfter' => 0]);
@@ -165,7 +338,7 @@ class ExamDocumentBuilder
         $middle->addPreserveText('Page {PAGE} of {NUMPAGES}', ['name' => 'Calibri', 'size' => 8, 'color' => '555555'], ['alignment' => Jc::CENTER, 'spaceAfter' => 0]);
 
         $right = $table->addCell((int) ($width * 0.40), ['valign' => 'bottom']);
-        foreach (['(075) 600 - 1507', 'San Vicente West, Urdaneta City, Pangasinan', 'ucu.edu.ph  |  univpresidentofficial@gmail.com'] as $line) {
+        foreach (SiteContent::lines('contact_details') as $line) {
             $right->addText($line, ['name' => 'Calibri', 'size' => 8, 'color' => self::RED], ['alignment' => Jc::RIGHT, 'spaceAfter' => 0]);
         }
     }
@@ -177,8 +350,8 @@ class ExamDocumentBuilder
         $center = ['alignment' => Jc::CENTER, 'spaceAfter' => 0];
         $course = $exam->programAssignment->course;
 
-        $section->addText('URDANETA CITY UNIVERSITY', ['bold' => true, 'size' => $size], $center);
-        $section->addText('COLLEGE OF BUSINESS MANAGEMENT AND ACCOUNTANCY', ['bold' => true, 'size' => $size], $center);
+        $section->addText(mb_strtoupper(SiteContent::text('university_name')), ['bold' => true, 'size' => $size], $center);
+        $section->addText(mb_strtoupper(SiteContent::text('college_name')), ['bold' => true, 'size' => $size], $center);
         $section->addText(mb_strtoupper(AcademicTerm::currentSemester()) . ', A.Y. ' . AcademicTerm::currentSchoolYear(), ['bold' => true, 'size' => $size], $center);
         $section->addTextBreak(1, ['size' => $size - 4]);
         $section->addText($title, ['bold' => true, 'size' => $size + 2], $center);
@@ -215,37 +388,51 @@ class ExamDocumentBuilder
                 break;
 
             case 'true-false':
-                $section->addText('Answer: ________ (True / False)', ['size' => $size], $indent);
+                if ($this->isAnswerSheet()) {
+                    $section->addText('(True / False)', ['size' => $size], $indent);
+                } else {
+                    $section->addText('Answer: ________ (True / False)', ['size' => $size], $indent);
+                }
                 break;
 
             case 'identification':
-                $section->addText('Answer: _______________________________', ['size' => $size], $indent);
+                if (!$this->isAnswerSheet()) {
+                    $section->addText('Answer: ' . $this->blank(31, 8), ['size' => $size], $indent);
+                }
                 break;
 
             case 'enumeration':
-                $count = count($options['answers'] ?? ['']);
-                for ($i = 0; $i < max($count, 1); $i++) {
-                    $section->addText(($i + 1) . '. _______________________________', ['size' => $size], $indent);
+                if (!$this->isAnswerSheet()) {
+                    $count = count($options['answers'] ?? ['']);
+                    for ($i = 0; $i < max($count, 1); $i++) {
+                        $section->addText(($i + 1) . '. ' . $this->blank(31, strlen((string) ($i + 1)) + 2), ['size' => $size], $indent);
+                    }
                 }
                 break;
 
             case 'problem-solving':
-                $section->addText('Show your solution:', ['size' => $size - 1, 'italic' => true], $indent);
-                for ($i = 0; $i < 4; $i++) {
-                    $section->addText('_______________________________________________________', ['size' => $size], $indent);
+                $section->addText('Show your solution' . ($this->isAnswerSheet() ? ' on the answer sheet.' : ':'), ['size' => $size - 1, 'italic' => true], $indent);
+                if (!$this->isAnswerSheet()) {
+                    for ($i = 0; $i < 4; $i++) {
+                        $section->addText($this->blank(55), ['size' => $size], $indent);
+                    }
                 }
                 break;
 
             case 'short-answer': // labeled "Essay" in the UI — open-ended, graded against a rubric
-                for ($i = 0; $i < 6; $i++) {
-                    $section->addText('_______________________________________________________', ['size' => $size], $indent);
+                if (!$this->isAnswerSheet()) {
+                    for ($i = 0; $i < 6; $i++) {
+                        $section->addText($this->blank(55), ['size' => $size], $indent);
+                    }
                 }
                 break;
 
             default:
                 // Unreachable via the current "Choose Question Type" modal (kept only so an
                 // older exam with a since-removed type still exports instead of erroring).
-                $section->addText('_______________________________________________________', ['size' => $size], $indent);
+                if (!$this->isAnswerSheet()) {
+                    $section->addText($this->blank(55), ['size' => $size], $indent);
+                }
         }
 
         // Legacy sub-questions (e.g. a since-removed Case Analysis scenario format) —

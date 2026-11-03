@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\ContentModule;
+use App\Models\FileVersion;
 use App\Models\CourseMaterial;
 use App\Models\CourseTopic;
 use App\Models\RepositoryDocument;
 use App\Models\SharedResource;
 use App\Models\Submission;
+use App\Models\SystemDocument;
 use App\Models\TemplateDocument;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
@@ -69,6 +71,8 @@ class FileController extends Controller
             'repository' => $this->repository($id, $user),
             'submission' => $this->submission($id, $user),
             'module' => $this->module($id, $user),
+            'system' => $this->system($id, $user),
+            'version' => $this->fileVersion($id, $user),
             default => abort(404),
         };
 
@@ -145,10 +149,24 @@ class FileController extends Controller
         return [$s, $allowed, $s->requirement->title ?? 'Submission', $s->faculty->name ?? null, $s->submitted_at ?? $s->created_at];
     }
 
+    protected function fileVersion(int $id, User $user): array
+    {
+        $v = FileVersion::with(['versionable', 'editor'])->findOrFail($id);
+
+        return [$v, (bool) $v->versionable?->canEdit($user), ($v->versionable->title ?? 'Document') . ' (earlier version)', $v->editor->name ?? null, $v->saved_at ?? $v->created_at];
+    }
+
+    protected function system(int $id, User $user): array
+    {
+        $d = SystemDocument::with('creator')->findOrFail($id);
+
+        return [$d, $d->canView($user), $d->title, $d->creator->name ?? null, $d->created_at];
+    }
+
     protected function module(int $id, User $user): array
     {
-        $m = ContentModule::findOrFail($id);
+        $m = ContentModule::with('creator')->findOrFail($id);
 
-        return [$m, $m->created_by === $user->id, $m->title, $user->name, $m->created_at];
+        return [$m, $m->canView($user), $m->title, $m->creator->name ?? null, $m->created_at];
     }
 }

@@ -7,7 +7,9 @@ use App\Models\User;
 use App\Support\AcademicTerm;
 use App\Support\BloomLevels;
 use App\Support\Signatories;
+use App\Support\SiteContent;
 use PhpOffice\PhpWord\TemplateProcessor;
+use ZipArchive;
 
 // Fills the official CBMA Table of Specification template (resources/templates/tos-template.docx,
 // made from the college's own sample, with its UCU/CBMA header and footer) with the course,
@@ -55,8 +57,64 @@ class TosDocumentBuilder
 
         $path = tempnam(sys_get_temp_dir(), 'tos');
         $doc->saveAs($path);
+        $this->applySiteContent($path);
 
         return $path;
+    }
+
+    // Puts the letterhead and footer from the System CMS into the finished file. The template
+    // holds the college's original wording, so nothing changes until the Admin changes it.
+    protected function applySiteContent(string $path): void
+    {
+        $university = SiteContent::wrapped('university_name', 14);
+        $contact = SiteContent::lines('contact_details');
+
+        $replacements = [
+            'URDANETA CITY UNIVERSITY' => mb_strtoupper(SiteContent::text('university_name')),
+            'COLLEGE OF BUSINESS MANAGEMENT AND ACCOUNTANCY' => mb_strtoupper(SiteContent::text('college_name')),
+            'URDANETA CITY' => $university[0],
+            'UNIVERSITY' => implode(' ', array_slice($university, 1)),
+            'Owned and operated by the City Government of Urdaneta' => SiteContent::text('university_note'),
+            '(075) 600 - 1507' => $contact[0] ?? '',
+            'San Vicente West, Urdaneta City, Pangasinan' => $contact[1] ?? '',
+            'ucu.edu.ph  |' => implode('  |  ', array_slice($contact, 2)),
+            '  univpresidentofficial@gmail.com' => '',
+        ];
+        // The template's contact line already reads like this, split over two pieces of text.
+        if (($contact[2] ?? null) === 'ucu.edu.ph  |  univpresidentofficial@gmail.com' && count($contact) === 3) {
+            unset($replacements['ucu.edu.ph  |'], $replacements['  univpresidentofficial@gmail.com']);
+        }
+
+        $images = array_filter([
+            'word/media/image1.png' => SiteContent::uploadedImage('letterhead_seal') ? SiteContent::imagePath('letterhead_seal') : null,
+            'word/media/image2.png' => SiteContent::uploadedImage('letterhead_logo') ? SiteContent::imagePath('letterhead_logo') : null,
+        ]);
+
+        $zip = new ZipArchive();
+        if ($zip->open($path) !== true) {
+            return;
+        }
+
+        foreach (['word/document.xml', 'word/header1.xml', 'word/footer1.xml'] as $part) {
+            $xml = $zip->getFromName($part);
+            if ($xml === false) {
+                continue;
+            }
+
+            $updated = $xml;
+            foreach ($replacements as $old => $new) {
+                $updated = str_replace('>' . $old . '</w:t>', '>' . htmlspecialchars($new, ENT_XML1) . '</w:t>', $updated);
+            }
+            if ($updated !== $xml) {
+                $zip->addFromString($part, $updated);
+            }
+        }
+
+        foreach ($images as $name => $file) {
+            $zip->addFile($file, $name);
+        }
+
+        $zip->close();
     }
 
     protected function fillTable(TemplateProcessor $doc, array $breakdown): void

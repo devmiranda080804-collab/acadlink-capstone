@@ -131,7 +131,7 @@ class DocumentRepositoryController extends Controller
         $request->validate([
             'title'    => 'required|string|max:255',
             'program'  => 'nullable|in:' . implode(',', Programs::codes()),
-            'doc_type' => 'required|in:' . implode(',', array_merge(array_keys(TemplateDocument::TYPES), ['other'])),
+            'doc_type' => 'required|in:' . implode(',', array_merge(array_keys(TemplateDocument::types()), ['other'])),
             'file'     => 'required|file|mimes:pdf,doc,docx,xls,xlsx|max:20480',
         ]);
 

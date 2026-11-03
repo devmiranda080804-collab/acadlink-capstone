@@ -2,47 +2,56 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasEditableFile;
 use Illuminate\Database\Eloquent\Model;
 
 class TemplateDocument extends Model
 {
+    use HasEditableFile;
+
+    const ONLYOFFICE_SOURCE = 'templates';
+
     protected $fillable = [
         'created_by', 'title', 'type', 'version', 'root_template_id', 'file_path', 'file_name',
         'file_type', 'file_size', 'superseded_at',
         'status', 'reviewed_by', 'reviewed_at', 'return_reason',
     ];
 
-    // Workflow: the Secretary uploads (pending) → the Dean approves and sends it to
-    // programs, or returns it to the Secretary with a reason.
+    // Workflow: the Secretary uploads (pending), or edits a new version in the system (draft)
+    // and submits it (pending) → the Dean approves and sends it to programs, or returns it
+    // to the Secretary with a reason. Only the Secretary ever sees a draft.
+    const STATUS_DRAFT    = 'draft';
     const STATUS_PENDING  = 'pending';
     const STATUS_APPROVED = 'approved';
     const STATUS_RETURNED = 'returned';
 
-    // Single source of truth for every document type the Template Library
-    // accepts — covers both instructional formats (syllabus/course guide/
-    // module) and the administrative/academic forms (memo, request letter,
-    // etc.) the manuscript's Faculty Document and Template Library describes.
-    // Feeds the Admin upload form, and every role's folder/card icon + label.
-    const TYPES = [
-        'syllabus'          => ['label' => 'Syllabus', 'icon' => '📘'],
-        'course_guide'      => ['label' => 'Course Guide', 'icon' => '📙'],
-        'module'            => ['label' => 'Module', 'icon' => '📝'],
-        'research_template' => ['label' => 'Research Template', 'icon' => '🔬'],
-        'memorandum'        => ['label' => 'Memorandum', 'icon' => '📰'],
-        'request_letter'    => ['label' => 'Request Letter', 'icon' => '✉️'],
-        'consultation_form' => ['label' => 'Consultation Form', 'icon' => '🗒️'],
-        'activity_proposal' => ['label' => 'Activity Proposal', 'icon' => '📋'],
-        'monitoring_sheet'  => ['label' => 'Monitoring Sheet', 'icon' => '📊'],
-    ];
+    // File types a template can be. PDF and Word open in the viewer; the others download.
+    const ALLOWED_EXTENSIONS = ['pdf', 'doc', 'docx', 'xlsx', 'pptx'];
+
+    // The kinds of template that can be chosen for a new upload (see TemplateType).
+    public static function types(): array
+    {
+        return array_filter(TemplateType::catalog(), fn ($type) => $type['active']);
+    }
+
+    public static function fileRule(): string
+    {
+        return 'required|file|mimes:' . implode(',', self::ALLOWED_EXTENSIONS) . '|max:20480';
+    }
+
+    public static function fileAccept(): string
+    {
+        return '.' . implode(',.', self::ALLOWED_EXTENSIONS);
+    }
 
     public static function typeLabel(string $type): string
     {
-        return self::TYPES[$type]['label'] ?? str_replace('_', ' ', ucfirst($type));
+        return TemplateType::catalog()[$type]['label'] ?? str_replace('_', ' ', ucfirst($type));
     }
 
     public static function typeIcon(string $type): string
     {
-        return self::TYPES[$type]['icon'] ?? '📄';
+        return TemplateType::catalog()[$type]['icon'] ?? '📄';
     }
 
     protected static function booted(): void
@@ -64,6 +73,7 @@ class TemplateDocument extends Model
         return [
             'reviewed_at'   => 'datetime',
             'superseded_at' => 'datetime',
+            'last_edited_at' => 'datetime',
         ];
     }
 
@@ -87,7 +97,35 @@ class TemplateDocument extends Model
     public function allVersions()
     {
         return self::where('root_template_id', $this->root_template_id)
+            ->where('status', '!=', self::STATUS_DRAFT)
             ->orderByDesc('version');
+    }
+
+    public function scopeSubmitted($query)
+    {
+        return $query->where('status', '!=', self::STATUS_DRAFT);
+    }
+
+    public function isDraft(): bool
+    {
+        return $this->status === self::STATUS_DRAFT;
+    }
+
+    public function canEdit(User $user): bool
+    {
+        return $user->role === 'secretary' && $this->isDraft() && $this->isEditableFile();
+    }
+
+    // A save can still arrive just after the Secretary submits; never after the Dean approves.
+    public function acceptsEditorSave(): bool
+    {
+        return $this->file_path !== null && ($this->isDraft() || $this->isPending());
+    }
+
+    // Templates already keep every version as its own record.
+    public function keepsVersionHistory(): bool
+    {
+        return false;
     }
 
     public function isPending(): bool

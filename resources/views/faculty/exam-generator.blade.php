@@ -262,19 +262,10 @@
 
         /* Exam parts (tests) in TOS Configuration */
         .tos-parts { margin-bottom: 14px; }
-        .tos-parts-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-        .tos-parts-head label { font-size: 11.5px; font-weight: 600; color: #333; }
         .tos-part { border: 1px solid #e3e6ee; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; background: #fafbfd; }
         .tos-part-top { display: flex; align-items: center; gap: 8px; }
         .tos-part-name { font-size: 12px; font-weight: 700; color: #0f2557; white-space: nowrap; min-width: 46px; }
         .tos-part select { flex: 1; min-width: 0; height: 30px; padding: 0 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; color: #333; background: #fff; }
-        .tos-part-levels { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; font-size: 11px; color: #666; }
-        .tos-part-levels select { flex: 0 0 auto; width: auto; height: 26px; font-size: 11px; }
-        .tos-part-remove { border: none; background: none; color: #999; cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
-        .tos-part-remove:hover { color: #ef4444; background: #fee2e2; }
-        .btn-add-part { border: 1px dashed #9aa6c2; background: #fff; color: #0f2557; font-size: 11.5px; font-weight: 600; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
-        .btn-add-part:disabled { opacity: 0.5; cursor: not-allowed; }
-        .tos-parts-hint { font-size: 10.5px; color: #888; margin-top: 2px; line-height: 1.4; }
         .tos-stale { background: #fff7e6; border: 1px solid #f59e0b; color: #92400e; font-size: 11.5px; padding: 8px 10px; border-radius: 5px; margin-bottom: 10px; }
         .tos-parts-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
         .tos-parts-summary span { background: #eef2fb; color: #0f2557; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 12px; }
@@ -642,9 +633,9 @@
     {{-- ════════════ SIDEBAR ════════════ --}}
     <aside class="sidebar">
     <div class="sidebar-logo">
-        <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
-        <span class="brand">CBMA</span>
-        <span class="brand-sub">Academic Coordination</span>
+        <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
+        <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
+        <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
     </div>
 
     <ul class="nav-list">
@@ -826,12 +817,15 @@
                             </div>
 
                             <div class="tos-parts">
-                                <div class="tos-parts-head">
-                                    <label>Exam Parts (Tests) <span id="tos-parts-count" style="font-weight:400;color:#888;"></span></label>
-                                    <button type="button" class="btn-add-part" id="btn-add-part" onclick="addTosPart()">+ Add Test</button>
+                                <div class="form-group">
+                                    <label for="tos-test-count">Number of Tests</label>
+                                    <select id="tos-test-count" onchange="setTosTestCount(parseInt(this.value))">
+                                        @for($count = 1; $count <= \App\Support\TestParts::MAX; $count++)
+                                            <option value="{{ $count }}">{{ $count }}</option>
+                                        @endfor
+                                    </select>
                                 </div>
                                 <div id="tos-parts-list"></div>
-                                <div class="tos-parts-hint">Add up to 6 tests (Test I to Test VI). Each test covers the Bloom's levels from where it starts up to where the next test starts; change "Starts at" to give a test more or fewer levels. One test means all items are in a single part.</div>
                             </div>
 
                             <button class="btn-generate" type="button" onclick="generateTOS()">Generate TOS</button>
@@ -1135,6 +1129,15 @@
                     @endforeach
                 </select>
             </div>
+            <div class="modal-field" id="dl-layout-field">
+                <label for="dl-layout">Layout</label>
+                <select id="dl-layout" onchange="updateDownloadPreview()">
+                    @foreach(\App\Support\ExamPrintOptions::LAYOUTS as $key => $layout)
+                        <option value="{{ $key }}" data-hint="{{ $layout['hint'] }}">{{ $layout['label'] }}</option>
+                    @endforeach
+                </select>
+                <div id="dl-layout-hint" style="font-size:11px;color:#888;margin-top:4px;"></div>
+            </div>
             <div style="background:#f7f8fb;border:1px dashed #cfd5e3;border-radius:8px;padding:12px 14px;margin-bottom:14px;">
                 <div style="font-size:10.5px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Preview</div>
                 <div id="dl-preview" style="color:#222;line-height:1.35;">
@@ -1298,6 +1301,7 @@
         // Exam parts (tests) the instructor chooses — a single Multiple Choice test by
         // default. Each test covers consecutive Bloom's levels, from where it starts up to
         // where the next one starts (same rule as App\Support\TestParts on the server).
+        var TOS_TEST_STARTS = @json(\App\Support\TestParts::STARTS);
         var TOS_ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
         var TOS_DEFAULT_TYPE_FOR = { Remembering: 'identification', Understanding: 'mc-single', Applying: 'problem-solving', Analyzing: 'short-answer', Evaluating: 'short-answer', Creating: 'short-answer' };
         var tosParts = [{ type: 'mc-single', from: 'Remembering' }];
@@ -1315,10 +1319,6 @@
             });
         }
 
-        function levelRangeText(levels) {
-            return levels.length === 1 ? levels[0] : levels[0] + ' to ' + levels[levels.length - 1];
-        }
-
         function renderTosParts() {
             var norm = normalizeTosParts(tosParts);
             var typeOptions = function(selected) {
@@ -1328,50 +1328,23 @@
             };
 
             document.getElementById('tos-parts-list').innerHTML = norm.map(function(p, i) {
-                var startHtml;
-                if (i === 0) {
-                    startHtml = 'Starts at <strong>Remembering</strong>';
-                } else {
-                    var prevStart = TOS_BLOOM_LEVELS.indexOf(norm[i - 1].from);
-                    var nextStart = i + 1 < norm.length ? TOS_BLOOM_LEVELS.indexOf(norm[i + 1].from) : TOS_BLOOM_LEVELS.length;
-                    var options = TOS_BLOOM_LEVELS.map(function(l, li) {
-                        if (li <= prevStart || li >= nextStart) return '';
-                        return '<option value="' + l + '"' + (l === p.from ? ' selected' : '') + '>' + l + '</option>';
-                    }).join('');
-                    startHtml = 'Starts at <select aria-label="Test ' + p.roman + ' starting level" onchange="setTosPartFrom(' + i + ', this.value)">' + options + '</select>';
-                }
                 return '<div class="tos-part">' +
                     '<div class="tos-part-top">' +
                         '<span class="tos-part-name">Test ' + p.roman + '</span>' +
                         '<select aria-label="Test ' + p.roman + ' question type" onchange="setTosPartType(' + i + ', this.value)">' + typeOptions(p.type) + '</select>' +
-                        (i > 0 ? '<button type="button" class="tos-part-remove" title="Remove Test ' + p.roman + '" onclick="removeTosPart(' + i + ')">×</button>' : '') +
                     '</div>' +
-                    '<div class="tos-part-levels">' + startHtml + '<span>· covers ' + levelRangeText(p.levels) + '</span></div>' +
                 '</div>';
             }).join('');
-
-            var addBtn = document.getElementById('btn-add-part');
-            addBtn.disabled = norm.length >= TOS_ROMAN.length;
-            addBtn.title = addBtn.disabled ? 'An exam can have up to ' + TOS_ROMAN.length + ' tests, one per Bloom\'s level.' : '';
-            document.getElementById('tos-parts-count').textContent = norm.length + ' of ' + TOS_ROMAN.length + ' tests';
         }
 
-        // A new test splits the test that covers the most Bloom's levels (the earliest one
-        // on a tie), so "+ Add Test" works every time up to Test VI. Change any test's
-        // starting level afterwards to move the split.
-        function addTosPart() {
-            var norm = normalizeTosParts(tosParts);
-            if (norm.length >= TOS_ROMAN.length) return;
-            var widest = 0;
-            norm.forEach(function(p, i) { if (p.levels.length > norm[widest].levels.length) widest = i; });
-            var split = norm[widest].levels;
-            var from = split[Math.ceil(split.length / 2)];
-            tosParts.splice(widest + 1, 0, { type: TOS_DEFAULT_TYPE_FOR[from] || 'mc-single', from: from });
+        // Tests that stay keep the question type already chosen for them.
+        function setTosTestCount(count) {
+            tosParts = TOS_TEST_STARTS[count].map(function(from, i) {
+                return { type: tosParts[i] ? tosParts[i].type : TOS_DEFAULT_TYPE_FOR[from], from: from };
+            });
             onTosPartsChanged();
         }
-        function removeTosPart(i) { tosParts.splice(i, 1); onTosPartsChanged(); }
         function setTosPartType(i, type) { tosParts[i].type = type; onTosPartsChanged(); }
-        function setTosPartFrom(i, from) { tosParts[i].from = from; onTosPartsChanged(); }
 
         // A TOS already on screen was numbered for the previous tests — ask for a
         // regenerate instead of silently renumbering it (and losing any edits).
@@ -1383,15 +1356,14 @@
             }
         }
 
-        // A test whose Bloom's levels got no items in this TOS would print as an empty
-        // "Test IV" on the exam; say which ones and how to fix it.
+        // A test that got no items in this TOS would print as an empty "Test IV" on the
+        // exam; say which ones and how to fix it.
         function emptyTestsWarning(parts) {
             var empty = parts.filter(function(p) { return p.items === 0; });
             if (!empty.length) return '';
             return '<div class="tos-stale">' + empty.map(function(p) {
-                return '<strong>Test ' + p.roman + '</strong> (' + escapeHtml(levelRangeText(p.levels)) + ')';
-            }).join(', ') + (empty.length === 1 ? ' has' : ' have') + ' no items because this TOS has no questions at ' + (empty.length === 1 ? 'that level' : 'those levels') +
-                '. Move ' + (empty.length === 1 ? 'its' : 'their') + ' "Starts at" to a lower level or remove ' + (empty.length === 1 ? 'it' : 'them') + ', then click <strong>Generate TOS</strong> again.</div>';
+                return '<strong>Test ' + p.roman + '</strong>';
+            }).join(', ') + (empty.length === 1 ? ' has' : ' have') + ' no items. Choose fewer tests or more items, then click <strong>Generate TOS</strong> again.</div>';
         }
 
         function tosPartsPayload() {
@@ -2873,7 +2845,7 @@
         function closePreview() { document.getElementById('preview-overlay').classList.remove('open'); }
         document.getElementById('preview-overlay').addEventListener('click', function(e) { if (e.target === this) closePreview(); });
 
-        // ── Download Options (font, size, paper) ──
+        // ── Download Options (font, size, paper, layout) ──
         var downloadKind = 'exam';
 
         function openDownloadOptions(kind) {
@@ -2883,6 +2855,9 @@
             document.getElementById('dl-font').value = currentExam.print_font || EXAM_PRINT_DEFAULTS.font;
             document.getElementById('dl-size').value = String(currentExam.print_font_size || EXAM_PRINT_DEFAULTS.size);
             document.getElementById('dl-paper').value = currentExam.print_paper || EXAM_PRINT_DEFAULTS.paper;
+            document.getElementById('dl-layout').value = currentExam.print_layout || EXAM_PRINT_DEFAULTS.layout;
+            // The answer key has one layout, so the choice only shows for the exam.
+            document.getElementById('dl-layout-field').style.display = kind === 'exam' ? '' : 'none';
             updateDownloadPreview();
             document.getElementById('download-options-overlay').classList.add('open');
         }
@@ -2894,18 +2869,22 @@
             var box = document.getElementById('dl-preview');
             box.style.fontFamily = '"' + document.getElementById('dl-font').value + '", sans-serif';
             box.style.fontSize = (parseInt(document.getElementById('dl-size').value, 10) * 4 / 3) + 'px';
+            var layout = document.getElementById('dl-layout');
+            document.getElementById('dl-layout-hint').textContent = layout.options[layout.selectedIndex].dataset.hint;
         }
 
         function confirmDownload() {
             var font = document.getElementById('dl-font').value;
             var size = document.getElementById('dl-size').value;
             var paper = document.getElementById('dl-paper').value;
+            var layout = document.getElementById('dl-layout').value;
+            currentExam.print_layout = layout;
             currentExam.print_font = font;
             currentExam.print_font_size = parseInt(size, 10);
             currentExam.print_paper = paper;
             closeDownloadOptions();
             window.location.href = '/faculty/exam-generator/' + currentExam.id + '/' + downloadKind +
-                '?font=' + encodeURIComponent(font) + '&size=' + encodeURIComponent(size) + '&paper=' + encodeURIComponent(paper);
+                '?font=' + encodeURIComponent(font) + '&size=' + encodeURIComponent(size) + '&paper=' + encodeURIComponent(paper) + '&layout=' + encodeURIComponent(layout);
         }
 
         function finalizeExam() {

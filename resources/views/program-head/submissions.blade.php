@@ -141,9 +141,9 @@
 
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
-            <span class="brand">CBMA</span>
-            <span class="brand-sub">Academic Coordination</span>
+            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
+            <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
+            <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
         </div>
         <ul class="nav-list">
             @if($navPermissions['dashboard'] ?? true)
@@ -176,6 +176,9 @@
             @endif
             @if($navPermissions['analytics'] ?? true)
             <li class="{{ request()->is('program-head/analytics*') ? 'active' : '' }}"><a href="{{ url('/program-head/analytics') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></li>
+            @endif
+            @if($navPermissions['official-documents'] ?? true)
+            <li class="{{ request()->is('program-head/official-documents*') ? 'active' : '' }}"><a href="{{ url('/program-head/official-documents') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Official Documents</a></li>
             @endif
         </ul>
         <div class="sidebar-logout">
@@ -437,6 +440,12 @@
             document.getElementById('submitters-' + id).classList.toggle('open');
         }
 
+        const TEMPLATE_TYPE_LABELS = @json(collect(\App\Models\TemplateType::catalog())->map(fn ($type) => $type['label']));
+
+        function removeHiddenTypeOption() {
+            document.querySelectorAll('#f-type option[data-hidden-type]').forEach((o) => o.remove());
+        }
+
         function openAddModal() {
             document.getElementById('modal-title').textContent = 'Add Requirement';
             document.getElementById('req-form').action = BASE;
@@ -445,6 +454,7 @@
             document.getElementById('f-deadline').value = '';
             document.getElementById('f-deadline').min = @json(now()->toDateString());
             document.getElementById('f-description').value = '';
+            removeHiddenTypeOption();
             document.getElementById('f-type').selectedIndex = 0;
             document.getElementById('f-priority').value = 'standard';
             document.getElementById('req-overlay').classList.add('open');
@@ -463,7 +473,15 @@
             document.getElementById('f-deadline').value = req.deadline.split('T')[0];
             document.getElementById('f-deadline').removeAttribute('min');
             document.getElementById('f-description').value = req.description || '';
-            document.getElementById('f-type').value = req.type;
+            removeHiddenTypeOption();
+            const typeSelect = document.getElementById('f-type');
+            if (![...typeSelect.options].some((o) => o.value === req.type)) {
+                // A type the Admin has since hidden stays selectable on the requirement using it.
+                const option = new Option(TEMPLATE_TYPE_LABELS[req.type] || req.type, req.type);
+                option.dataset.hiddenType = '1';
+                typeSelect.add(option);
+            }
+            typeSelect.value = req.type;
             document.getElementById('f-priority').value = req.priority || 'standard';
             document.getElementById('req-overlay').classList.add('open');
         }

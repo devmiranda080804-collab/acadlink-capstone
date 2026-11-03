@@ -14,6 +14,12 @@
     </div>
 
     <div class="card-actions">
+        @if($template->isEditableFile())
+            <form method="POST" action="{{ url('/faculty/my-template/' . $template->id . '/use') }}" style="margin:0;">
+                @csrf
+                <button type="submit" class="btn-sm btn-view-file" style="cursor:pointer;" title="Make your own copy in your CMS and edit it there">Use this template</button>
+            </form>
+        @endif
         <a class="btn-sm btn-view-file" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank" onclick="markTemplateViewed({{ $template->id }}, this)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             View

@@ -7,7 +7,11 @@ use App\Http\Controllers\ProgramHead\AccountManagementController as PHAccountMan
 use App\Http\Controllers\Secretary\AccountManagementController as SecAccountManagementController;
 use App\Http\Controllers\ChangePasswordController;
 use App\Http\Controllers\FileController;
+use App\Http\Controllers\ProgramHead\OfficialDocumentController;
+use App\Http\Controllers\OnlyOfficeController;
+use App\Http\Controllers\SystemCmsController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
+use App\Http\Controllers\Admin\TemplateTypeController as AdminTemplateTypeController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\Admin\RolesPermissionsController;
@@ -65,7 +69,18 @@ Route::get('/change-password', [ChangePasswordController::class, 'show']);
 Route::post('/change-password', [ChangePasswordController::class, 'update']);
 
 // Shared file viewer for every role; access is checked per file in FileController.
-Route::middleware('auth')->prefix('files')->whereIn('source', ['template', 'material', 'topic', 'shared', 'repository', 'submission', 'module'])->group(function () {
+// Called by the document editor service, not by a browser (see OnlyOfficeController).
+Route::whereIn('source', ['modules', 'system-documents', 'templates'])->whereNumber('id')->group(function () {
+    Route::get('/onlyoffice/{source}/{id}/file', [OnlyOfficeController::class, 'file'])
+        ->middleware('signed:relative')->name('onlyoffice.file');
+    Route::post('/onlyoffice/{source}/{id}/callback', [OnlyOfficeController::class, 'callback'])
+        ->name('onlyoffice.callback');
+});
+
+// Images on the login page, shown before anyone has signed in.
+Route::get('/site-content/{key}', [SystemCmsController::class, 'image']);
+
+Route::middleware('auth')->prefix('files')->whereIn('source', ['template', 'material', 'topic', 'shared', 'repository', 'submission', 'module', 'system', 'version'])->group(function () {
     Route::get('/{source}/{id}', [FileController::class, 'show'])->whereNumber('id');
     Route::get('/{source}/{id}/raw', [FileController::class, 'raw'])->whereNumber('id');
     Route::get('/{source}/{id}/download', [FileController::class, 'download'])->whereNumber('id');
@@ -81,6 +96,7 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::get('/dashboard', [FacultyDashboardController::class, 'index']);
     Route::get('/my-template', [TemplateController::class, 'index']);
     Route::post('/my-template/{template}/view', [TemplateController::class, 'markViewed']);
+    Route::post('/my-template/{template}/use', [TemplateController::class, 'useTemplate']);
     Route::get('/exam-generator', [ExamGeneratorController::class, 'index']);
     Route::post('/exam-generator', [ExamGeneratorController::class, 'store']);
     // Literal routes must come before the {exam} wildcard below so they aren't swallowed by it
@@ -113,10 +129,12 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::post('/submissions/{requirement}', [FacultySubmissionController::class, 'store']);
     Route::get('/cms', [ContentModuleController::class, 'index']);
     Route::post('/cms', [ContentModuleController::class, 'store']);
+    Route::get('/cms/{module}/edit', [ContentModuleController::class, 'edit']);
     Route::put('/cms/{module}', [ContentModuleController::class, 'update']);
-    Route::get('/cms/{module}/docx-file', [ContentModuleController::class, 'docxFile']);
-    Route::get('/cms/{module}/docx-text', [ContentModuleController::class, 'docxText']);
-    Route::put('/cms/{module}/docx-text', [ContentModuleController::class, 'updateDocxText']);
+    Route::post('/cms/{module}/share', [ContentModuleController::class, 'share']);
+    Route::get('/cms/{module}/versions', [ContentModuleController::class, 'versions']);
+    Route::post('/cms/{module}/versions/{version}/restore', [ContentModuleController::class, 'restoreVersion']);
+    Route::post('/cms/{module}/convert', [ContentModuleController::class, 'convert']);
     Route::delete('/cms/{module}', [ContentModuleController::class, 'destroy']);
 
     // Collaboration API (Google Docs-backed)
@@ -176,6 +194,20 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
     Route::get('/analytics', [AdminAnalyticsController::class, 'index']);
     Route::get('/settings', [AdminSettingsController::class, 'index']);
     Route::put('/settings', [AdminSettingsController::class, 'update']);
+    Route::get('/system-cms', [SystemCmsController::class, 'index']);
+    Route::post('/system-cms/documents', [SystemCmsController::class, 'store']);
+    Route::get('/system-cms/documents/{document}/edit', [SystemCmsController::class, 'edit']);
+    Route::put('/system-cms/documents/{document}', [SystemCmsController::class, 'update']);
+    Route::post('/system-cms/documents/{document}/publish', [SystemCmsController::class, 'togglePublish']);
+    Route::get('/system-cms/documents/{document}/versions', [SystemCmsController::class, 'versions']);
+    Route::post('/system-cms/documents/{document}/versions/{version}/restore', [SystemCmsController::class, 'restoreVersion']);
+    Route::post('/system-cms/documents/{document}/convert', [SystemCmsController::class, 'convert']);
+    Route::delete('/system-cms/documents/{document}', [SystemCmsController::class, 'destroy']);
+    Route::put('/system-cms/site', [SystemCmsController::class, 'updateSite']);
+    Route::post('/template-types', [AdminTemplateTypeController::class, 'store']);
+    Route::put('/template-types/{templateType}', [AdminTemplateTypeController::class, 'update']);
+    Route::post('/template-types/{templateType}/toggle', [AdminTemplateTypeController::class, 'toggle']);
+    Route::delete('/template-types/{templateType}', [AdminTemplateTypeController::class, 'destroy']);
 });
 
 /*
@@ -185,6 +217,7 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
 */
 
 Route::middleware('role:program_head')->prefix('program-head')->group(function () {
+    Route::get('/official-documents', [OfficialDocumentController::class, 'index']);
     Route::get('/dashboard', [PHDashboardController::class, 'index']);
     Route::get('/template-review', [TemplateReviewController::class, 'index']);
     Route::get('/course-oversight', [CourseOversightController::class, 'index']);
@@ -231,6 +264,18 @@ Route::middleware('role:program_head')->prefix('program-head')->group(function (
 */
 
 Route::middleware('role:secretary')->prefix('secretary')->group(function () {
+    Route::get('/system-cms', [SystemCmsController::class, 'index']);
+    Route::post('/system-cms/documents', [SystemCmsController::class, 'store']);
+    Route::get('/system-cms/documents/{document}/edit', [SystemCmsController::class, 'edit']);
+    Route::put('/system-cms/documents/{document}', [SystemCmsController::class, 'update']);
+    Route::post('/system-cms/documents/{document}/publish', [SystemCmsController::class, 'togglePublish']);
+    Route::get('/system-cms/documents/{document}/versions', [SystemCmsController::class, 'versions']);
+    Route::post('/system-cms/documents/{document}/versions/{version}/restore', [SystemCmsController::class, 'restoreVersion']);
+    Route::post('/system-cms/documents/{document}/convert', [SystemCmsController::class, 'convert']);
+    Route::delete('/system-cms/documents/{document}', [SystemCmsController::class, 'destroy']);
+    Route::post('/template-distribution/{template}/edit', [TemplateDistributionController::class, 'startEditing']);
+    Route::get('/template-distribution/{template}/editor', [TemplateDistributionController::class, 'editor']);
+    Route::post('/template-distribution/{template}/submit', [TemplateDistributionController::class, 'submitDraft']);
     Route::get('/dashboard', [SecDashboardController::class, 'index']);
     Route::get('/document-repository', [DocumentRepositoryController::class, 'index']);
     Route::post('/document-repository', [DocumentRepositoryController::class, 'store']);

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login – CBMA System</title>
+    <title>Login – {{ \App\Support\SiteContent::text('system_name') }}</title>
     <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -17,7 +17,7 @@
         position: fixed;
         inset: 0;
         background-color: #4a6b4a;
-        background-image: url('{{ asset("images/bg-campus.jpg") }}');
+        background-image: url('{{ \App\Support\SiteContent::imageUrl('login_background') }}');
         background-size: cover;
         background-position: center;
         filter: blur(6px);
@@ -188,7 +188,7 @@
 
             {{-- Logo --}}
             <div class="logo-panel">
-                <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA Logo">
+                <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
             </div>
 
             {{-- Form --}}
@@ -196,8 +196,8 @@
                 <form method="POST" action="{{ route('login.submit') }}">
                 @csrf
 
-                <h1>CBMA System</h1>
-                <p class="sub">Academic Coordination and Instructional Management</p>
+                <h1>{{ \App\Support\SiteContent::text('system_name') }}</h1>
+                <p class="sub">{{ \App\Support\SiteContent::text('system_tagline') }}</p>
 
                 @if($errors->any())
                     <div class="error-msg" style="display:block;">
@@ -233,7 +233,7 @@
                <div class="forgot"><a href="{{ route('password.request') }}">Forgot your password?</a></div>
 
                 <p class="copyright">
-                    © 2026 CBMA System. All rights reserved.
+                    © {{ date('Y') }} {{ \App\Support\SiteContent::text('system_name') }}. All rights reserved.
                 </p>
             </form>
 

@@ -21,6 +21,7 @@ class RolesPermissionsController extends Controller
             'announcements'       => 'Announcements',
             'calendar'            => 'Calendar of Activities',
             'analytics'           => 'Analytics',
+            'official-documents'  => 'Official Documents',
         ],
         'secretary' => [
             'dashboard'              => 'Dashboard',
@@ -30,6 +31,7 @@ class RolesPermissionsController extends Controller
             'account-management'     => 'Account Management',
             'announcements'          => 'Announcements',
             'calendar'               => 'Calendar of Activities',
+            'system-cms'             => 'System CMS',
         ],
         'faculty' => [
             'dashboard'           => 'Dashboard',
