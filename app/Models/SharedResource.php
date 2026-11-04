@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SharedResource extends Model
 {
     protected $fillable = [
-        'shared_by', 'program', 'title', 'type', 'description',
+        'shared_by', 'program', 'course_id', 'source_module_id', 'title', 'type', 'description',
         'file_path', 'file_name', 'file_type', 'file_size',
     ];
 
@@ -31,6 +31,11 @@ class SharedResource extends Model
     {
         return self::typeOptions()[$this->type]
             ?? (isset(TemplateType::catalog()[$this->type]) ? TemplateDocument::typeLabel($this->type) : 'Lecture Slides');
+    }
+
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
     }
 
     public function sharer()

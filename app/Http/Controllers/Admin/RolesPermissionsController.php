@@ -43,7 +43,6 @@ class RolesPermissionsController extends Controller
             'calendar'            => 'Calendar of Activities',
             'announcements'       => 'Announcements',
             'submissions'         => 'Submissions and Deadline',
-            'cms'                 => 'CMS',
         ],
     ];
 

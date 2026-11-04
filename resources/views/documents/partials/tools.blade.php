@@ -2,6 +2,8 @@
 <style>
     .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; background: #fff; border: 1px solid #d0d0d0; border-radius: 5px; color: #444; cursor: pointer; text-decoration: none; }
     .icon-btn:hover { background: #f5f5f5; }
+    .icon-btn-active { color: #065f46; border-color: #6ee7b7; background: #d1fae5; }
+    .icon-btn-active:hover { background: #a7f3d0; }
     .icon-btn-danger { color: #b91c1c; border-color: #fca5a5; }
     .icon-btn-danger:hover { background: #fee2e2; }
     .icon-btn-plain { width: 24px; height: 24px; border-color: transparent; background: transparent; color: #777; border-radius: 50%; }

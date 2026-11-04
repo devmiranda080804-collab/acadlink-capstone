@@ -101,7 +101,6 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::post('/exam-generator', [ExamGeneratorController::class, 'store']);
     // Literal routes must come before the {exam} wildcard below so they aren't swallowed by it
     Route::post('/exam-generator/tos-target', [ExamGeneratorController::class, 'tosTarget']);
-    Route::post('/exam-generator/tos-download', [ExamGeneratorController::class, 'tosDownload']);
     Route::post('/exam-generator/generate-questions', [ExamGeneratorController::class, 'generateQuestions']);
     Route::get('/exam-generator/item-bank', [ExamGeneratorController::class, 'bankItems']);
     Route::post('/exam-generator/item-bank/{question}/reuse', [ExamGeneratorController::class, 'reuseItem']);
@@ -109,6 +108,7 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::get('/exam-generator/{exam}', [ExamGeneratorController::class, 'show']);
     Route::put('/exam-generator/{exam}', [ExamGeneratorController::class, 'update']);
     Route::get('/exam-generator/{exam}/tos', [ExamGeneratorController::class, 'tos']);
+    Route::get('/exam-generator/{exam}/tos/download', [ExamGeneratorController::class, 'tosDownload']);
     Route::post('/exam-generator/{exam}/finalize', [ExamGeneratorController::class, 'finalize']);
     Route::get('/exam-generator/{exam}/download', [ExamGeneratorController::class, 'download']);
     Route::get('/exam-generator/{exam}/answer-key', [ExamGeneratorController::class, 'answerKey']);
@@ -127,11 +127,15 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::get('/announcements', [FacultyAnnouncementController::class, 'index']);
     Route::get('/submissions', [FacultySubmissionController::class, 'index']);
     Route::post('/submissions/{requirement}', [FacultySubmissionController::class, 'store']);
-    Route::get('/cms', [ContentModuleController::class, 'index']);
+    // No CMS page for faculty for now; the editor opens from Templates.
+    Route::redirect('/cms', '/faculty/my-template');
     Route::post('/cms', [ContentModuleController::class, 'store']);
     Route::get('/cms/{module}/edit', [ContentModuleController::class, 'edit']);
     Route::put('/cms/{module}', [ContentModuleController::class, 'update']);
     Route::post('/cms/{module}/share', [ContentModuleController::class, 'share']);
+    Route::post('/cms/{module}/library/prepare', [ContentModuleController::class, 'prepareLibraryShare']);
+    Route::get('/cms/{module}/library/status', [ContentModuleController::class, 'libraryShareStatus']);
+    Route::post('/cms/{module}/library', [ContentModuleController::class, 'shareToLibrary']);
     Route::get('/cms/{module}/versions', [ContentModuleController::class, 'versions']);
     Route::post('/cms/{module}/versions/{version}/restore', [ContentModuleController::class, 'restoreVersion']);
     Route::post('/cms/{module}/convert', [ContentModuleController::class, 'convert']);

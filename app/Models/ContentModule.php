@@ -12,7 +12,7 @@ class ContentModule extends Model
     const ONLYOFFICE_SOURCE = 'modules';
 
     protected $fillable = [
-        'created_by', 'title', 'description', 'content',
+        'created_by', 'source_template_id', 'title', 'description', 'content',
         'google_doc_id', 'file_path', 'file_name', 'file_type', 'file_size',
     ];
 
@@ -43,6 +43,12 @@ class ContentModule extends Model
 
     // Legacy — new modules no longer create Google Docs (see
     // ContentModuleController::store()), but older rows may still have one.
+    // Its copy in the Shared Library, when the owner has shared it.
+    public function libraryEntry()
+    {
+        return $this->hasOne(SharedResource::class, 'source_module_id');
+    }
+
     public function isGoogleDoc(): bool
     {
         return $this->google_doc_id !== null;

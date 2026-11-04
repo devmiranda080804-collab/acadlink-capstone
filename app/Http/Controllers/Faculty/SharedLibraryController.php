@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Faculty;
 
 use App\Http\Controllers\Controller;
-use App\Models\TemplateDocument;
+use App\Models\Course;
 use App\Models\CourseMaterial;
 use App\Models\SharedResource;
+use App\Models\SystemDocument;
 use App\Support\FileLinks;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -19,38 +20,37 @@ class SharedLibraryController extends Controller
 
         $items = collect();
 
-        // Every item carries a "folder" (group/key/label/icon) so the view can
-        // arrange the library into real folders — Templates grouped by type,
-        // Course Materials grouped by the actual course, Faculty Shared
-        // grouped by category — instead of one long flat, mixed list.
+        // Every item carries a "folder" (group/key/label/icon) so the view can arrange the
+        // library into sections: Official Documents, Program with whole-program resources
+        // by category, and Courses with each course's materials and shared resources together.
+        // Official templates stay in Templates; faculty share their edited copies here.
 
-        // 1. Templates the Dean sent to this faculty member's program (current versions only)
-        TemplateDocument::with('creator')
-            ->whereNull('superseded_at')
-            ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
+        // Documents the Admin or Secretary published in the System CMS
+        SystemDocument::with('creator')
+            ->where('is_published', true)
             ->get()
-            ->each(function ($t) use (&$items, $myProgram) {
+            ->each(function ($d) use (&$items) {
                 $items->push([
-                    'id'           => $t->id,
-                    'source'       => 'template',
-                    'title'        => $t->title,
-                    'type'         => TemplateDocument::typeLabel($t->type),
-                    'shared_by'    => $t->creator->name ?? 'Unknown',
-                    'desc'         => 'Official template approved by the Dean',
-                    'file_type'    => $t->file_type,
-                    'file_size'    => $t->readable_size,
-                    'view_url'     => FileLinks::view('template', $t->id),
-                    'download_url' => FileLinks::download('template', $t->id),
-                    'date'         => $t->programRow($myProgram)->distributed_at,
+                    'id'           => $d->id,
+                    'source'       => 'official',
+                    'title'        => $d->title,
+                    'type'         => 'Official Document',
+                    'shared_by'    => $d->creator->name ?? 'The college',
+                    'desc'         => $d->description ?? 'From the college',
+                    'file_type'    => $d->file_type,
+                    'file_size'    => $d->readable_size,
+                    'view_url'     => FileLinks::view('system', $d->id),
+                    'download_url' => FileLinks::download('system', $d->id),
+                    'date'         => $d->updated_at,
                     'can_delete'   => false,
-                    'folder_group' => 'templates',
-                    'folder_key'   => 'template-' . $t->type,
-                    'folder_label' => TemplateDocument::typeLabel($t->type) . ' Templates',
-                    'folder_icon'  => TemplateDocument::typeIcon($t->type),
+                    'folder_group' => 'official',
+                    'folder_key'   => 'official-documents',
+                    'folder_label' => 'Official Documents',
+                    'folder_icon'  => '📑',
                 ]);
             });
 
-        // 2. Course materials (own program) — one folder per actual course
+        // Course materials (own program) — one folder per actual course
         CourseMaterial::with(['course', 'uploader'])
             ->whereHas('course', fn($c) => $c->where('program', $myProgram))
             ->get()
@@ -68,19 +68,24 @@ class SharedLibraryController extends Controller
                     'download_url' => FileLinks::download('material', $m->id),
                     'date'         => $m->created_at,
                     'can_delete'   => false,
-                    'folder_group' => 'materials',
+                    'folder_group' => 'courses',
                     'folder_key'   => 'course-' . $m->course_id,
                     'folder_label' => ($m->course->code ?? 'Unknown') . ' — ' . ($m->course->title ?? 'Course'),
                     'folder_icon'  => '📚',
                 ]);
             });
 
-        // 3. Faculty-shared resources (own program) — one folder per category
-        SharedResource::with('sharer')
+        // Faculty-shared resources (own program) — in their course's folder, or one folder
+        // per category when they're for the whole program
+        SharedResource::with(['sharer', 'course'])
             ->where('program', $myProgram)
             ->get()
             ->each(function ($r) use (&$items) {
-                $items->push([
+                $folder = $r->course
+                    ? ['folder_group' => 'courses', 'folder_key' => 'course-' . $r->course_id, 'folder_label' => $r->course->code . ' — ' . $r->course->title, 'folder_icon' => '📚']
+                    : ['folder_group' => 'program', 'folder_key' => 'shared-' . $r->type, 'folder_label' => $r->type_label, 'folder_icon' => '🗂️'];
+
+                $items->push($folder + [
                     'id'           => $r->id,
                     'source'       => 'shared',
                     'title'        => $r->title,
@@ -93,10 +98,6 @@ class SharedLibraryController extends Controller
                     'download_url' => FileLinks::download('shared', $r->id),
                     'date'         => $r->created_at,
                     'can_delete'   => $r->shared_by === auth()->id(), // own upload only
-                    'folder_group' => 'shared',
-                    'folder_key'   => 'shared-' . $r->type,
-                    'folder_label' => $r->type_label,
-                    'folder_icon'  => '🗂️',
                 ]);
             });
 
@@ -121,7 +122,9 @@ class SharedLibraryController extends Controller
             ];
         })->sortBy('label')->values();
 
-        return view('faculty.shared-library', compact('items', 'folders', 'myProgram', 'recentItems', 'recentDays'));
+        $courses = Course::where('program', $myProgram)->orderBy('code')->get();
+
+        return view('faculty.shared-library', compact('items', 'folders', 'myProgram', 'recentItems', 'recentDays', 'courses'));
     }
 
     public function store(Request $request)
@@ -130,8 +133,9 @@ class SharedLibraryController extends Controller
             'title'       => 'required|string|max:255',
             'type'        => ['required', Rule::in(array_keys(SharedResource::typeOptions()))],
             'description' => 'nullable|string|max:500',
+            'course_id'   => ['nullable', 'integer', Rule::exists('courses', 'id')->where('program', auth()->user()->program)],
             'file'        => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx|max:20480',
-        ]);
+        ], [], ['course_id' => 'course']);
 
         $file = $request->file('file');
         $path = $file->store('shared-resources', 'public');
@@ -139,6 +143,7 @@ class SharedLibraryController extends Controller
         SharedResource::create([
             'shared_by'   => auth()->id(),
             'program'     => auth()->user()->program,
+            'course_id'   => $request->course_id ?: null,
             'title'       => $request->title,
             'type'        => $request->type,
             'description' => $request->description,

@@ -146,17 +146,21 @@ class TosDocumentBuilder
         }
 
         foreach (self::LEVEL_KEYS as $level => $key) {
-            $doc->setValue("tot_{$key}", (string) $totals[$level]);
+            // TemplateProcessor blanks a plain "0", and a level with no items should still show it.
+            $doc->setValue("tot_{$key}", $totals[$level] === 0 ? '0 ' : (string) $totals[$level]);
         }
         $doc->setValue('tot_hours', (string) $breakdown['total_hours']);
         $doc->setValue('tot_items', (string) $breakdown['total_items']);
     }
 
     // "1-3" -> "1, 2, 3" like the college's sample; with several tests the "II." style
-    // prefix is kept. Long runs stay as a range, and anything the faculty typed by hand
-    // in Edit mode is printed as-is.
+    // prefix is kept. Long runs stay as a range, and anything else is printed as-is.
     protected function itemNumbers(?string $range, string $level): string
     {
+        if ($range && str_contains($range, ',')) {
+            return implode(', ', array_map(fn ($part) => $this->itemNumbers(trim($part), $level), explode(',', $range)));
+        }
+
         if (!$range || !preg_match('/^(?:(VI|IV|V|I{1,3})\.)?(\d+)(?:-(\d+))?$/', trim($range), $m)) {
             return (string) $range;
         }

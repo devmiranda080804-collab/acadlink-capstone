@@ -15,18 +15,12 @@
 
     <div class="card-actions">
         @if($template->isEditableFile())
-            <form method="POST" action="{{ url('/faculty/my-template/' . $template->id . '/use') }}" style="margin:0;">
+            <form method="POST" action="{{ url('/faculty/my-template/' . $template->id . '/use') }}" class="card-copy">
                 @csrf
-                <button type="submit" class="btn-sm btn-view-file" style="cursor:pointer;" title="Make your own copy in your CMS and edit it there">Use this template</button>
+                <button type="submit" class="btn-sm btn-view-file" title="{{ $template->has_copy ? 'Open your copy of this template in the editor' : 'Make your own copy and edit it in the editor' }}">{{ $template->has_copy ? 'Continue Editing' : 'Make Copy' }}</button>
             </form>
         @endif
-        <a class="btn-sm btn-view-file" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank" onclick="markTemplateViewed({{ $template->id }}, this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            View
-        </a>
-        <a class="btn-sm btn-view-file" href="{{ \App\Support\FileLinks::download('template', $template->id) }}" onclick="markTemplateViewed({{ $template->id }}, this)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download
-        </a>
+        <a class="icon-btn" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank" title="View" aria-label="View" onclick="markTemplateViewed({{ $template->id }}, this)">@include('documents.partials.icon', ['name' => 'eye'])</a>
+        <a class="icon-btn" href="{{ \App\Support\FileLinks::download('template', $template->id) }}" title="Download" aria-label="Download" onclick="markTemplateViewed({{ $template->id }}, this)">@include('documents.partials.icon', ['name' => 'download'])</a>
     </div>
 </div>

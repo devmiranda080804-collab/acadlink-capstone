@@ -87,7 +87,11 @@
         .card-icon { font-size: 22px; }
         .card-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
         .card-meta { font-size: 10.5px; color: #aaa; margin-bottom: 14px; }
-        .card-actions { display: flex; gap: 6px; margin-top: auto; }
+        .card-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: auto; }
+        .card-copy { flex: 1; min-width: 0; margin: 0; }
+        .card-copy button { width: 100%; }
+        .icon-btn { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; height: 32px; background: #fff; border: 1px solid #d0d0d0; border-radius: 5px; color: #444; text-decoration: none; }
+        .icon-btn:hover { background: #f5f5f5; }
         .btn-sm { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; cursor: pointer; border: 1px solid transparent; text-decoration: none; flex: 1; }
         .btn-view-file { background: #fff; color: #333; border: 1px solid #d0d0d0; }
         .btn-view-file:hover { background: #f5f5f5; }

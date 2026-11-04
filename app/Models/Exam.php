@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BloomLevels;
 use Illuminate\Database\Eloquent\Model;
 
 class Exam extends Model
@@ -109,7 +110,7 @@ class Exam extends Model
             ->value('parts');
         $parts = is_string($parts) ? json_decode($parts, true) : $parts;
 
-        if (!is_array($parts) || count($parts) < 2 || count($parts) !== $sectionCount) {
+        if (!is_array($parts) || count($parts) < 2 || count($parts) !== $sectionCount || empty($parts[0]['levels'])) {
             return [];
         }
 
@@ -131,6 +132,113 @@ class Exam extends Model
         );
 
         return collect($breakdown['topics'])->mapWithKeys(fn($t) => [$t['topic'] => (int) $t['target_items']])->all();
+    }
+
+    // The finished TOS: each topic's hours, % and items, plus the Bloom's level of every
+    // question the instructor actually put in the exam, with the item numbers the printed
+    // exam uses. "issues" says what is still missing; the TOS is ready when it is empty.
+    public function finalTos(): array
+    {
+        $breakdown = CourseTopic::targetBreakdown(
+            $this->programAssignment->course_id,
+            $this->grading_period,
+            (int) $this->target_items
+        );
+
+        $counts = [];
+        $untagged = 0;
+        foreach ($this->sections as $section) {
+            self::tallyTopics($section->questions, $counts, $untagged);
+        }
+        $issues = $this->tosCountIssues($counts, $untagged, true);
+        if (empty($breakdown['topics'])) {
+            $issues[] = 'This exam has no TOS topics yet. Generate the TOS for this subject and grading period first.';
+        }
+
+        // Numbered like ExamDocumentBuilder: continuous across the sections, with a
+        // sub-question printed under its question's number as "12.a".
+        $cells = [];
+        $unclassified = 0;
+        $add = function ($question, $label) use (&$cells, &$unclassified) {
+            if (!$question->bloom_level) {
+                $unclassified++;
+
+                return;
+            }
+            $cell = &$cells[$question->topic][$question->bloom_level];
+            $cell['labels'][] = $label;
+            $cell['points'] = ($cell['points'] ?? 0) + (int) $question->points;
+        };
+
+        $number = 0;
+        foreach ($this->sections as $section) {
+            foreach ($section->questions as $question) {
+                $number++;
+                foreach ($question->children as $i => $child) {
+                    $add($child, $number . '.' . chr(97 + $i));
+                }
+                if ($question->children->isEmpty() && $question->type !== 'case-analysis') {
+                    $add($question, $number);
+                }
+            }
+        }
+        if ($unclassified > 0) {
+            $issues[] = $unclassified === 1
+                ? "1 question has no Bloom's level yet. Choose its level."
+                : "{$unclassified} questions have no Bloom's level yet. Choose a level for each one.";
+        }
+
+        $totalPoints = 0;
+        $breakdown['topics'] = array_map(function ($topic) use ($cells, &$totalPoints) {
+            $topic['topic_points'] = 0;
+            foreach (BloomLevels::LEVELS as $level) {
+                $cell = $cells[$topic['topic']][$level] ?? null;
+                $topic['levels'][$level] = [
+                    'count'           => $cell ? count($cell['labels']) : 0,
+                    'range'           => $cell ? self::itemRange($cell['labels']) : null,
+                    'points'          => $cell['points'] ?? 0,
+                    'points_per_item' => 1,
+                ];
+                $topic['topic_points'] += $cell['points'] ?? 0;
+            }
+            $totalPoints += $topic['topic_points'];
+
+            return $topic;
+        }, $breakdown['topics']);
+
+        unset($breakdown['parts']);
+        $breakdown['total_points'] = $totalPoints;
+        $breakdown['issues'] = $issues;
+
+        return $breakdown;
+    }
+
+    // [1, 2, 3, 7, '9.a'] -> "1-3, 7, 9.a"
+    protected static function itemRange(array $labels): string
+    {
+        $ranges = [];
+        $start = $previous = null;
+        $close = function () use (&$ranges, &$start, &$previous) {
+            if ($start !== null) {
+                $ranges[] = $start === $previous ? (string) $start : "{$start}-{$previous}";
+            }
+            $start = $previous = null;
+        };
+
+        foreach ($labels as $label) {
+            if (!is_int($label)) {
+                $close();
+                $ranges[] = $label;
+            } elseif ($previous !== null && $label === $previous + 1) {
+                $previous = $label;
+            } else {
+                $close();
+                $start = $previous = $label;
+            }
+        }
+        $close();
+
+        return implode(', ', $ranges);
     }
 
     // Plain-language problems with the item count per topic. Too many items, or a

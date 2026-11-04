@@ -82,6 +82,7 @@ class ExamGeneratorController extends Controller
             'grading_period'        => 'required|in:Prelim,Midterm,Final',
             'duration_minutes'      => 'nullable|integer|min:1',
             'target_items'          => 'nullable|integer|min:1',
+            'on_existing_draft'     => 'nullable|in:continue,replace',
         ]);
 
         // Faculty can only build exams for courses actually assigned to them
@@ -109,8 +110,53 @@ class ExamGeneratorController extends Controller
             ->where('status', 'draft')
             ->first();
 
+        // A TOS that no longer matches the draft is the instructor's call: keep working on
+        // the draft, or delete it and start over from the new TOS.
+        $targetItems = (int) ($request->target_items ?: $tos->total_items);
+        $tests = count($tos->parts ?? []);
+        $choice = $request->on_existing_draft;
+        $replaceDraft = false;
+
         if ($existingDraft) {
-            return response()->json($existingDraft->load('programAssignment.course'), 200);
+            $draftTests = $existingDraft->sections()->count();
+            $draftItems = (int) ($existingDraft->target_items ?: $targetItems);
+
+            if ($draftItems === $targetItems && $draftTests === $tests) {
+                return response()->json($existingDraft->load('programAssignment.course'), 200);
+            }
+
+            if (!$choice) {
+                $existingDraft->load('sections.questions.children');
+                $untagged = 0;
+                $counts = [];
+                foreach ($existingDraft->sections as $section) {
+                    Exam::tallyTopics($section->questions, $counts, $untagged);
+                }
+                $added = array_sum($counts) + $untagged;
+
+                return response()->json([
+                    'message'        => 'You already have a draft for this subject and grading period.',
+                    'draft_conflict' => [
+                        'id'        => $existingDraft->id,
+                        'title'     => $existingDraft->title,
+                        'items'     => $draftItems,
+                        'tests'     => $draftTests,
+                        'questions' => $added,
+                        'new_items' => $targetItems,
+                        'new_tests' => $tests,
+                    ],
+                ], 409);
+            }
+
+            if ($choice === 'continue') {
+                $breakdown = CourseTopic::targetBreakdown($assignment->course_id, $request->grading_period, $draftItems);
+                $breakdown['parts'] = TestParts::forCount(max(1, min($draftTests, count(TestParts::ROMAN))));
+                $this->persistTos($assignment, $request->grading_period, $breakdown);
+
+                return response()->json($existingDraft->load('programAssignment.course'), 200);
+            }
+
+            $replaceDraft = true;
         }
 
         // A test with no items would become an empty "Test IV" on the exam.
@@ -118,33 +164,40 @@ class ExamGeneratorController extends Controller
         abort_if($emptyTests->isNotEmpty(), 422, $emptyTests->map(fn($p) => 'Test ' . $p['roman'])->implode(', ')
             . ($emptyTests->count() === 1 ? ' has' : ' have') . ' no items in the TOS. In the TOS Generator, choose fewer tests or more items, then click Generate TOS again.');
 
-        $exam = Exam::create([
-            'program_assignment_id' => $assignment->id,
-            'faculty_id'            => auth()->id(),
-            'title'                 => $request->title,
-            'grading_period'        => $request->grading_period,
-            'duration_minutes'      => $request->duration_minutes,
-            // Left blank, it follows the TOS — so TOS Progress and the count checks always
-            // have a target to measure against.
-            'target_items'          => $request->target_items ?: $tos->total_items,
-        ]);
+        $exam = DB::transaction(function () use ($request, $assignment, $tos, $targetItems, $existingDraft, $replaceDraft) {
+            if ($replaceDraft) {
+                $existingDraft->delete();
+            }
 
-        // One section per test the instructor chose in the TOS (e.g. "Test I – Multiple
-        // Choice"), so the exam starts with the same structure as its TOS.
-        foreach ($tos->parts ?? [] as $i => $part) {
-            $exam->sections()->create([
-                'title'        => TestParts::sectionTitle($part),
-                'instructions' => TestParts::INSTRUCTIONS[$part['type']] ?? null,
-                'order'        => $i,
+            $exam = Exam::create([
+                'program_assignment_id' => $assignment->id,
+                'faculty_id'            => auth()->id(),
+                'title'                 => $request->title,
+                'grading_period'        => $request->grading_period,
+                'duration_minutes'      => $request->duration_minutes,
+                // Left blank, it follows the TOS — so TOS Progress and the count checks always
+                // have a target to measure against.
+                'target_items'          => $targetItems,
             ]);
-        }
 
-        // Link this exam to its originating TOS, if one was generated for the same
-        // program assignment + grading period and isn't already linked to another exam.
-        Tos::where('program_assignment_id', $assignment->id)
-            ->where('grading_period', $request->grading_period)
-            ->whereNull('exam_id')
-            ->update(['exam_id' => $exam->id]);
+            // One section per test in the TOS, so the exam starts with the same structure.
+            foreach ($tos->parts ?? [] as $i => $part) {
+                $exam->sections()->create([
+                    'title'        => TestParts::sectionTitle($part),
+                    'instructions' => TestParts::INSTRUCTIONS[$part['type'] ?? ''] ?? null,
+                    'order'        => $i,
+                ]);
+            }
+
+            // Link this exam to its originating TOS, if one was generated for the same
+            // program assignment + grading period and isn't already linked to another exam.
+            Tos::where('program_assignment_id', $assignment->id)
+                ->where('grading_period', $request->grading_period)
+                ->whereNull('exam_id')
+                ->update(['exam_id' => $exam->id]);
+
+            return $exam;
+        });
 
         return response()->json($exam->load('programAssignment.course'), 201);
     }
@@ -308,9 +361,9 @@ class ExamGeneratorController extends Controller
     {
         abort_unless($exam->faculty_id === auth()->id(), 403);
 
-        $exam->load('sections.questions.children');
+        $exam->load('sections.questions.children', 'programAssignment');
 
-        return response()->json($exam->tosBreakdown());
+        return response()->json($exam->finalTos());
     }
 
     // TOS Generator preview (Panel comment #8: Total Hours auto-fetched from OBE data,
@@ -323,32 +376,35 @@ class ExamGeneratorController extends Controller
             'program_assignment_id' => 'required|exists:program_assignments,id',
             'grading_period'        => 'required|in:Prelim,Midterm,Final',
             'total_items'           => 'required|integer|min:1',
-            'parts'                 => 'nullable|array|max:' . TestParts::MAX,
+            'test_count'            => 'nullable|integer|min:1|max:' . TestParts::MAX,
         ]);
 
         $assignment = ProgramAssignment::where('id', $request->program_assignment_id)
             ->where('faculty_id', auth()->id())
             ->firstOrFail();
 
-        // The Exam Builder asks without parts (it only needs the per-topic targets) — keep
-        // the tests already saved for this TOS instead of resetting them to the default.
-        $parts = $request->input('parts') ?? Tos::where('program_assignment_id', $assignment->id)
+        $breakdown = CourseTopic::targetBreakdown($assignment->course_id, $request->grading_period, (int) $request->total_items);
+
+        // The Exam Builder asks without a test count (it only needs the per-topic targets).
+        $saved = Tos::where('program_assignment_id', $assignment->id)
             ->where('grading_period', $request->grading_period)
             ->value('parts');
-        if (is_string($parts)) {
-            $parts = json_decode($parts, true);
+        $saved = is_string($saved) ? json_decode($saved, true) : $saved;
+
+        // Generating a TOS saves it. The Exam Builder only reads, so opening an exam never
+        // changes the saved TOS.
+        if ($request->test_count) {
+            $breakdown['parts'] = TestParts::forCount((int) $request->test_count);
+            $this->persistTos($assignment, $request->grading_period, $breakdown);
+        } else {
+            $breakdown['parts'] = $saved ?: $breakdown['parts'];
         }
-
-        $breakdown = CourseTopic::targetBreakdown($assignment->course_id, $request->grading_period, (int) $request->total_items, $parts);
-
-        $this->persistTos($assignment, $request->grading_period, $breakdown);
 
         return response()->json($breakdown);
     }
 
     // Saves (or replaces) the persisted TOS snapshot for this program assignment +
-    // grading period — called from both tosTarget() (auto-computed) and tosDownload()
-    // (possibly faculty-edited), so the stored record always reflects the latest version.
+    // grading period.
     private function persistTos(ProgramAssignment $assignment, string $gradingPeriod, array $breakdown): Tos
     {
         $tos = Tos::updateOrCreate(
@@ -381,66 +437,20 @@ class ExamGeneratorController extends Controller
 
     // Downloadable, editable .docx matching the official TOS template — faculty fill in
     // the schedule, sign, or adjust wording after downloading; nothing round-trips back.
-    // Takes the breakdown exactly as shown on screen (the client mirrors targetBreakdown()'s
-    // numbering/rounding rules in JS), so any Edit-mode adjustments the faculty made are
-    // reflected in the downloaded document instead of being silently recomputed away.
-    public function tosDownload(Request $request)
+    // Only for a finished exam, because the Bloom's levels come from its questions.
+    public function tosDownload(Exam $exam)
     {
-        $request->validate([
-            'program_assignment_id' => 'required|exists:program_assignments,id',
-            'grading_period'        => 'required|in:Prelim,Midterm,Final',
-            'breakdown'             => 'required|string',
-        ]);
+        abort_unless($exam->faculty_id === auth()->id(), 403);
 
-        $assignment = ProgramAssignment::with('course')
-            ->where('id', $request->program_assignment_id)
-            ->where('faculty_id', auth()->id())
-            ->firstOrFail();
+        $exam->load('sections.questions.children', 'programAssignment.course');
 
-        $breakdown = json_decode($request->breakdown, true);
+        $tos = $exam->finalTos();
+        abort_unless(empty($tos['issues']), 422, "The TOS isn't ready yet:\n" . implode("\n", $tos['issues']));
 
-        if (!is_array($breakdown) || empty($breakdown['topics']) || !is_array($breakdown['topics'])) {
-            abort(422, 'Invalid Table of Specification data. Please regenerate and try again.');
-        }
+        $course = $exam->programAssignment->course;
+        $path = (new TosDocumentBuilder())->build($course, $exam->grading_period, $tos, auth()->user());
 
-        // Defensive defaults so a partial/edited payload never crashes the document builder.
-        foreach ($breakdown['topics'] as &$topic) {
-            $topic['topic'] = (string) ($topic['topic'] ?? '');
-            $topic['hours'] = (int) ($topic['hours'] ?? 0);
-            $topic['weight_percent'] = $topic['weight_percent'] ?? 0;
-            $topic['target_items'] = (int) ($topic['target_items'] ?? 0);
-            foreach (BloomLevels::LEVELS as $level) {
-                $topic['levels'][$level] = array_merge(
-                    ['count' => 0, 'range' => null, 'points' => 0, 'points_per_item' => 1],
-                    is_array($topic['levels'][$level] ?? null) ? $topic['levels'][$level] : []
-                );
-            }
-        }
-        unset($topic);
-        $breakdown['total_hours'] = (int) ($breakdown['total_hours'] ?? 0);
-        $breakdown['total_items'] = (int) ($breakdown['total_items'] ?? 0);
-        $breakdown['total_points'] = (int) ($breakdown['total_points'] ?? array_sum(array_column($breakdown['topics'], 'topic_points')));
-
-        // Re-derive the tests from their type + starting level, and recount their items
-        // from the (possibly edited) cells.
-        $breakdown['parts'] = array_map(function ($part) use ($breakdown) {
-            $part['items'] = 0;
-            foreach ($breakdown['topics'] as $topic) {
-                foreach ($part['levels'] as $level) {
-                    $part['items'] += (int) $topic['levels'][$level]['count'];
-                }
-            }
-
-            return $part;
-        }, TestParts::normalize(is_array($breakdown['parts'] ?? null) ? $breakdown['parts'] : null));
-
-        $this->persistTos($assignment, $request->grading_period, $breakdown);
-
-        $path = (new TosDocumentBuilder())->build($assignment->course, $request->grading_period, $breakdown, auth()->user());
-
-        $filename = 'TOS-' . $assignment->course->code . '-' . $request->grading_period . '.docx';
-
-        return response()->download($path, $filename, [
+        return response()->download($path, 'TOS-' . $course->code . '-' . $exam->grading_period . '.docx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         ])->deleteFileAfterSend();
     }
@@ -662,6 +672,12 @@ class ExamGeneratorController extends Controller
         if (empty($drafts) && $skipped > 0) {
             return response()->json([
                 'message' => 'Every generated question repeated one already in the exam, so none were added. Try again, or add more teaching notes for this topic.',
+            ], 422);
+        }
+
+        if (empty($drafts)) {
+            return response()->json([
+                'message' => 'The AI could not write questions for this topic this time. Try again, or add more teaching notes for this topic.',
             ], 422);
         }
 

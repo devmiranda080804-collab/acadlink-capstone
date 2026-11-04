@@ -61,6 +61,11 @@ class AppServiceProvider extends ServiceProvider
                     ->pluck('is_enabled', 'module')
                     ->toArray();
 
+                // Faculty work on their template copies in the editor for now, with no CMS page.
+                if ($role === 'faculty') {
+                    $permissions['cms'] = false;
+                }
+
                 $view->with('navPermissions', $permissions);
                 $view->with('unreadAnnouncementsCount', Announcement::unreadCountFor(Auth::user()));
 

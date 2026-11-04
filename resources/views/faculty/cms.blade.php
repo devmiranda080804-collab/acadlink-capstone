@@ -87,7 +87,7 @@
         .btn-create { display: flex; align-items: center; gap: 6px; background: #0f2557; color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
         .btn-create:hover { background: #1a3a7a; }
 
-        .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
         .module-card { background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; padding: 16px; transition: box-shadow 0.15s; }
         .module-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
         .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
@@ -435,6 +435,7 @@
 
 
     @include('documents.partials.tools')
+    @include('documents.partials.library-share')
 
     <div id="logout-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
         <div style="background:#fff;border-radius:10px;padding:24px 26px;width:360px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,0.25);font-family:Arial,sans-serif;">

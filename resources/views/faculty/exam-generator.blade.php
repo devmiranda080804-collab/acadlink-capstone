@@ -261,14 +261,7 @@
         .form-row .form-group { margin-bottom: 0; }
 
         /* Exam parts (tests) in TOS Configuration */
-        .tos-parts { margin-bottom: 14px; }
-        .tos-part { border: 1px solid #e3e6ee; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; background: #fafbfd; }
-        .tos-part-top { display: flex; align-items: center; gap: 8px; }
-        .tos-part-name { font-size: 12px; font-weight: 700; color: #0f2557; white-space: nowrap; min-width: 46px; }
-        .tos-part select { flex: 1; min-width: 0; height: 30px; padding: 0 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; color: #333; background: #fff; }
         .tos-stale { background: #fff7e6; border: 1px solid #f59e0b; color: #92400e; font-size: 11.5px; padding: 8px 10px; border-radius: 5px; margin-bottom: 10px; }
-        .tos-parts-summary { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-        .tos-parts-summary span { background: #eef2fb; color: #0f2557; font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 12px; }
         .tos-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .q-dup-badge span { display: inline-block; margin-left: 6px; font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 10px; vertical-align: middle; }
         .q-dup-badge .dup-exact { background: #fee2e2; color: #b91c1c; }
@@ -816,16 +809,9 @@
                                 </div>
                             </div>
 
-                            <div class="tos-parts">
-                                <div class="form-group">
-                                    <label for="tos-test-count">Number of Tests</label>
-                                    <select id="tos-test-count" onchange="setTosTestCount(parseInt(this.value))">
-                                        @for($count = 1; $count <= \App\Support\TestParts::MAX; $count++)
-                                            <option value="{{ $count }}">{{ $count }}</option>
-                                        @endfor
-                                    </select>
-                                </div>
-                                <div id="tos-parts-list"></div>
+                            <div class="form-group">
+                                <label for="tos-test-count">Number of Tests</label>
+                                <input type="number" id="tos-test-count" min="1" max="{{ \App\Support\TestParts::MAX }}" step="1" value="1" oninput="setTosTestCount(this.value)">
                             </div>
 
                             <button class="btn-generate" type="button" onclick="generateTOS()">Generate TOS</button>
@@ -885,6 +871,7 @@
                     <div class="eb-btn-group">
                         <button class="btn-eb-save" onclick="saveExam()" id="btn-save-exam" disabled>💾 Save</button>
                         <button class="btn-eb-preview" onclick="previewExam()" id="btn-preview-exam" disabled>👁 Preview</button>
+                        <button class="btn-eb-preview" onclick="openExamTos()" id="btn-view-tos" disabled>📋 TOS</button>
                         <button class="btn-eb-preview" onclick="finalizeExam()" id="btn-finalize-exam" disabled>🔒 Finalize</button>
                         <a class="btn-eb-preview" href="#" id="btn-download-exam" onclick="openDownloadOptions('exam'); return false;" disabled style="display:none;pointer-events:none;opacity:0.5;">⬇ Download</a>
                         <a class="btn-eb-preview" href="#" id="btn-download-answer-key" onclick="openDownloadOptions('answer-key'); return false;" disabled style="display:none;pointer-events:none;opacity:0.5;">🔑 Answer Key</a>
@@ -1048,6 +1035,32 @@
         </div>
     </div>
 
+    {{-- A new TOS that no longer matches the draft for the same subject + grading period --}}
+    <div class="modal-overlay" id="draft-conflict-overlay">
+        <div class="modal" style="width:480px;">
+            <div class="modal-title">You already have a draft</div>
+            <div style="font-size:12.5px;color:#444;line-height:1.55;">
+                <strong id="draft-conflict-title"></strong> is still a draft for this subject and grading period, and it doesn't match your new TOS.
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0;font-size:12px;">
+                <div style="border:1px solid #e0e0e0;border-radius:6px;padding:10px 12px;">
+                    <div style="font-weight:700;color:#1a1a2e;margin-bottom:4px;">Your draft</div>
+                    <div id="draft-conflict-old" style="color:#555;line-height:1.5;"></div>
+                </div>
+                <div style="border:1px solid #e0e0e0;border-radius:6px;padding:10px 12px;">
+                    <div style="font-weight:700;color:#1a1a2e;margin-bottom:4px;">Your new TOS</div>
+                    <div id="draft-conflict-new" style="color:#555;line-height:1.5;"></div>
+                </div>
+            </div>
+            <div id="draft-conflict-warning" style="font-size:11.5px;color:#b91c1c;line-height:1.5;"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeDraftConflict()">Cancel</button>
+                <button type="button" class="btn-danger" onclick="chooseDraftConflict('replace')">Delete Draft &amp; Start New</button>
+                <button type="button" class="btn-save" onclick="chooseDraftConflict('continue')">Continue Draft</button>
+            </div>
+        </div>
+    </div>
+
     {{-- ════════════ AI GENERATE QUESTIONS MODAL ════════════ --}}
     <div class="modal-overlay" id="ai-gen-overlay">
         <div class="modal">
@@ -1073,7 +1086,7 @@
                 </div>
                 <div class="modal-field">
                     <label>How many items?</label>
-                    <input type="number" id="ai-gen-count" min="1" max="10" value="3">
+                    <input type="number" id="ai-gen-count" min="1" max="10" value="1">
                 </div>
             </div>
             <div style="font-size:10.5px;color:#888;margin:-4px 0 10px;">
@@ -1155,6 +1168,18 @@
     </div>
 
     {{-- ════════════ FINALIZE CONFIRM MODAL ════════════ --}}
+    <div class="modal-overlay" id="exam-tos-overlay">
+        <div class="modal" style="width:980px;">
+            <div class="modal-title">Table of Specifications</div>
+            <div class="modal-error" id="exam-tos-issues" style="white-space:pre-line;"></div>
+            <div id="exam-tos-table"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeExamTos()">Close</button>
+                <a class="btn-save" id="exam-tos-download" href="#" style="display:none;text-decoration:none;">⬇ Download TOS</a>
+            </div>
+        </div>
+    </div>
+
     <div class="modal-overlay" id="finalize-confirm-overlay">
         <div class="modal" style="width:420px;">
             <div class="modal-title">Finalize this exam?</div>
@@ -1249,7 +1274,6 @@
 
         let currentExam = null;
         let tosTargetCache = null;
-        let tosEditMode = false;
         let qtypeTarget = { secId: null, qi: null };
         // TOS breakdown for the currently-loaded exam's target_items (per-topic, per-Bloom's-
         // level counts) — fetched once per loadExam(), used to resolve each question's
@@ -1267,7 +1291,9 @@
             const res = await fetch(url, opts);
             if (!res.ok) {
                 const err = await res.json().catch(function () { return {}; });
-                throw new Error(err.message || ('Request failed (' + res.status + ')'));
+                var error = new Error(err.message || ('Request failed (' + res.status + ')'));
+                error.data = err;
+                throw error;
             }
             return res.status === 204 ? null : res.json();
         }
@@ -1295,79 +1321,23 @@
         // TOS GENERATOR
         // ══════════════════════════════
         function onTosSubjectChange() { /* topics are fetched fresh on Generate */ }
-        document.addEventListener('DOMContentLoaded', renderTosParts);
 
         var TOS_BLOOM_LEVELS = ['Remembering', 'Understanding', 'Applying', 'Analyzing', 'Evaluating', 'Creating'];
-        // Exam parts (tests) the instructor chooses — a single Multiple Choice test by
-        // default. Each test covers consecutive Bloom's levels, from where it starts up to
-        // where the next one starts (same rule as App\Support\TestParts on the server).
-        var TOS_TEST_STARTS = @json(\App\Support\TestParts::STARTS);
-        var TOS_ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
-        var TOS_DEFAULT_TYPE_FOR = { Remembering: 'identification', Understanding: 'mc-single', Applying: 'problem-solving', Analyzing: 'short-answer', Evaluating: 'short-answer', Creating: 'short-answer' };
-        var tosParts = [{ type: 'mc-single', from: 'Remembering' }];
+        // How many tests the exam starts with. The instructor chooses their question types
+        // in the Exam Builder. Waits for a valid number, so clearing the field to retype
+        // doesn't change anything.
+        var TOS_MAX_TESTS = {{ \App\Support\TestParts::MAX }};
+        var tosTestCount = 1;
         var tosPartsStale = false;
 
-        function normalizeTosParts(parts) {
-            return parts.map(function(p, i) {
-                var start = i === 0 ? 0 : TOS_BLOOM_LEVELS.indexOf(p.from);
-                var end = i + 1 < parts.length ? TOS_BLOOM_LEVELS.indexOf(parts[i + 1].from) : TOS_BLOOM_LEVELS.length;
-                return {
-                    number: i + 1, roman: TOS_ROMAN[i], type: p.type,
-                    label: (QUESTION_TYPES[p.type] || {}).label || p.type,
-                    from: TOS_BLOOM_LEVELS[start], levels: TOS_BLOOM_LEVELS.slice(start, end)
-                };
-            });
-        }
-
-        function renderTosParts() {
-            var norm = normalizeTosParts(tosParts);
-            var typeOptions = function(selected) {
-                return Object.keys(QUESTION_TYPES).map(function(k) {
-                    return '<option value="' + k + '"' + (k === selected ? ' selected' : '') + '>' + escapeHtml(QUESTION_TYPES[k].label) + '</option>';
-                }).join('');
-            };
-
-            document.getElementById('tos-parts-list').innerHTML = norm.map(function(p, i) {
-                return '<div class="tos-part">' +
-                    '<div class="tos-part-top">' +
-                        '<span class="tos-part-name">Test ' + p.roman + '</span>' +
-                        '<select aria-label="Test ' + p.roman + ' question type" onchange="setTosPartType(' + i + ', this.value)">' + typeOptions(p.type) + '</select>' +
-                    '</div>' +
-                '</div>';
-            }).join('');
-        }
-
-        // Tests that stay keep the question type already chosen for them.
-        function setTosTestCount(count) {
-            tosParts = TOS_TEST_STARTS[count].map(function(from, i) {
-                return { type: tosParts[i] ? tosParts[i].type : TOS_DEFAULT_TYPE_FOR[from], from: from };
-            });
-            onTosPartsChanged();
-        }
-        function setTosPartType(i, type) { tosParts[i].type = type; onTosPartsChanged(); }
-
-        // A TOS already on screen was numbered for the previous tests — ask for a
-        // regenerate instead of silently renumbering it (and losing any edits).
-        function onTosPartsChanged() {
-            renderTosParts();
+        function setTosTestCount(value) {
+            var count = Number(value);
+            if (!Number.isInteger(count) || count < 1 || count > TOS_MAX_TESTS || count === tosTestCount) return;
+            tosTestCount = count;
             if (tosTargetCache && tosTargetCache.result && tosTargetCache.result.topics && tosTargetCache.result.topics.length) {
-                tosPartsStale = true;
+                tosPartsStale = count !== tosTargetCache.testCount;
                 renderTosResult();
             }
-        }
-
-        // A test that got no items in this TOS would print as an empty "Test IV" on the
-        // exam; say which ones and how to fix it.
-        function emptyTestsWarning(parts) {
-            var empty = parts.filter(function(p) { return p.items === 0; });
-            if (!empty.length) return '';
-            return '<div class="tos-stale">' + empty.map(function(p) {
-                return '<strong>Test ' + p.roman + '</strong>';
-            }).join(', ') + (empty.length === 1 ? ' has' : ' have') + ' no items. Choose fewer tests or more items, then click <strong>Generate TOS</strong> again.</div>';
-        }
-
-        function tosPartsPayload() {
-            return tosParts.map(function(p) { return { type: p.type, from: p.from }; });
         }
 
         var TOS_CELL_STYLE = 'padding:6px 4px;border:1px solid #e0e0e0;text-align:center;vertical-align:top;font-size:10.5px;line-height:1.4;';
@@ -1376,7 +1346,15 @@
             var assignmentId = document.getElementById('tos-subject').value;
             var period       = document.getElementById('tos-period').value;
             var totalItems   = parseInt(document.getElementById('tos-total-items').value);
+            var testCount    = document.getElementById('tos-test-count');
             var panel        = document.getElementById('tos-result-panel');
+
+            if (!testCount.value || !testCount.checkValidity()) {
+                panel.innerHTML =
+                    '<div class="tos-panel-title">Generated Table of Specifications</div>' +
+                    '<div class="tos-empty" style="color:#ef4444;"><div class="empty-icon">⚠️</div>Number of Tests must be a whole number from 1 to ' + testCount.max + '.</div>';
+                return;
+            }
 
             if (!assignmentId || !period || !totalItems) {
                 panel.innerHTML =
@@ -1389,7 +1367,7 @@
             try {
                 result = await api('/faculty/exam-generator/tos-target', {
                     method: 'POST',
-                    body: { program_assignment_id: assignmentId, grading_period: period, total_items: totalItems, parts: tosPartsPayload() }
+                    body: { program_assignment_id: assignmentId, grading_period: period, total_items: totalItems, test_count: tosTestCount }
                 });
             } catch (e) {
                 panel.innerHTML =
@@ -1398,9 +1376,7 @@
                 return;
             }
 
-            tosTargetCache = { assignmentId: assignmentId, period: period, totalItems: totalItems, result: result };
-            tosManualNumbering = false;
-            tosEditMode = false;
+            tosTargetCache = { assignmentId: assignmentId, period: period, totalItems: totalItems, testCount: tosTestCount, result: result };
             tosPartsStale = false;
             document.getElementById('tos-total-hours').textContent = result.total_hours + ' hrs';
 
@@ -1414,218 +1390,63 @@
             renderTosResult();
         }
 
-        // Once the faculty types their own item numbers into any cell, the TOS stops
-        // auto-numbering so their format (e.g. "1, 2, 3" or "6, 8") is never overwritten.
-        // Generating the TOS again starts over with automatic numbering.
-        var tosManualNumbering = false;
-
-        // Counts the items in a cell's item-number text: "1, 2, 3" → 3, "1-15" → 15,
-        // "I.16-30" → 15, "6, 8, 10-12" → 5. Anything else marks the cell invalid.
-        function parseItemNumbers(text) {
-            var count = 0, valid = true;
-            (text || '').split(/[,;]+/).forEach(function(raw) {
-                var token = raw.trim().replace(/^(I{1,3}|IV|V)\.\s*/i, '');
-                if (token === '') return;
-                var range = token.match(/^(\d+)\s*-\s*(\d+)$/);
-                if (range) {
-                    var a = parseInt(range[1], 10), b = parseInt(range[2], 10);
-                    if (b >= a) { count += b - a + 1; } else { valid = false; }
-                } else if (/^\d+$/.test(token)) {
-                    count += 1;
-                } else {
-                    valid = false;
-                }
-            });
-            return { count: count, valid: valid };
-        }
-
-        // Recomputes derived fields (per-topic item total, weight %, grand totals). With
-        // automatic numbering, each cell's count drives sequential item numbers per test —
-        // the same rule the backend uses in CourseTopic::targetBreakdown(). With manual
-        // numbering, each cell's typed item numbers drive its count instead.
-        function recomputeTosBreakdown(topics) {
-            var parts = (tosTargetCache && tosTargetCache.result && tosTargetCache.result.parts) || normalizeTosParts(tosParts);
-            var counters = parts.map(function() { return 1; });
-            var partOf = {};
-            parts.forEach(function(p, pi) { p.levels.forEach(function(l) { partOf[l] = pi; }); });
-            var totalHours = 0;
-            topics.forEach(function(t) { totalHours += t.hours; });
-
-            var totalItems = 0;
-            topics.forEach(function(t) {
-                var topicItems = 0;
-                TOS_BLOOM_LEVELS.forEach(function(l) {
-                    var cell = t.levels[l];
-                    if (tosManualNumbering) {
-                        var parsed = parseItemNumbers(cell.range);
-                        cell.count = parsed.count;
-                        cell.invalid = !parsed.valid;
-                        if (!cell.range) cell.range = null;
-                    } else if (cell.count > 0) {
-                        cell.invalid = false;
-                        var pi = partOf[l];
-                        var start = counters[pi]; counters[pi] += cell.count; var end = counters[pi] - 1;
-                        cell.range = (parts.length > 1 ? parts[pi].roman + '.' : '') + (cell.count === 1 ? start : start + '-' + end);
-                    } else {
-                        cell.invalid = false;
-                        cell.range = null;
-                    }
-                    cell.points_per_item = 1;
-                    cell.points = cell.count;
-                    topicItems += cell.count;
-                });
-                t.target_items = topicItems;
-                t.topic_points = topicItems;
-                t.weight_percent = totalHours ? Math.round((t.hours / totalHours) * 1000) / 10 : 0;
-                totalItems += topicItems;
-            });
-
-            var partsOut = parts.map(function(p) {
-                var items = 0;
-                topics.forEach(function(t) { p.levels.forEach(function(l) { items += t.levels[l].count; }); });
-                return Object.assign({}, p, { items: items });
-            });
-
-            return { total_hours: totalHours, total_items: totalItems, total_points: totalItems, topics: topics, parts: partsOut };
-        }
-
-        function onTosInputChange(e) {
-            if (!e.target.classList || !e.target.classList.contains('tos-edit-input')) return;
-            var ti = parseInt(e.target.dataset.ti, 10);
-            var level = e.target.dataset.level;
-            var field = e.target.dataset.field;
-            var topics = tosTargetCache.result.topics;
-
-            if (field === 'hours') {
-                topics[ti].hours = Math.max(0, parseInt(e.target.value, 10) || 0);
-            } else if (field === 'topic') {
-                topics[ti].topic = e.target.value.trim() || topics[ti].topic;
-            } else if (field === 'items' && level) {
-                tosManualNumbering = true;
-                topics[ti].levels[level].range = e.target.value.trim() || null;
-            }
-
-            tosTargetCache.result = recomputeTosBreakdown(topics);
-            document.getElementById('tos-total-hours').textContent = tosTargetCache.result.total_hours + ' hrs';
-            renderTosResult();
-        }
-
-        function toggleTosEdit() {
-            tosEditMode = !tosEditMode;
-            renderTosResult();
-        }
-
-        function levelCellHtml(cell, editable, ti, level) {
-            if (editable) {
-                return '<input type="text" class="tos-edit-input" data-ti="' + ti + '" data-level="' + level + '" data-field="items" value="' + escapeAttr(cell.range || '') + '" placeholder="e.g. 1, 2, 3"' +
-                    (cell.invalid ? ' title="Use numbers separated by commas, or ranges like 1-15"' : '') +
-                    ' style="width:100%;min-width:70px;box-sizing:border-box;text-align:center;font-size:11px;padding:3px;border:1px solid ' + (cell.invalid ? '#ef4444' : '#ccc') + ';border-radius:3px;">' +
-                    '<div style="font-size:9.5px;color:' + (cell.invalid ? '#ef4444' : '#888') + ';margin-top:3px;">' + (cell.invalid ? 'check format' : '(' + cell.count + ')') + '</div>';
-            }
-            if (!cell || cell.count === 0) return '';
-            return '<div>' + escapeHtml(cell.range) + '</div><div>(' + cell.count + ')</div>';
-        }
-
-        function renderTosResult() {
-            var panel = document.getElementById('tos-result-panel');
-            var result = tosTargetCache.result;
-            var editable = tosEditMode;
-
+        // Topics, hours, % and items. With withLevels, the Bloom's level columns the exam
+        // filled in as well (see Exam::finalTos()).
+        function tosTableHtml(tos, withLevels) {
             var totalsByLevel = {};
             TOS_BLOOM_LEVELS.forEach(function(l) { totalsByLevel[l] = 0; });
+            var box = 'padding:8px;border:1px solid #e0e0e0;';
+            var center = box + 'text-align:center;';
 
-            var rows = result.topics.map(function(t, ti) {
-                var levelCells = TOS_BLOOM_LEVELS.map(function(l) {
-                    totalsByLevel[l] += t.levels[l].count;
-                    return '<td style="' + TOS_CELL_STYLE + '">' + levelCellHtml(t.levels[l], editable, ti, l) + '</td>';
+            var rows = tos.topics.map(function(t) {
+                var levelCells = !withLevels ? '' : TOS_BLOOM_LEVELS.map(function(l) {
+                    var cell = t.levels[l];
+                    totalsByLevel[l] += cell.count;
+                    return '<td style="' + TOS_CELL_STYLE + '">' + (cell.count ? '<div>' + escapeHtml(cell.range) + '</div><div>(' + cell.count + ')</div>' : '') + '</td>';
                 }).join('');
 
-                var hoursCell = editable
-                    ? '<input type="number" min="0" class="tos-edit-input" data-ti="' + ti + '" data-field="hours" value="' + t.hours + '" style="width:44px;text-align:center;font-size:11px;padding:2px;border:1px solid #ccc;border-radius:3px;">'
-                    : t.hours;
-
-                var topicCell = editable
-                    ? '<input type="text" class="tos-edit-input" data-ti="' + ti + '" data-field="topic" value="' + escapeAttr(t.topic) + '" style="width:100%;min-width:120px;box-sizing:border-box;font-size:11px;padding:3px;border:1px solid #ccc;border-radius:3px;">'
-                    : escapeHtml(t.topic);
-
                 return '<tr>' +
-                    '<td style="padding:8px;border:1px solid #e0e0e0;">' + topicCell + '</td>' +
+                    '<td style="' + box + '">' + escapeHtml(t.topic) + '</td>' +
                     levelCells +
-                    '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + hoursCell + '</td>' +
-                    '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + t.weight_percent + '%</td>' +
-                    '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;font-weight:700;">' + t.target_items + '</td>' +
+                    '<td style="' + center + '">' + t.hours + '</td>' +
+                    '<td style="' + center + '">' + t.weight_percent + '%</td>' +
+                    '<td style="' + center + 'font-weight:700;">' + t.target_items + '</td>' +
                 '</tr>';
             }).join('');
 
-            var levelHeaders = TOS_BLOOM_LEVELS.map(function(l) {
-                return '<th style="padding:8px;border:1px solid #e0e0e0;font-size:10.5px;">' + l + '</th>';
+            var levelHeaders = !withLevels ? '' : TOS_BLOOM_LEVELS.map(function(l) {
+                return '<th style="' + box + 'font-size:10.5px;">' + l + '</th>';
             }).join('');
-            var levelTotals = TOS_BLOOM_LEVELS.map(function(l) {
-                return '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + totalsByLevel[l] + '</td>';
+            var levelTotals = !withLevels ? '' : TOS_BLOOM_LEVELS.map(function(l) {
+                return '<td style="' + center + '">' + totalsByLevel[l] + '</td>';
             }).join('');
 
-            panel.innerHTML =
-                '<div class="tos-panel-title">Generated Table of Specifications' + (editable ? ' <span style="font-weight:400;font-size:11px;color:#f59e0b;">(editing — click a cell to change it)</span>' : '') + '</div>' +
-                (tosPartsStale ? '<div class="tos-stale">The exam parts changed. Click <strong>Generate TOS</strong> again to apply them before downloading or starting the exam.</div>' : '') +
-                '<div class="tos-parts-summary">' + (result.parts || []).map(function(p) {
-                    return '<span' + (p.items === 0 ? ' style="background:#fee2e2;color:#b91c1c;"' : '') + '>Test ' + p.roman + ' · ' + escapeHtml(p.label) + ' · ' + p.items + ' item' + (p.items === 1 ? '' : 's') + '</span>';
-                }).join('') + '</div>' +
-                emptyTestsWarning(result.parts || []) +
-                '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11.5px;">' +
+            return '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:11.5px;">' +
                 '<thead><tr style="background:#f5f5f5;">' +
-                '<th style="padding:8px;border:1px solid #e0e0e0;text-align:left;">Topics</th>' +
+                '<th style="' + box + 'text-align:left;">Topics</th>' +
                 levelHeaders +
-                '<th style="padding:8px;border:1px solid #e0e0e0;">No. of<br>Hours</th>' +
-                '<th style="padding:8px;border:1px solid #e0e0e0;">%</th>' +
-                '<th style="padding:8px;border:1px solid #e0e0e0;">No. of<br>Items</th>' +
+                '<th style="' + box + '">No. of<br>Hours</th>' +
+                '<th style="' + box + '">%</th>' +
+                '<th style="' + box + '">No. of<br>Items</th>' +
                 '</tr></thead><tbody>' + rows + '</tbody>' +
                 '<tfoot><tr style="background:#f5f5f5;font-weight:700;">' +
-                '<td style="padding:8px;border:1px solid #e0e0e0;">TOTAL</td>' +
+                '<td style="' + box + '">TOTAL</td>' +
                 levelTotals +
-                '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + result.total_hours + '</td>' +
-                '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">100%</td>' +
-                '<td style="padding:8px;border:1px solid #e0e0e0;text-align:center;">' + result.total_items + '</td>' +
-                '</tr></tfoot></table></div>' +
-                (editable ? '<div style="font-size:11px;color:#666;margin-top:8px;">Type the item numbers in each cell — e.g. <strong>1, 2, 3</strong>, <strong>6, 8</strong>, or <strong>1-15</strong>. The number of items and totals update automatically.</div>' : '') +
-                '<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">' +
-                '<button class="tos-action-btn" type="button" onclick="toggleTosEdit()">' + (editable ? '💾 Done Editing' : '✏ Edit') + '</button>' +
-                '<button class="tos-action-btn" type="button" onclick="downloadTos()"' + (tosPartsStale ? ' disabled' : '') + '>⬇ Download TOS</button>' +
-                '<button class="tos-action-btn" type="button" onclick="startExamFromTOS()"' + (tosPartsStale ? ' disabled' : '') + '>Start Exam from this TOS →</button>' +
-                '</div>';
-
-            panel.onchange = onTosInputChange;
+                '<td style="' + center + '">' + tos.total_hours + '</td>' +
+                '<td style="' + center + '">100%</td>' +
+                '<td style="' + center + '">' + tos.total_items + '</td>' +
+                '</tr></tfoot></table></div>';
         }
 
-        async function downloadTos() {
-            if (!tosTargetCache || tosPartsStale) return;
-            try {
-                var res = await fetch('/faculty/exam-generator/tos-download', {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': CSRF, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({
-                        program_assignment_id: tosTargetCache.assignmentId,
-                        grading_period: tosTargetCache.period,
-                        breakdown: JSON.stringify(tosTargetCache.result)
-                    })
-                });
-                if (!res.ok) {
-                    var err = await res.json().catch(function () { return {}; });
-                    throw new Error(err.message || 'Download failed.');
-                }
-                var blob = await res.blob();
-                var url = URL.createObjectURL(blob);
-                var cd = res.headers.get('Content-Disposition') || '';
-                var match = cd.match(/filename="?([^"]+)"?/);
-                var a = document.createElement('a');
-                a.href = url;
-                a.download = match ? match[1] : 'TOS.docx';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(url);
-            } catch (e) {
-                showToast(e.message, 'error');
-            }
+        function renderTosResult() {
+            document.getElementById('tos-result-panel').innerHTML =
+                '<div class="tos-panel-title">Generated Table of Specifications</div>' +
+                (tosPartsStale ? '<div class="tos-stale">The number of tests changed. Click <strong>Generate TOS</strong> again to apply it before starting the exam.</div>' : '') +
+                tosTableHtml(tosTargetCache.result, false) +
+                '<div style="font-size:11px;color:#666;margin-top:8px;">The Bloom\'s levels are added from your exam. You can download the complete TOS from the Exam Builder when the exam is done.</div>' +
+                '<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">' +
+                '<button class="tos-action-btn" type="button" onclick="startExamFromTOS()"' + (tosPartsStale ? ' disabled' : '') + '>Start Exam from this TOS →</button>' +
+                '</div>';
         }
 
         // Faculty already filled in Subject/Period/Duration/Target Items back in the TOS
@@ -1655,7 +1476,7 @@
             document.getElementById('sev-title').textContent = title;
             document.getElementById('sev-target-items').textContent = targetItems;
             document.getElementById('sev-parts').textContent = (tosTargetCache.result.parts || []).map(function(p) {
-                return 'Test ' + p.roman + ' – ' + p.label + ' (' + p.items + ')';
+                return 'Test ' + p.roman;
             }).join(', ') || '—';
 
             openStartExamView();
@@ -1726,6 +1547,14 @@
             try {
                 var exam = await api('/faculty/exam-generator', { method: 'POST', body: body });
                 if (closeFn) closeFn();
+                // Keeping the draft put the saved TOS back to the draft's, so the one on
+                // screen no longer applies.
+                if (body.on_existing_draft === 'continue') clearGeneratedTos();
+                // Starting over deleted the draft, so it leaves the exam list too.
+                if (body.on_existing_draft === 'replace' && body.replaced_draft_id) {
+                    var oldOption = document.querySelector('#eb-exam-select option[value="' + body.replaced_draft_id + '"]');
+                    if (oldOption) oldOption.remove();
+                }
                 // The server may return an already-existing draft instead of
                 // creating a new one (same subject + grading period) — only
                 // add a dropdown option if one for this exam isn't there yet.
@@ -1740,9 +1569,49 @@
                 switchTab('exam-builder');
                 await loadExam(exam.id);
             } catch (e) {
+                if (e.data && e.data.draft_conflict) {
+                    openDraftConflict(e.data.draft_conflict, body, closeFn, errorElId);
+                    return;
+                }
                 if (errorEl) { errorEl.textContent = window.humanizeMessage(e.message); errorEl.style.display = 'block'; }
                 else showToast(e.message, 'error');
             }
+        }
+
+        var draftConflictRequest = null;
+
+        function openDraftConflict(conflict, body, closeFn, errorElId) {
+            var plural = function(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); };
+            draftConflictRequest = { body: body, closeFn: closeFn, errorElId: errorElId, draftId: conflict.id };
+            document.getElementById('draft-conflict-title').textContent = conflict.title;
+            document.getElementById('draft-conflict-old').innerHTML =
+                escapeHtml(plural(conflict.items, 'item')) + '<br>' + escapeHtml(plural(conflict.tests, 'test')) + '<br>' + escapeHtml(plural(conflict.questions, 'question') + ' added');
+            document.getElementById('draft-conflict-new').innerHTML =
+                escapeHtml(plural(conflict.new_items, 'item')) + '<br>' + escapeHtml(plural(conflict.new_tests, 'test'));
+            document.getElementById('draft-conflict-warning').textContent = conflict.questions > 0
+                ? 'Delete Draft & Start New permanently deletes the ' + plural(conflict.questions, 'question') + ' in this draft. They also leave your Item Bank.'
+                : 'Delete Draft & Start New permanently deletes this draft.';
+            document.getElementById('draft-conflict-overlay').classList.add('open');
+        }
+        function closeDraftConflict() {
+            document.getElementById('draft-conflict-overlay').classList.remove('open');
+            draftConflictRequest = null;
+        }
+        document.getElementById('draft-conflict-overlay').addEventListener('click', function(e) { if (e.target === this) closeDraftConflict(); });
+
+        function chooseDraftConflict(choice) {
+            var request = draftConflictRequest;
+            if (!request) return;
+            closeDraftConflict();
+            submitCreateExam(Object.assign({}, request.body, { on_existing_draft: choice, replaced_draft_id: request.draftId }), request.closeFn, request.errorElId);
+        }
+
+        function clearGeneratedTos() {
+            tosTargetCache = null;
+            tosPartsStale = false;
+            document.getElementById('tos-result-panel').innerHTML =
+                '<div class="tos-panel-title">Generated Table of Specifications</div>' +
+                '<div class="tos-empty"><div class="empty-icon">📋</div>No TOS generated yet.<br>Fill in the configuration and click <strong>Generate TOS</strong>.</div>';
         }
 
         // ══════════════════════════════
@@ -1775,6 +1644,7 @@
             // out editing, so faculty can still fix a typo or add a question afterward.
             document.getElementById('btn-save-exam').disabled = false;
             document.getElementById('btn-preview-exam').disabled = false;
+            document.getElementById('btn-view-tos').disabled = false;
             document.getElementById('btn-finalize-exam').disabled = finalized;
             document.getElementById('btn-add-section').disabled = false;
             document.getElementById('eb-no-exam-notice').style.display = 'none';
@@ -1827,6 +1697,7 @@
             document.getElementById('eb-type-label').textContent = '—';
             document.getElementById('btn-save-exam').disabled = true;
             document.getElementById('btn-preview-exam').disabled = true;
+            document.getElementById('btn-view-tos').disabled = true;
             document.getElementById('btn-finalize-exam').disabled = true;
             document.getElementById('btn-add-section').disabled = true;
             document.getElementById('eb-no-exam-notice').style.display = '';
@@ -2415,7 +2286,7 @@
             var countInput = document.getElementById('ai-gen-count');
             var topicName = opt ? (TOPICS_BY_ASSIGNMENT[currentExam.program_assignment_id] || {})[currentExam.grading_period]
                 .filter(function(t) { return String(t.id) === String(opt.value); }).map(function(t) { return t.topic; })[0] : null;
-            var remaining = topicName ? topicRemaining(topicName) : null;
+            var remaining = topicName ? aiGenRemaining(topicName) : null;
             countInput.max = 10;
             if (remaining === null) {
                 box.style.display = 'none';
@@ -2426,7 +2297,7 @@
             } else {
                 box.style.display = 'block';
                 box.style.background = '#eff6ff'; box.style.border = '1px solid #bfdbfe'; box.style.color = '#1e40af';
-                box.textContent = 'The TOS needs ' + remaining + ' more ' + (remaining === 1 ? 'question' : 'questions') + ' for this topic (' + countExistingForTopic(topicName) + ' of ' + topicMapTarget(topicName) + ' added).';
+                box.textContent = 'The TOS needs ' + remaining + ' more ' + (remaining === 1 ? 'question' : 'questions') + ' for this topic (' + (countExistingForTopic(topicName) - topicBlanksIn(aiGenTarget, topicName)) + ' of ' + topicMapTarget(topicName) + ' added).';
                 countInput.max = Math.min(10, remaining);
                 countInput.value = Math.min(parseInt(countInput.value, 10) || remaining, remaining, 10);
             }
@@ -2442,6 +2313,7 @@
             document.getElementById('ai-gen-no-content-warning').style.display = 'none';
             document.getElementById('ai-gen-remaining').style.display = 'none';
             document.getElementById('ai-gen-count').max = 10;
+            document.getElementById('ai-gen-count').value = 1;
             document.getElementById('ai-gen-submit').disabled = false;
             document.getElementById('ai-gen-overlay').classList.add('open');
         }
@@ -2465,7 +2337,7 @@
         // (one section per test), else null — mirrors Exam::sectionLevels().
         function sectionPartLevels() {
             var parts = examTosTargetCache && examTosTargetCache.parts;
-            if (!currentExam || !parts || parts.length < 2 || parts.length !== currentExam.sections.length) return null;
+            if (!currentExam || !parts || parts.length < 2 || parts.length !== currentExam.sections.length || !parts[0].levels) return null;
             return parts.map(function(p) { return p.levels; });
         }
 
@@ -2613,10 +2485,37 @@
             return Math.max(0, targets[topicName] - countExistingForTopic(topicName));
         }
 
+        // A question the instructor added but hasn't started: no wording, answers untouched.
+        function isBlankQuestion(q) {
+            return q.type !== 'case-analysis' && !(q.children || []).length &&
+                !normalizeQuestionText(q.question_text) && !/<img/i.test(q.question_text || '') &&
+                JSON.stringify(q.options || null) === JSON.stringify(defaultOptionsFor(q.type));
+        }
+
+        // The blanks in a section that AI questions for a topic fill first, top to bottom. A
+        // blank already set to another topic stays open for that topic.
+        function fillableBlanks(secId, topicName) {
+            var sec = findSection(secId);
+            return (sec ? sec.questions || [] : []).filter(function(q) {
+                return isBlankQuestion(q) && (!q.topic || q.topic === topicName);
+            });
+        }
+
+        // This topic's blanks in the section. They count as items already, but filling them
+        // adds none, so they don't use up what the TOS still allows.
+        function topicBlanksIn(secId, topicName) {
+            return fillableBlanks(secId, topicName).filter(function(q) { return q.topic === topicName; }).length;
+        }
+
+        function aiGenRemaining(topicName) {
+            var remaining = topicRemaining(topicName);
+            return remaining === null ? null : remaining + topicBlanksIn(aiGenTarget, topicName);
+        }
+
         async function submitAiGen() {
             var topicId = document.getElementById('ai-gen-topic').value;
             var type = document.getElementById('ai-gen-type').value;
-            var count = parseInt(document.getElementById('ai-gen-count').value) || 3;
+            var count = parseInt(document.getElementById('ai-gen-count').value) || 1;
             var errBox = document.getElementById('ai-gen-error');
             errBox.style.display = 'none';
 
@@ -2629,8 +2528,9 @@
             var byAssignment = TOPICS_BY_ASSIGNMENT[currentExam.program_assignment_id] || {};
             var topics = byAssignment[currentExam.grading_period] || [];
             var topicRow = topics.find(function(t) { return String(t.id) === String(topicId); });
-            var existingCount = topicRow ? countExistingForTopic(topicRow.topic) : 0;
-            var remaining = topicRow ? topicRemaining(topicRow.topic) : null;
+            var topicBlanks = topicRow ? topicBlanksIn(aiGenTarget, topicRow.topic) : 0;
+            var existingCount = topicRow ? countExistingForTopic(topicRow.topic) - topicBlanks : 0;
+            var remaining = topicRow ? aiGenRemaining(topicRow.topic) : null;
             if (remaining !== null && count > remaining) {
                 errBox.textContent = remaining === 0
                     ? 'This topic already has all its questions set in the TOS.'
@@ -2664,7 +2564,7 @@
                         existing_count: existingCount,
                         target_items: currentExam.target_items || null,
                         part_levels: aiPartLevels.levels,
-                        part_existing_count: aiPartLevels.existing,
+                        part_existing_count: Math.max(0, aiPartLevels.existing - topicBlanks),
                         existing_questions: liveExamItems()
                             .filter(function(i) { return i.norm; })
                             .sort(function(a, b) { return (b.q.topic === (topicRow && topicRow.topic)) - (a.q.topic === (topicRow && topicRow.topic)); })
@@ -2673,7 +2573,12 @@
                 });
                 var sec = findSection(aiGenTarget);
                 if (sec) {
-                    result.questions.forEach(function(q) {
+                    var blanks = fillableBlanks(aiGenTarget, topicRow ? topicRow.topic : null);
+                    result.questions.forEach(function(q, i) {
+                        if (blanks[i]) {
+                            Object.assign(blanks[i], { type: q.type, topic: q.topic, question_text: q.question_text, options: q.options });
+                            return;
+                        }
                         sec.questions.push({
                             type: q.type, topic: q.topic, question_text: q.question_text,
                             points: q.points, options: q.options, children: []
@@ -2684,6 +2589,8 @@
                 closeAiGenModal();
                 if (result.skipped > 0) {
                     showToast(result.skipped + ' generated ' + (result.skipped === 1 ? 'question was' : 'questions were') + ' skipped because ' + (result.skipped === 1 ? 'it repeats' : 'they repeat') + ' a question already in the exam.', 'info');
+                } else if (result.questions.length < count) {
+                    showToast('Only ' + result.questions.length + ' of ' + count + ' questions could be written. Generate again for the rest.', 'info');
                 }
             } catch (e) {
                 errBox.textContent = window.humanizeMessage(e.message);
@@ -2736,17 +2643,18 @@
             };
         }
 
-        async function saveExam() {
-            if (!currentExam) return;
+        // silent: only speaks up when the save fails. Returns whether it saved.
+        async function saveExam(silent) {
+            if (!currentExam) return false;
             var overIssues = tosCountIssues(false);
             if (overIssues.length) {
                 openSaveResult(false, "The exam doesn't match its TOS:\n" + overIssues.join('\n'));
-                return;
+                return false;
             }
             var repeated = exactDuplicateIssues();
             if (repeated.length) {
                 openSaveResult(false, 'The exam has repeated questions:\n' + repeated.join('\n'));
-                return;
+                return false;
             }
             var body = {
                 title: document.getElementById('eb-title-input').value,
@@ -2767,11 +2675,39 @@
                 });
                 renderEB();
                 await refreshTosProgress();
-                openSaveResult(true, 'Exam saved successfully.');
+                if (!silent) openSaveResult(true, 'Exam saved successfully.');
+                return true;
             } catch (e) {
                 openSaveResult(false, 'Save failed: ' + e.message);
+                return false;
             }
         }
+
+        // Saves first, so the TOS counts the questions on screen. The Bloom's levels and the
+        // download only appear when the exam is complete; until then it says what's missing.
+        async function openExamTos() {
+            if (!(await saveExam(true))) return;
+
+            var tos;
+            try {
+                tos = await api('/faculty/exam-generator/' + currentExam.id + '/tos');
+            } catch (e) {
+                openSaveResult(false, e.message);
+                return;
+            }
+
+            var ready = tos.issues.length === 0;
+            var issues = document.getElementById('exam-tos-issues');
+            issues.style.display = ready ? 'none' : 'block';
+            issues.textContent = ready ? '' : 'Finish these to complete the TOS:\n' + tos.issues.join('\n');
+            document.getElementById('exam-tos-table').innerHTML = tosTableHtml(tos, ready);
+            var download = document.getElementById('exam-tos-download');
+            download.style.display = ready ? '' : 'none';
+            download.href = '/faculty/exam-generator/' + currentExam.id + '/tos/download';
+            document.getElementById('exam-tos-overlay').classList.add('open');
+        }
+        function closeExamTos() { document.getElementById('exam-tos-overlay').classList.remove('open'); }
+        document.getElementById('exam-tos-overlay').addEventListener('click', function(e) { if (e.target === this) closeExamTos(); });
 
         function openSaveResult(success, message) {
             document.getElementById('save-result-title').textContent = success ? '✓ Exam saved' : '⚠️ Save failed';
@@ -2936,19 +2872,7 @@
             var target = examTosTargetCache;
             if (!currentExam || !currentExam.target_items || !target) { container.innerHTML = ''; return; }
 
-            var LEVEL_ABBR = { Remembering: 'Rem', Understanding: 'Und', Applying: 'App', Analyzing: 'Ana', Evaluating: 'Eval', Creating: 'Create' };
             var live = liveTopicCounts();
-            var byLevel = {};
-            function walk(q) {
-                if (q.type !== 'case-analysis' && q.topic) {
-                    var l = q._displayBloom;
-                    byLevel[q.topic] = byLevel[q.topic] || {};
-                    if (l) byLevel[q.topic][l] = (byLevel[q.topic][l] || 0) + 1;
-                }
-                (q.children || []).forEach(walk);
-            }
-            currentExam.sections.forEach(function(sec) { (sec.questions || []).forEach(walk); });
-
             var total = 0;
             Object.keys(live.counts).forEach(function(k) { total += live.counts[k]; });
             total += live.untagged;
@@ -2956,23 +2880,17 @@
             var rows = (target.topics || []).map(function(t) {
                 var have = live.counts[t.topic] || 0;
                 var over = have - t.target_items;
-                var color = over > 0 ? '#dc2626' : (have === t.target_items ? '#16a34a' : '#888');
-                var status = have + ' / ' + t.target_items + ' items' + (over > 0 ? ' — ' + over + ' over' : '');
-                var levelBits = TOS_BLOOM_LEVELS.map(function(l) {
-                    var need = t.levels[l].count;
-                    if (need === 0) return '';
-                    var got = (byLevel[t.topic] || {})[l] || 0;
-                    return '<span style="display:inline-block;margin-right:10px;color:' + (got === need ? '#16a34a' : (got > need ? '#dc2626' : '#c2410c')) + ';">' +
-                        LEVEL_ABBR[l] + ' ' + got + '/' + need +
-                    '</span>';
-                }).join('');
+                var color = over > 0 ? '#dc2626' : (have === t.target_items ? '#16a34a' : '#0f2557');
+                var filled = t.target_items > 0 ? Math.min(100, have / t.target_items * 100) : 0;
 
-                return '<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;">' +
-                    '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;">' +
-                        '<span>' + escapeHtml(t.topic) + '</span>' +
-                        '<span style="color:' + color + ';white-space:nowrap;font-weight:' + (over > 0 ? '700' : '400') + ';">' + status + '</span>' +
+                return '<div style="padding:7px 0;">' +
+                    '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;margin-bottom:4px;">' +
+                        '<span style="overflow-wrap:anywhere;">' + escapeHtml(t.topic) + '</span>' +
+                        '<span style="color:' + (have === 0 ? '#888' : color) + ';white-space:nowrap;font-weight:' + (over > 0 || have === t.target_items ? '700' : '400') + ';">' +
+                            have + ' / ' + t.target_items + ' items' + (over > 0 ? ' — ' + over + ' over' : '') +
+                        '</span>' +
                     '</div>' +
-                    '<div style="margin-top:3px;font-size:10.5px;">' + levelBits + '</div>' +
+                    '<div style="height:5px;background:#eceef3;border-radius:3px;overflow:hidden;"><div style="height:100%;width:' + filled + '%;background:' + color + ';border-radius:3px;"></div></div>' +
                 '</div>';
             }).join('');
 
@@ -2992,9 +2910,10 @@
                 partsHtml = '<div style="padding:6px 0 8px;border-bottom:1px solid #f0f0f0;font-size:11px;">' + parts.map(function(p, i) {
                     var sec = currentExam.sections[i], have = 0;
                     (function walk(list) { (list || []).forEach(function(q) { if (q.type !== 'case-analysis') have++; walk(q.children); }); })(sec.questions);
-                    var color = have === p.items ? '#16a34a' : (have > p.items ? '#dc2626' : '#555');
-                    return '<div style="display:flex;justify-content:space-between;gap:8px;"><span>Test ' + p.roman + ' – ' + escapeHtml(p.label) + '</span>' +
-                        '<span style="color:' + color + ';white-space:nowrap;">' + have + ' / ' + p.items + ' items</span></div>';
+                    var hasTarget = p.items !== undefined;
+                    var color = !hasTarget ? '#555' : (have === p.items ? '#16a34a' : (have > p.items ? '#dc2626' : '#555'));
+                    return '<div style="display:flex;justify-content:space-between;gap:8px;"><span>Test ' + p.roman + (p.label ? ' – ' + escapeHtml(p.label) : '') + '</span>' +
+                        '<span style="color:' + color + ';white-space:nowrap;">' + have + (hasTarget ? ' / ' + p.items : '') + (have === 1 && !hasTarget ? ' item' : ' items') + '</span></div>';
                 }).join('') + '</div>';
             }
 

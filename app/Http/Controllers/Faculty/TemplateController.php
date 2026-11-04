@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ContentModule;
 use App\Models\TemplateDocument;
 use App\Models\TemplateDocumentView;
+use App\Services\OnlyOffice;
 use Illuminate\Support\Facades\Storage;
 
 class TemplateController extends Controller
@@ -32,24 +33,41 @@ class TemplateController extends Controller
         // A foreach, not ->each(fn): an arrow fn returns the assigned value, and
         // each() stops at the first false — every card after the first viewed
         // one lost its NEW label.
+        $copiedIds = ContentModule::where('created_by', auth()->id())
+            ->whereIn('source_template_id', $templates->pluck('id'))
+            ->pluck('source_template_id')
+            ->all();
+
         foreach ($templates as $t) {
             $t->is_new = !in_array($t->id, $viewedIds);
+            $t->has_copy = in_array($t->id, $copiedIds);
         }
 
         return view('faculty.my-template', compact('templates'));
     }
 
-    // A personal copy in the faculty member's CMS. The official template stays as it is.
+    // Opens the faculty member's personal copy in the editor, making it the first time.
+    // The official template stays as it is.
     public function useTemplate(TemplateDocument $template)
     {
         abort_unless($template->isApproved() && $template->superseded_at === null && $template->isDistributedTo((string) auth()->user()->program), 403);
         abort_unless($template->isEditableFile(), 422, 'Only Word, Excel and PowerPoint templates can be copied for editing.');
+
+        if (!OnlyOffice::isConfigured()) {
+            return back()->withErrors(['editor' => 'The document editor is not available right now. You can still view and download this template.']);
+        }
+
+        $copy = ContentModule::where('created_by', auth()->id())->where('source_template_id', $template->id)->first();
+        if ($copy) {
+            return redirect('/faculty/cms/' . $copy->id . '/edit');
+        }
 
         $path = 'content-modules/' . bin2hex(random_bytes(20)) . '.' . $template->extension();
         Storage::disk('public')->copy($template->file_path, $path);
 
         $module = ContentModule::create([
             'created_by'  => auth()->id(),
+            'source_template_id' => $template->id,
             'title'       => $template->title,
             'description' => 'Copied from the official template (v' . $template->version . ').',
             'file_path'   => $path,

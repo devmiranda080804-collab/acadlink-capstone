@@ -7,6 +7,7 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
@@ -19,6 +20,10 @@ class OnlyOffice
     protected const DOCUMENT_TYPES = [
         'doc' => 'word', 'docx' => 'word', 'xlsx' => 'cell', 'pptx' => 'slide', 'pdf' => 'pdf',
     ];
+
+    protected const COMMAND_OK = 0;
+    protected const COMMAND_NOT_OPEN = 1;
+    protected const COMMAND_NO_CHANGES = 4;
 
     public static function isConfigured(): bool
     {
@@ -58,6 +63,33 @@ class OnlyOffice
         $config['token'] = JWT::encode($config, config('services.onlyoffice.secret'), 'HS256');
 
         return $config;
+    }
+
+    // Asks an open editor to send its unsaved changes to the callback now. True means a save
+    // is on its way; false means there is nothing to wait for (no open editor or no changes).
+    public function forceSave(Model $document): bool
+    {
+        if (!self::isConfigured() || !$document->document_key) {
+            return false;
+        }
+
+        $command = ['c' => 'forcesave', 'key' => $document->document_key];
+        $command['token'] = JWT::encode($command, config('services.onlyoffice.secret'), 'HS256');
+
+        try {
+            $response = Http::timeout(10)->acceptJson()->post(rtrim(config('services.onlyoffice.url'), '/') . '/coauthoring/CommandService.ashx', $command);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return false;
+        }
+
+        $error = $response->json('error');
+        if (!in_array($error, [self::COMMAND_OK, self::COMMAND_NOT_OPEN, self::COMMAND_NO_CHANGES], true)) {
+            Log::warning('Document editor refused a save command', ['key' => $document->document_key, 'error' => $error, 'http' => $response->status()]);
+        }
+
+        return $error === self::COMMAND_OK;
     }
 
     // Starts or checks a conversion. The file link in $job is relative to AcadLink.

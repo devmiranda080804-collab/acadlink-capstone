@@ -61,6 +61,10 @@
         @endif
         @if($owned)
             <button type="button" class="icon-btn" title="Share" aria-label="Share" data-url="{{ url('/faculty/cms/' . $module->id . '/share') }}" data-shares="{{ $module->shares->mapWithKeys(fn ($share) => [$share->user_id => $share->can_edit ? 'edit' : 'view'])->toJson() }}" onclick="openShare(this)">@include('documents.partials.icon', ['name' => 'share'])</button>
+            @if($module->file_path)
+                @php $libraryEntry = $module->libraryEntry; @endphp
+                <button type="button" class="icon-btn {{ $libraryEntry ? 'icon-btn-active' : '' }}" title="{{ $libraryEntry ? 'In the Shared Library. Click to update it' : 'Share to Library' }}" aria-label="{{ $libraryEntry ? 'Update in Shared Library' : 'Share to Library' }}" data-library-refresh data-url="{{ url('/faculty/cms/' . $module->id . '/library') }}" data-title="{{ $module->title }}" @if($libraryEntry) data-entry="{{ json_encode($libraryEntry->only(['title', 'type', 'description', 'course_id'])) }}" @endif onclick="openLibraryShare(this)">@include('documents.partials.icon', ['name' => 'library'])</button>
+            @endif
             <form method="POST" action="{{ url('/faculty/cms/' . $module->id) }}" data-confirm="Delete {{ $module->title }}? This can't be undone." data-confirm-title="Delete document?" data-confirm-button="Delete">
                 @csrf
                 @method('DELETE')

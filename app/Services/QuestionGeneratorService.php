@@ -20,6 +20,15 @@ class QuestionGeneratorService
     // between what the AI returns and what gets saved.
     const SUPPORTED_TYPES = ['mc-single', 'true-false', 'identification', 'enumeration', 'short-answer', 'problem-solving'];
 
+    const IDENTIFICATION_RULE = 'Each answer must be the exact term only, in 1 or 2 words, with no explanation or full sentence. '
+        . 'Only ask about a term whose full name is naturally 1 or 2 words, and describe it in the question without using the term itself. '
+        . 'Never shorten a longer term or drop words to make it fit, and never ask for a formula or a list; choose a different term instead.';
+
+    const IDENTIFICATION_MAX_WORDS = 2;
+
+    // Extra requests for replacements when identification answers run too long.
+    const IDENTIFICATION_RETRIES = 2;
+
     public function __construct()
     {
         $apiKey = config('services.anthropic.api_key');
@@ -55,6 +64,39 @@ class QuestionGeneratorService
     // the questions are genuinely aligned to that cognitive demand, not just labeled as such.
     public function generate(string $type, string $topicName, string $topicNotes, int $count, ?string $modulePdfAbsolutePath = null, array $bloomLevels = [], array $avoidQuestions = []): array
     {
+        $questions = $this->requestQuestions($type, $topicName, $topicNotes, $count, $modulePdfAbsolutePath, $bloomLevels, $avoidQuestions);
+        if ($type !== 'identification') {
+            return $questions;
+        }
+
+        // The model can squeeze a long term into two words and make the answer wrong, so a
+        // long answer is replaced with a different question rather than cut short.
+        $kept = [];
+        for ($retry = 0; ; $retry++) {
+            foreach ($questions as $question) {
+                if (count($kept) < $count && $this->identificationAnswerFits($question)) {
+                    $kept[] = $question;
+                }
+                $avoidQuestions[] = $question['question_text'] ?? '';
+            }
+
+            if (count($kept) >= $count || $retry >= self::IDENTIFICATION_RETRIES) {
+                return $kept;
+            }
+
+            $questions = $this->requestQuestions($type, $topicName, $topicNotes, $count - count($kept), $modulePdfAbsolutePath, $bloomLevels, $avoidQuestions);
+        }
+    }
+
+    protected function identificationAnswerFits(array $question): bool
+    {
+        $answer = trim((string) ($question['options']['answer'] ?? ''));
+
+        return $answer !== '' && count(preg_split('/\s+/u', $answer)) <= self::IDENTIFICATION_MAX_WORDS;
+    }
+
+    protected function requestQuestions(string $type, string $topicName, string $topicNotes, int $count, ?string $modulePdfAbsolutePath, array $bloomLevels, array $avoidQuestions): array
+    {
         // Questions already in the exam, so the AI writes new ones instead of repeats
         // (capped to keep the prompt small; the caller still filters the results).
         $avoidHint = '';
@@ -83,6 +125,7 @@ class QuestionGeneratorService
             . "Write exactly {$count} question(s) of this type based strictly on the content "
             . ($modulePdfAbsolutePath ? 'in the attached document' : 'above') . '.'
             . ($type === 'mc-single' ? ' Each question must have exactly 4 answer choices.' : '')
+            . ($type === 'identification' ? ' ' . self::IDENTIFICATION_RULE : '')
             . $levelHint
             . $avoidHint;
 
@@ -158,7 +201,7 @@ class QuestionGeneratorService
             ],
             'identification' => [
                 'type' => 'object',
-                'properties' => ['answer' => ['type' => 'string']],
+                'properties' => ['answer' => ['type' => 'string', 'description' => 'The exact term only, in 1 or 2 words, with no explanation']],
                 'required' => ['answer'],
                 'additionalProperties' => false,
             ],

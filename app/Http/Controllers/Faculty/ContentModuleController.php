@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Faculty;
 
 use App\Http\Controllers\Controller;
 use App\Models\ContentModule;
+use App\Models\SharedResource;
+use App\Models\Course;
 use App\Models\FileVersion;
 use App\Models\SystemDocument;
 use App\Models\User;
@@ -26,12 +28,13 @@ class ContentModuleController extends Controller
         $user = auth()->user();
 
         return view('faculty.cms', [
-            'modules' => ContentModule::with(['shares.user', 'lastEditor'])->where('created_by', $user->id)->latest()->get(),
+            'modules' => ContentModule::with(['shares.user', 'lastEditor', 'libraryEntry'])->where('created_by', $user->id)->latest()->get(),
             'sharedModules' => ContentModule::with(['creator', 'lastEditor'])
                 ->whereHas('shares', fn ($q) => $q->where('user_id', $user->id))
                 ->latest()
                 ->get(),
             'colleagues' => $this->colleagues(),
+            'libraryCourses' => $this->programCourses(),
             'officialDocuments' => SystemDocument::where('is_published', true)->latest()->get(),
             'editorReady' => OnlyOffice::isConfigured(),
         ]);
@@ -82,21 +85,100 @@ class ContentModuleController extends Controller
         }
 
         if (!OnlyOffice::isConfigured()) {
-            return redirect('/faculty/cms')->withErrors(['editor' => 'The document editor is not available right now. You can still download the file.']);
+            return redirect('/faculty/my-template')->withErrors(['editor' => 'The document editor is not available right now. You can still download the file.']);
         }
 
         if ($module->isWritten() && !$this->convertWrittenModule($module)) {
-            return redirect('/faculty/cms')->withErrors(['editor' => 'This older module could not be opened in the editor.']);
+            return redirect('/faculty/my-template')->withErrors(['editor' => 'This older module could not be opened in the editor.']);
         }
 
         return view('documents.editor', [
             'title'     => $module->title,
-            'backUrl'   => url('/faculty/cms'),
-            'backLabel' => 'Back to CMS',
+            'backUrl'   => url('/faculty/my-template'),
+            'backLabel' => 'Back to Templates',
             'canEdit'   => $module->canEdit($user),
             'config'    => (new OnlyOffice())->editorConfig($module, $user),
             'scriptUrl' => OnlyOffice::scriptUrl(),
+            'libraryModule'  => $module->created_by === $user->id && $module->file_path ? $module->load('libraryEntry') : null,
+            'libraryCourses' => $this->programCourses(),
         ]);
+    }
+
+    protected function programCourses()
+    {
+        return Course::where('program', auth()->user()->program)->orderBy('code')->get();
+    }
+
+    // Sharing to the library copies the file, so an open editor saves first (see the
+    // library-share partial). This asks for that save; status() says when it has arrived.
+    public function prepareLibraryShare(ContentModule $module, OnlyOffice $onlyOffice)
+    {
+        $this->abortUnlessShareable($module);
+
+        // Read before asking: the save can land as soon as the editor gets the command.
+        $stamp = optional($module->last_edited_at)->toIso8601String();
+
+        return response()->json(['saving' => $onlyOffice->forceSave($module), 'stamp' => $stamp]);
+    }
+
+    public function libraryShareStatus(ContentModule $module)
+    {
+        $this->abortUnlessShareable($module);
+
+        return response()->json(['stamp' => optional($module->last_edited_at)->toIso8601String()]);
+    }
+
+    // A separate copy of the file: the owner keeps editing theirs privately, and sharing
+    // again replaces the copy instead of adding another one.
+    public function shareToLibrary(Request $request, ContentModule $module)
+    {
+        $this->abortUnlessShareable($module);
+
+        $program = auth()->user()->program;
+        $data = $request->validate([
+            'title'       => 'required|string|max:255',
+            'type'        => ['required', Rule::in(array_keys(SharedResource::typeOptions()))],
+            'description' => 'nullable|string|max:500',
+            'course_id'   => ['nullable', 'integer', Rule::exists('courses', 'id')->where('program', $program)],
+        ], [], ['type' => 'category', 'course_id' => 'course']);
+
+        $path = 'shared-resources/' . bin2hex(random_bytes(20)) . '.' . $module->extension();
+        Storage::disk('public')->copy($module->file_path, $path);
+
+        $entry = SharedResource::where('source_module_id', $module->id)->where('shared_by', auth()->id())->first();
+        $updating = (bool) $entry;
+        $oldPath = $entry?->file_path;
+
+        SharedResource::updateOrCreate(
+            ['source_module_id' => $module->id, 'shared_by' => auth()->id()],
+            [
+                'program'     => $program,
+                'course_id'   => $data['course_id'] ?? null,
+                'title'       => $data['title'],
+                'type'        => $data['type'],
+                'description' => $data['description'] ?? null,
+                'file_path'   => $path,
+                'file_name'   => $module->file_name,
+                'file_type'   => $module->file_type,
+                'file_size'   => Storage::disk('public')->size($path),
+            ]
+        );
+
+        if ($oldPath) {
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        return response()->json([
+            'message' => $updating
+                ? 'The shared copy in the library was updated.'
+                : 'Shared to the library. Faculty in your program can now view and download it.',
+        ]);
+    }
+
+    protected function abortUnlessShareable(ContentModule $module): void
+    {
+        abort_unless($module->created_by === auth()->id(), 403, 'Only the owner of this document can share it to the library.');
+        abort_unless((bool) $module->file_path, 422, 'Only documents with a file can be shared to the library.');
     }
 
     public function update(Request $request, ContentModule $module)
