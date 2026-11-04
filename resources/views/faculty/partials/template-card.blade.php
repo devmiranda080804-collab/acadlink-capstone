@@ -17,7 +17,7 @@
         @if($template->isEditableFile())
             <form method="POST" action="{{ url('/faculty/my-template/' . $template->id . '/use') }}" class="card-copy">
                 @csrf
-                <button type="submit" class="btn-sm btn-view-file" title="{{ $template->has_copy ? 'Open your copy of this template in the editor' : 'Make your own copy and edit it in the editor' }}">{{ $template->has_copy ? 'Continue Editing' : 'Make Copy' }}</button>
+                <button type="submit" class="btn-sm btn-view-file" title="Make a new copy of this template and edit it">Make Copy</button>
             </form>
         @endif
         <a class="icon-btn" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank" title="View" aria-label="View" onclick="markTemplateViewed({{ $template->id }}, this)">@include('documents.partials.icon', ['name' => 'eye'])</a>

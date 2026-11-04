@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Faculty;
 
 use App\Http\Controllers\Controller;
 use App\Models\ContentModule;
+use App\Models\Course;
 use App\Models\TemplateDocument;
 use App\Models\TemplateDocumentView;
 use App\Services\OnlyOffice;
@@ -33,21 +34,24 @@ class TemplateController extends Controller
         // A foreach, not ->each(fn): an arrow fn returns the assigned value, and
         // each() stops at the first false — every card after the first viewed
         // one lost its NEW label.
-        $copiedIds = ContentModule::where('created_by', auth()->id())
-            ->whereIn('source_template_id', $templates->pluck('id'))
-            ->pluck('source_template_id')
-            ->all();
-
         foreach ($templates as $t) {
             $t->is_new = !in_array($t->id, $viewedIds);
-            $t->has_copy = in_array($t->id, $copiedIds);
         }
 
-        return view('faculty.my-template', compact('templates'));
+        // The faculty member's own documents, newest work first: where they come back to a copy.
+        $copies = ContentModule::with('libraryEntry')
+            ->where('created_by', auth()->id())
+            ->whereNotNull('file_path')
+            ->orderByRaw('COALESCE(last_edited_at, created_at) DESC')
+            ->get();
+
+        $libraryCourses = Course::where('program', $myProgram)->orderBy('code')->get();
+
+        return view('faculty.my-template', compact('templates', 'copies', 'libraryCourses'));
     }
 
-    // Opens the faculty member's personal copy in the editor, making it the first time.
-    // The official template stays as it is.
+    // Makes a new personal copy each time and opens it in the editor. The official template
+    // stays as it is.
     public function useTemplate(TemplateDocument $template)
     {
         abort_unless($template->isApproved() && $template->superseded_at === null && $template->isDistributedTo((string) auth()->user()->program), 403);
@@ -57,10 +61,8 @@ class TemplateController extends Controller
             return back()->withErrors(['editor' => 'The document editor is not available right now. You can still view and download this template.']);
         }
 
-        $copy = ContentModule::where('created_by', auth()->id())->where('source_template_id', $template->id)->first();
-        if ($copy) {
-            return redirect('/faculty/cms/' . $copy->id . '/edit');
-        }
+        // Numbered so several copies of one template can be told apart.
+        $earlier = ContentModule::where('created_by', auth()->id())->where('source_template_id', $template->id)->count();
 
         $path = 'content-modules/' . bin2hex(random_bytes(20)) . '.' . $template->extension();
         Storage::disk('public')->copy($template->file_path, $path);
@@ -68,7 +70,7 @@ class TemplateController extends Controller
         $module = ContentModule::create([
             'created_by'  => auth()->id(),
             'source_template_id' => $template->id,
-            'title'       => $template->title,
+            'title'       => $template->title . ($earlier ? ' (Copy ' . ($earlier + 1) . ')' : ''),
             'description' => 'Copied from the official template (v' . $template->version . ').',
             'file_path'   => $path,
             'file_name'   => $template->file_name,

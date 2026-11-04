@@ -92,6 +92,14 @@
         .card-copy button { width: 100%; }
         .icon-btn { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; height: 32px; background: #fff; border: 1px solid #d0d0d0; border-radius: 5px; color: #444; text-decoration: none; }
         .icon-btn:hover { background: #f5f5f5; }
+        button.icon-btn { padding: 0; cursor: pointer; }
+        .icon-btn-active { color: #065f46; border-color: #6ee7b7; background: #d1fae5; }
+        .icon-btn-active:hover { background: #a7f3d0; }
+        .icon-btn-danger { color: #b91c1c; border-color: #fca5a5; }
+        .icon-btn-danger:hover { background: #fee2e2; }
+        .card-delete { margin: 0; }
+        .btn-copy-open { flex: 1; min-width: 0; background: #0f2557; color: #fff; text-decoration: none; }
+        .btn-copy-open:hover { background: #1a3a7a; }
         .btn-sm { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; cursor: pointer; border: 1px solid transparent; text-decoration: none; flex: 1; }
         .btn-view-file { background: #fff; color: #333; border: 1px solid #d0d0d0; }
         .btn-view-file:hover { background: #f5f5f5; }
@@ -230,6 +238,20 @@
 
             {{-- FOLDER HOME: templates arranged by type, like library shelves --}}
             <div id="folder-home">
+                @if($copies->isNotEmpty())
+                    <div class="folder-section">
+                        <div class="folder-section-title">
+                            My Copies
+                            <span class="folder-section-count">{{ $copies->count() }} file{{ $copies->count() == 1 ? '' : 's' }}</span>
+                        </div>
+                        <div class="template-grid">
+                            @foreach($copies as $copy)
+                                @include('faculty.partials.copy-card', ['copy' => $copy])
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 <div class="folder-section">
                     <div class="folder-section-title">
                         All Templates
@@ -369,6 +391,7 @@
         document.getElementById('logout-confirm-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
     </script>
 
+    @include('documents.partials.library-share')
     @include('partials.system-feedback')
 </body>
 </html>
