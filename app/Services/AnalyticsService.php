@@ -22,16 +22,16 @@ class AnalyticsService
 {
     // (1) Instructional Compliance Report — built entirely on the existing Submissions &
     // Deadline data (SubmissionRequirement + Submission), not a new concept.
-    public function complianceReport(?string $program = null, ?int $facultyId = null): array
+    public function complianceReport(string|array|null $program = null, ?int $facultyId = null): array
     {
-        $requirements = SubmissionRequirement::when($program, fn($q) => $q->where('program', $program))
+        $requirements = SubmissionRequirement::when($program, fn($q) => $q->whereIn('program', (array) $program))
             ->with(['submissions' => fn($q) => $facultyId ? $q->where('faculty_id', $facultyId) : $q])
             ->get();
 
         $facultyCountByProgram = [];
         $facultyCount = function (string $prog) use (&$facultyCountByProgram) {
             return $facultyCountByProgram[$prog] ??= User::where('role', 'faculty')
-                ->whereNull('archived_at')->where('program', $prog)->count();
+                ->whereNull('archived_at')->inProgram($prog)->count();
         };
 
         $byType = [];
@@ -56,7 +56,7 @@ class AnalyticsService
 
             if (!$facultyId) {
                 $missingFaculty = User::where('role', 'faculty')->whereNull('archived_at')
-                    ->where('program', $req->program)
+                    ->inProgram($req->program)
                     ->whereNotIn('id', $submittedIds)
                     ->get(['id', 'name']);
                 foreach ($missingFaculty as $f) {
@@ -84,13 +84,13 @@ class AnalyticsService
     // (2) Assessment Coverage Report — actual Bloom's-level item counts (from finalized
     // exams' real ExamQuestion.bloom_level, via Exam::tosBreakdown()) vs. each course's own
     // TOS target for the same grading period (via CourseTopic::targetBreakdown()).
-    public function assessmentCoverageReport(?string $program = null, ?int $facultyId = null): array
+    public function assessmentCoverageReport(string|array|null $program = null, ?int $facultyId = null): array
     {
         $exams = Exam::where('status', 'finalized')
             ->whereNotNull('target_items')
             ->with(['sections.questions.children', 'programAssignment.course'])
             ->when($facultyId, fn($q) => $q->where('faculty_id', $facultyId))
-            ->when($program, fn($q) => $q->whereHas('programAssignment.course', fn($c) => $c->where('program', $program)))
+            ->when($program, fn($q) => $q->whereHas('programAssignment.course', fn($c) => $c->whereIn('program', (array) $program)))
             ->get();
 
         $actualByLevel = array_fill_keys(BloomLevels::LEVELS, 0);
@@ -132,13 +132,13 @@ class AnalyticsService
 
     // (3) Faculty Activity Summary — per-faculty counts of real activity for a term
     // (defaults to the current one when not given, so existing callers are unaffected).
-    public function facultyActivitySummary(?string $program = null, ?int $facultyId = null, ?string $schoolYear = null, ?string $semester = null): array
+    public function facultyActivitySummary(string|array|null $program = null, ?int $facultyId = null, ?string $schoolYear = null, ?string $semester = null): array
     {
         $schoolYear ??= AcademicTerm::currentSchoolYear();
         $semester ??= AcademicTerm::currentSemester();
 
         $facultyQuery = User::where('role', 'faculty')->whereNull('archived_at')
-            ->when($program, fn($q) => $q->where('program', $program))
+            ->when($program, fn($q) => $q->inProgram($program))
             ->when($facultyId, fn($q) => $q->where('id', $facultyId));
 
         $rows = [];
@@ -165,7 +165,7 @@ class AnalyticsService
     // (4) Course Coordination Status Report — courses with 2+ faculty assigned in a term
     // (multi-section), and whether each assigned faculty has finalized their exam per period.
     // Defaults to the current term when not given, so existing callers are unaffected.
-    public function courseCoordinationStatusReport(?string $program = null, ?string $schoolYear = null, ?string $semester = null): array
+    public function courseCoordinationStatusReport(string|array|null $program = null, ?string $schoolYear = null, ?string $semester = null): array
     {
         $schoolYear ??= AcademicTerm::currentSchoolYear();
         $semester ??= AcademicTerm::currentSemester();
@@ -173,7 +173,7 @@ class AnalyticsService
         $byCourse = ProgramAssignment::where('school_year', $schoolYear)
             ->where('semester', $semester)
             ->with(['course', 'faculty'])
-            ->when($program, fn($q) => $q->whereHas('course', fn($c) => $c->where('program', $program)))
+            ->when($program, fn($q) => $q->whereHas('course', fn($c) => $c->whereIn('program', (array) $program)))
             ->get()
             ->groupBy('course_id');
 

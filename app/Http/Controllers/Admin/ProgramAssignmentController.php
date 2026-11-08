@@ -41,7 +41,7 @@ class ProgramAssignmentController extends Controller
         // Not filtered by the page's Program filter — the Assign Faculty modal scopes
         // itself to each course's own program client-side (a course keeps its program
         // even when the admin is viewing "All Programs"), so this list needs everyone.
-        $facultyList = User::where('role', 'faculty')
+        $facultyList = User::with('programRows')->where('role', 'faculty')
             ->whereNull('archived_at')
             ->orderBy('name')
             ->get();

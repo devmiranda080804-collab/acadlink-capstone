@@ -17,7 +17,7 @@ class DashboardController extends Controller
 
         // Faculty within the PH's own program
         $facultyCount = User::where('role', 'faculty')
-            ->where('program', $myProgram)
+            ->inProgram($myProgram)
             ->whereNull('archived_at')
             ->count();
 

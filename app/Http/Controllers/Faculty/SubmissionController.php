@@ -13,10 +13,10 @@ class SubmissionController extends Controller
 {
         public function index()
     {
-        $myProgram = auth()->user()->program;
+        $myPrograms = auth()->user()->programCodes();
         $facultyId = auth()->id();
 
-        $requirements = SubmissionRequirement::where('program', $myProgram)
+        $requirements = SubmissionRequirement::whereIn('program', $myPrograms)
             ->orderByPriority()
             ->get()
             ->map(function ($req) use ($facultyId) {
@@ -31,6 +31,7 @@ class SubmissionController extends Controller
                     'type'        => \App\Models\SubmissionRequirement::typeLabel($req->type),
                     'type_key'    => $req->type,
                     'priority'    => $req->priority,
+                    'program'     => $req->program,
                     'deadline'    => $req->deadline,
                     'days_left'   => $req->days_left,
                     'is_due_soon' => $req->is_due_soon,
@@ -38,12 +39,12 @@ class SubmissionController extends Controller
                 ];
             });
 
-        return view('faculty.submissions', compact('requirements'));
+        return view('faculty.submissions', compact('requirements', 'myPrograms'));
     }
 
     public function store(Request $request, SubmissionRequirement $requirement)
     {
-        abort_unless($requirement->program === auth()->user()->program, 403);
+        abort_unless(auth()->user()->belongsToProgram($requirement->program), 403);
 
         $request->validate([
             'file' => 'required|file|mimes:pdf,doc,docx|max:20480',

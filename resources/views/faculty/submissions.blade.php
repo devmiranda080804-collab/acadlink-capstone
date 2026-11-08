@@ -260,7 +260,7 @@
                         <div class="req-top">
                             <div>
                                 <div class="req-title"><span class="priority-badge priority-{{ $req['priority'] }}">{{ \App\Models\SubmissionRequirement::priorityLabel($req['priority']) }}</span>{{ $req['title'] }}</div>
-                                <div class="req-type">{{ $req['type'] }} · Due {{ $req['deadline']->format('M d, Y') }}</div>
+                                <div class="req-type">@if(count($myPrograms) > 1)<strong class="req-program">{{ $req['program'] }}</strong> · @endif{{ $req['type'] }} · Due {{ $req['deadline']->format('M d, Y') }}</div>
                             </div>
                             <span class="req-deadline-badge {{ $badgeClass }}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>

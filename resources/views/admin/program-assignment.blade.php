@@ -265,7 +265,7 @@
                     <select name="faculty_id" id="f-faculty-select" required>
                         <option value="">Select faculty...</option>
                         @foreach($facultyList as $f)
-                            <option value="{{ $f->id }}" data-name="{{ $f->name }}" data-program="{{ $f->program }}">{{ $f->name }} ({{ $f->program }})</option>
+                            <option value="{{ $f->id }}" data-name="{{ $f->name }}" data-programs="{{ implode(' ', $f->programCodes()) }}" data-label="{{ $f->programs_label }}">{{ $f->name }} ({{ $f->programs_label }})</option>
                         @endforeach
                     </select>
                 </div>
@@ -290,7 +290,7 @@
                 if (!opt.value) return; // skip the "Select faculty..." placeholder
 
                 // Only faculty from the same program as this course can be assigned to it
-                if (opt.dataset.program !== courseProgram) {
+                if ((opt.dataset.programs || '').split(' ').indexOf(courseProgram) === -1) {
                     opt.hidden = true;
                     opt.disabled = true;
                     return;
@@ -299,7 +299,7 @@
 
                 var already = assignedSet.indexOf(opt.value) !== -1;
                 opt.disabled = already;
-                opt.textContent = (already ? '✓ ' : '') + opt.dataset.name + ' (' + opt.dataset.program + ')' + (already ? ' — Already assigned' : '');
+                opt.textContent = (already ? '✓ ' : '') + opt.dataset.name + ' (' + opt.dataset.label + ')' + (already ? ' — Already assigned' : '');
             });
 
             document.getElementById('assign-overlay').classList.add('open');

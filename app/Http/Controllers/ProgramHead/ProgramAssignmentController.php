@@ -36,7 +36,7 @@ class ProgramAssignmentController extends Controller
             ->groupBy('course_id');
 
         $facultyList = User::where('role', 'faculty')
-            ->where('program', $myProgram)
+            ->inProgram($myProgram)
             ->whereNull('archived_at')
             ->orderBy('name')
             ->get();
@@ -60,7 +60,7 @@ class ProgramAssignmentController extends Controller
 
         // Security: the course and the faculty must both belong to this PH's own program
         $course = Course::where('id', $request->course_id)->where('program', $myProgram)->firstOrFail();
-        $faculty = User::where('id', $request->faculty_id)->where('role', 'faculty')->where('program', $myProgram)->firstOrFail();
+        $faculty = User::where('id', $request->faculty_id)->where('role', 'faculty')->inProgram($myProgram)->firstOrFail();
 
         ProgramAssignment::firstOrCreate([
             'course_id'   => $course->id,

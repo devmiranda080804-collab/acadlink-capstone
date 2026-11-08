@@ -72,7 +72,7 @@ class Announcement extends Model
                        ->whereHas('programs', fn($p) => $p->where('program', $user->program));
                 })->orWhere('user_id', $user->id);
             }),
-            'faculty' => $query->whereHas('programs', fn($p) => $p->where('program', $user->program)),
+            'faculty' => $query->whereHas('programs', fn($p) => $p->whereIn('program', $user->programCodes())),
             default => $query->whereRaw('0 = 1'),
         };
     }

@@ -21,7 +21,7 @@ class AccountManagementController extends Controller
 
         $query = User::query()
             ->where('role', 'faculty')
-            ->where('program', $myProgram);
+            ->inProgram($myProgram);
 
         if ($request->get('status') === 'archived') {
             $query->whereNotNull('archived_at');
@@ -76,6 +76,7 @@ class AccountManagementController extends Controller
             'program'       => $myProgram, // server-derived, not from the form
             'academic_year' => $request->academic_year,
         ]);
+        $user->syncPrograms([$myProgram]);
         AuditLog::record('Account Created', "Created faculty account for {$user->name} ({$user->email})");
 
         Mail::to($user->email)->send(new NewAccountCredentials($user, $temporaryPassword));
@@ -86,7 +87,7 @@ class AccountManagementController extends Controller
 
     public function update(Request $request, User $user)
     {
-        abort_unless($user->role === 'faculty' && $user->program === auth()->user()->program, 403);
+        abort_unless($user->role === 'faculty' && $user->belongsToProgram(auth()->user()->program), 403);
 
         $request->validate([
             'first_name'    => 'required|string|max:255',
@@ -110,7 +111,7 @@ class AccountManagementController extends Controller
 
     public function archive(User $user)
     {
-        abort_unless($user->role === 'faculty' && $user->program === auth()->user()->program, 403);
+        abort_unless($user->role === 'faculty' && $user->belongsToProgram(auth()->user()->program), 403);
 
         $user->update([
             'is_active'   => false,
@@ -124,7 +125,7 @@ class AccountManagementController extends Controller
 
     public function unarchive(User $user)
     {
-        abort_unless($user->role === 'faculty' && $user->program === auth()->user()->program, 403);
+        abort_unless($user->role === 'faculty' && $user->belongsToProgram(auth()->user()->program), 403);
 
         $user->update([
             'is_active'   => true,

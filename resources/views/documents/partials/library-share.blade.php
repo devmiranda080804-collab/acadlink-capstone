@@ -27,11 +27,8 @@
         <div id="library-fields">
             <div class="library-field">
                 <label for="library-course">Share to <span style="color:#ef4444">*</span></label>
-                <select id="library-course" name="course_id">
-                    <option value="">Whole program ({{ auth()->user()->program }})</option>
-                    @foreach($libraryCourses as $course)
-                        <option value="{{ $course->id }}">{{ $course->code }} — {{ $course->title }}</option>
-                    @endforeach
+                <select id="library-course" name="target" required>
+                    @include('partials.library-targets', ['targetPrograms' => auth()->user()->programCodes(), 'targetCourses' => $libraryCourses])
                 </select>
             </div>
             <div class="library-field">
@@ -82,10 +79,21 @@
         document.getElementById('library-submit').textContent = entry ? 'Update in Library' : 'Share';
         document.getElementById('library-note').textContent = entry
             ? 'This document is already in the Shared Library. Your latest version will replace the shared copy.'
-            : 'Faculty in your program can view and download a copy of your latest version. Your own document stays private and only you can edit it.';
+            : 'Faculty in the program you choose can view and download a copy of your latest version. Your own document stays private and only you can edit it.';
         document.getElementById('library-title').value = entry ? entry.title : button.dataset.title;
         document.getElementById('library-description').value = entry ? (entry.description || '') : '';
-        document.getElementById('library-course').value = entry && entry.course_id ? String(entry.course_id) : '';
+        // A copy of a template only goes to the programs the Dean sent it to (data-programs).
+        var allowed = (button.dataset.programs || '').split(' ');
+        var target = document.getElementById('library-course');
+        target.querySelectorAll('option').forEach(function (option) {
+            var off = allowed.indexOf(option.dataset.program) === -1;
+            option.hidden = off;
+            option.disabled = off;
+        });
+        target.querySelectorAll('optgroup').forEach(function (group) { group.hidden = allowed.indexOf(group.dataset.program) === -1; });
+        var wanted = entry ? (entry.course_id ? 'course:' + entry.course_id : 'program:' + entry.program) : null;
+        var first = target.querySelector('option:not([disabled])');
+        target.value = wanted && target.querySelector('option[value="' + wanted + '"]:not([disabled])') ? wanted : (first ? first.value : '');
         if (entry) type.value = entry.type;
         document.getElementById('library-overlay').classList.add('open');
     }

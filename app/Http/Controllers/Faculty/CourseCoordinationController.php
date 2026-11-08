@@ -40,7 +40,10 @@ class CourseCoordinationController extends Controller
         // faculty's own program — a real link from Course Coordination into
         // the Template Library, so uploading an OBTL doesn't mean hunting
         // through a separate page for the required format first.
-        $officialCourseGuide = TemplateDocument::currentForProgramAndType(auth()->user()->program, 'course_guide');
+        $officialCourseGuide = collect(auth()->user()->programCodes())
+            ->map(fn ($code) => TemplateDocument::currentForProgramAndType($code, 'course_guide'))
+            ->filter()
+            ->first();
 
         if ($request->filled('course_id')) {
             $selectedCourse = Course::where('id', $request->course_id)

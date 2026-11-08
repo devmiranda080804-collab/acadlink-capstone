@@ -87,6 +87,7 @@
         .card-icon { font-size: 22px; }
         .card-title { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
         .card-meta { font-size: 10.5px; color: #aaa; margin-bottom: 14px; }
+        .card-program { align-self: flex-start; font-size: 10px; font-weight: 700; color: #0f2557; background: #eef2ff; border-radius: 4px; padding: 2px 7px; margin-bottom: 6px; }
         .card-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: auto; }
         .card-copy { flex: 1; min-width: 0; margin: 0; }
         .card-copy button { width: 100%; }
@@ -201,7 +202,7 @@
             <div class="page-header">
                 <div>
                     <div class="page-title">Templates</div>
-                    <div class="page-sub">Official templates the Dean has approved and sent to your program</div>
+                    <div class="page-sub">Official templates the Dean has approved and sent to your {{ count($myPrograms) > 1 ? 'programs: ' . implode(', ', $myPrograms) : 'program' }}</div>
                 </div>
             </div>
 
@@ -258,7 +259,7 @@
                         <span class="folder-section-count">{{ $templates->count() }} file{{ $templates->count() == 1 ? '' : 's' }}</span>
                     </div>
                     @if($typeFolders->isEmpty())
-                        <div class="empty-state">The Dean hasn't sent any templates to your program yet.</div>
+                        <div class="empty-state">The Dean hasn't sent any templates to your {{ count($myPrograms) > 1 ? 'programs' : 'program' }} yet.</div>
                     @else
                         <div class="folder-grid">
                             @foreach($typeFolders as $folder)

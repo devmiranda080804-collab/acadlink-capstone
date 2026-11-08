@@ -273,7 +273,7 @@
                         @forelse($accounts as $account)
                             <tr>
                                 <td>{{ $account->name }}</td>
-                                <td><span title="{{ \App\Support\Programs::label($account->program) }}">{{ $account->program }}</span></td>
+                                <td><span title="{{ collect($account->programCodes())->map(fn ($c) => \App\Support\Programs::label($c))->implode('; ') }}">{{ $account->programs_label ?: '—' }}</span></td>
                                 <td>{{ $account->email }}</td>
                                 <td>{{ $account->academic_year }}</td>
                                 <td>
@@ -284,7 +284,7 @@
                                                     '{{ $account->id }}',
                                                     '{{ addslashes($account->first_name ?? '') }}',
                                                     '{{ addslashes($account->last_name ?? '') }}',
-                                                    '{{ $account->program }}',
+                                                    '{{ implode(',', $account->programCodes()) }}',
                                                     '{{ $account->academic_year }}',
                                                     '{{ addslashes($account->google_email ?? '') }}'
                                                 )">
@@ -356,15 +356,11 @@
                         <label>Role</label>
                         <input type="text" value="Faculty" disabled>
                     </div>
-                    <div class="modal-field">
-                        <label>Program <span style="color:#ef4444">*</span></label>
-                        <select id="f-program" name="program">
-                            <option value="" disabled selected>Select program</option>
-                            @foreach(\App\Support\Programs::options() as $code => $label)
-                                <option value="{{ $code }}">{{ $code }} — {{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
+                </div>
+
+                <div class="modal-field">
+                    <label>Programs <span style="color:#ef4444">*</span></label>
+                    @include('partials.program-checkboxes', ['id' => 'f-programs'])
                 </div>
 
                 <div class="modal-field">
@@ -431,10 +427,24 @@
             ['f-firstname', 'f-lastname', 'f-email', 'f-google-email'].forEach(function (id) {
                 document.getElementById(id).value = '';
             });
-            document.getElementById('f-program').selectedIndex = 0;
+            setProgramChecks([]);
             document.getElementById('f-year').value = @json($currentSchoolYear);
             document.getElementById('modal-error').style.display = 'none';
         }
+
+        function setProgramChecks(codes) {
+            document.querySelectorAll('#f-programs input[type=checkbox]').forEach(function (box) {
+                box.checked = codes.indexOf(box.value) !== -1;
+            });
+        }
+
+        document.getElementById('accountForm').addEventListener('submit', function (e) {
+            if (document.querySelector('#f-programs input:checked')) return;
+            e.preventDefault();
+            var error = document.getElementById('modal-error');
+            error.textContent = 'Choose at least one program.';
+            error.style.display = 'block';
+        });
 
         function closeModal() {
             document.getElementById('modal-overlay').classList.remove('open');
@@ -450,7 +460,7 @@
             document.getElementById('modal-title').innerText = 'Edit Account';
             document.getElementById('modal-error').style.display = 'none';
 
-            document.getElementById('f-program').value = program;
+            setProgramChecks(program ? program.split(',') : []);
             document.getElementById('f-year').value = year;
             document.getElementById('f-google-email').value = googleEmail || '';
 

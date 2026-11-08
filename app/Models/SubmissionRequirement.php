@@ -103,7 +103,7 @@ class SubmissionRequirement extends Model
     // drives the nav badge, same role Announcement::unreadCountFor() plays.
     public static function urgentCountFor(User $user): int
     {
-        return static::where('program', $user->program)
+        return static::whereIn('program', $user->programCodes())
             ->get()
             ->filter(function ($req) use ($user) {
                 if (!$req->is_overdue && !$req->is_due_soon) {

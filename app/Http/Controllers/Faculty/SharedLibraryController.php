@@ -16,7 +16,8 @@ class SharedLibraryController extends Controller
 {
     public function index()
     {
-        $myProgram = auth()->user()->program;
+        $myPrograms = auth()->user()->programCodes();
+        $myProgram = implode(', ', $myPrograms);
 
         $items = collect();
 
@@ -52,7 +53,7 @@ class SharedLibraryController extends Controller
 
         // Course materials (own program) — one folder per actual course
         CourseMaterial::with(['course', 'uploader'])
-            ->whereHas('course', fn($c) => $c->where('program', $myProgram))
+            ->whereHas('course', fn($c) => $c->whereIn('program', $myPrograms))
             ->get()
             ->each(function ($m) use (&$items) {
                 $items->push([
@@ -78,12 +79,12 @@ class SharedLibraryController extends Controller
         // Faculty-shared resources (own program) — in their course's folder, or one folder
         // per category when they're for the whole program
         SharedResource::with(['sharer', 'course'])
-            ->where('program', $myProgram)
+            ->whereIn('program', $myPrograms)
             ->get()
             ->each(function ($r) use (&$items) {
                 $folder = $r->course
                     ? ['folder_group' => 'courses', 'folder_key' => 'course-' . $r->course_id, 'folder_label' => $r->course->code . ' — ' . $r->course->title, 'folder_icon' => '📚']
-                    : ['folder_group' => 'program', 'folder_key' => 'shared-' . $r->type, 'folder_label' => $r->type_label, 'folder_icon' => '🗂️'];
+                    : ['folder_group' => 'program-' . $r->program, 'folder_key' => 'shared-' . $r->program . '-' . $r->type, 'folder_label' => $r->type_label, 'folder_icon' => '🗂️'];
 
                 $items->push($folder + [
                     'id'           => $r->id,
@@ -122,9 +123,14 @@ class SharedLibraryController extends Controller
             ];
         })->sortBy('label')->values();
 
-        $courses = Course::where('program', $myProgram)->orderBy('code')->get();
+        $courses = Course::whereIn('program', $myPrograms)->orderBy('program')->orderBy('code')->get();
 
-        return view('faculty.shared-library', compact('items', 'folders', 'myProgram', 'recentItems', 'recentDays', 'courses'));
+        // From the College, then one section per program, then the course folders.
+        $sections = ['official' => 'From the College']
+            + collect($myPrograms)->mapWithKeys(fn ($code) => ['program-' . $code => 'Program — ' . $code])->all()
+            + ['courses' => 'Courses'];
+
+        return view('faculty.shared-library', compact('items', 'folders', 'myProgram', 'myPrograms', 'sections', 'recentItems', 'recentDays', 'courses'));
     }
 
     public function store(Request $request)
@@ -133,17 +139,18 @@ class SharedLibraryController extends Controller
             'title'       => 'required|string|max:255',
             'type'        => ['required', Rule::in(array_keys(SharedResource::typeOptions()))],
             'description' => 'nullable|string|max:500',
-            'course_id'   => ['nullable', 'integer', Rule::exists('courses', 'id')->where('program', auth()->user()->program)],
+            'target'      => 'required|string',
             'file'        => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx|max:20480',
-        ], [], ['course_id' => 'course']);
+        ], [], ['target' => 'share to']);
+        $target = SharedResource::resolveTarget($request->target, auth()->user()->programCodes());
 
         $file = $request->file('file');
         $path = $file->store('shared-resources', 'public');
 
         SharedResource::create([
             'shared_by'   => auth()->id(),
-            'program'     => auth()->user()->program,
-            'course_id'   => $request->course_id ?: null,
+            'program'     => $target['program'],
+            'course_id'   => $target['course_id'],
             'title'       => $request->title,
             'type'        => $request->type,
             'description' => $request->description,
@@ -153,7 +160,7 @@ class SharedLibraryController extends Controller
             'file_size'   => $file->getSize(),
         ]);
 
-        return back()->with('success', 'Resource shared successfully with your program.');
+        return back()->with('success', 'Resource shared with ' . $target['program'] . '.');
     }
 
     public function destroy(SharedResource $resource)

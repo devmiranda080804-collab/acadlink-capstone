@@ -3,6 +3,9 @@
         <span class="card-icon">{{ \App\Models\TemplateDocument::typeIcon($template->type) }}</span>
         <span class="status-badge status-approved">{{ \App\Models\TemplateDocument::typeLabel($template->type) }}</span>
     </div>
+    @if(count($myPrograms ?? []) > 1)
+        <div class="card-program">For {{ implode(', ', array_values(array_intersect($template->sentPrograms(), $myPrograms))) }}</div>
+    @endif
 
     <div class="card-title">
         @if($template->is_new ?? false) <span class="new-tag">NEW</span> @endif

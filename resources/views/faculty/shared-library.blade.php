@@ -203,7 +203,7 @@
             <div class="page-header">
                 <div>
                     <div class="page-title">Shared Library</div>
-                    <div class="page-sub">Resources for your program: <strong>{{ $myProgram }}</strong></div>
+                    <div class="page-sub">Resources for your {{ count($myPrograms) > 1 ? 'programs' : 'program' }}: <strong>{{ $myProgram }}</strong></div>
                 </div>
                 <button class="btn-share" onclick="openShareModal()">
                     <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -241,7 +241,7 @@
                         </div>
                     @endif
 
-                    @foreach(['official' => 'From the College', 'program' => 'Program — ' . $myProgram, 'courses' => 'Courses'] as $group => $sectionLabel)
+                    @foreach($sections as $group => $sectionLabel)
                         @php $groupFolders = $folders->where('group', $group); @endphp
                         @if($groupFolders->isNotEmpty())
                             <div class="folder-section">
@@ -295,15 +295,12 @@
             <form method="POST" action="{{ url('/faculty/shared-library') }}" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-title">Share a Resource</div>
-                <div class="modal-sub">This will be visible to all faculty in the <strong>{{ $myProgram }}</strong> program.</div>
+                <div class="modal-sub">Faculty in the program you choose can view and download it.</div>
 
                 <div class="modal-field">
                     <label>Share to <span style="color:#ef4444">*</span></label>
-                    <select name="course_id">
-                        <option value="">Whole program ({{ $myProgram }})</option>
-                        @foreach($courses as $course)
-                            <option value="{{ $course->id }}">{{ $course->code }} — {{ $course->title }}</option>
-                        @endforeach
+                    <select name="target" required>
+                        @include('partials.library-targets', ['targetPrograms' => $myPrograms, 'targetCourses' => $courses])
                     </select>
                 </div>
 

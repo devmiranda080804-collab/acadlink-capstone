@@ -26,7 +26,7 @@
         <div class="editor-title">{{ $title }}</div>
         <span class="editor-access">{{ $canEdit ? 'Changes save automatically' : 'View only' }}</span>
         @if($libraryModule ?? null)
-            <button type="button" class="editor-share" data-url="{{ url('/faculty/cms/' . $libraryModule->id . '/library') }}" data-title="{{ $libraryModule->title }}" @if($libraryModule->libraryEntry) data-entry="{{ json_encode($libraryModule->libraryEntry->only(['title', 'type', 'description', 'course_id'])) }}" @endif onclick="openLibraryShare(this)">{{ $libraryModule->libraryEntry ? 'Update in Library' : 'Share to Library' }}</button>
+            <button type="button" class="editor-share" data-programs="{{ implode(' ', $libraryModule->libraryPrograms(auth()->user())) }}" data-url="{{ url('/faculty/cms/' . $libraryModule->id . '/library') }}" data-title="{{ $libraryModule->title }}" @if($libraryModule->libraryEntry) data-entry="{{ json_encode($libraryModule->libraryEntry->only(['title', 'type', 'description', 'course_id', 'program'])) }}" @endif onclick="openLibraryShare(this)">{{ $libraryModule->libraryEntry ? 'Update in Library' : 'Share to Library' }}</button>
         @endif
     </div>
     <div class="editor-area"><div id="document-editor"></div></div>

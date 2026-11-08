@@ -80,4 +80,58 @@ public function sendPasswordResetNotification($token)
 
     $this->notify(new \App\Notifications\ResetPasswordNotification($url));
 }
+
+    public function programRows()
+    {
+        return $this->hasMany(UserProgram::class);
+    }
+
+    // Every program the account belongs to. Faculty can teach in several; a Program Head
+    // leads one. Accounts saved before user_programs existed fall back to `program`.
+    public function programCodes(): array
+    {
+        $codes = $this->exists ? $this->programRows->pluck('program')->all() : [];
+        if (!$codes && $this->program) {
+            $codes = [$this->program];
+        }
+
+        return array_values(array_unique($codes));
+    }
+
+    public function belongsToProgram(?string $code): bool
+    {
+        return $code !== null && $code !== '' && in_array($code, $this->programCodes(), true);
+    }
+
+    public function getProgramsLabelAttribute(): string
+    {
+        return implode(', ', $this->programCodes());
+    }
+
+    public function scopeInProgram($query, string|array $codes)
+    {
+        $codes = array_values((array) $codes);
+
+        return $query->where(fn ($q) => $q->whereIn('program', $codes)
+            ->orWhereHas('programRows', fn ($p) => $p->whereIn('program', $codes)));
+    }
+
+    // Replaces the account's programs; the first is also kept in `program`. Returns the
+    // change as [from, to] labels, or null when nothing changed.
+    public function syncPrograms(array $codes): ?array
+    {
+        $before = $this->programCodes();
+        $codes = array_values(array_unique(array_filter($codes, fn ($c) => is_string($c) && $c !== '')));
+
+        $this->programRows()->whereNotIn('program', $codes)->delete();
+        foreach ($codes as $code) {
+            $this->programRows()->firstOrCreate(['program' => $code]);
+        }
+        $this->forceFill(['program' => $codes[0] ?? null])->saveQuietly();
+        $this->unsetRelation('programRows');
+
+        $sorted = fn ($list) => collect($list)->sort()->values()->all();
+
+        return $sorted($before) === $sorted($codes) ? null : [implode(', ', $before), implode(', ', $codes)];
+    }
 }

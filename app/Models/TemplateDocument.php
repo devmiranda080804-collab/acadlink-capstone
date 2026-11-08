@@ -203,7 +203,7 @@ class TemplateDocument extends Model
     public static function newForFaculty(\App\Models\User $user)
     {
         return self::whereNull('superseded_at')
-            ->whereHas('programs', fn($p) => $p->where('program', $user->program)->whereNotNull('distributed_at'))
+            ->whereHas('programs', fn($p) => $p->whereIn('program', $user->programCodes())->whereNotNull('distributed_at'))
             ->whereDoesntHave('views', fn($v) => $v->where('user_id', $user->id));
     }
 

@@ -43,6 +43,23 @@ class ContentModule extends Model
 
     // Legacy — new modules no longer create Google Docs (see
     // ContentModuleController::store()), but older rows may still have one.
+    public function sourceTemplate()
+    {
+        return $this->belongsTo(TemplateDocument::class, 'source_template_id');
+    }
+
+    // Programs whose library this document can be shared to: the owner's programs, and for a
+    // copy of an official template only those the Dean sent the template to.
+    public function libraryPrograms(User $user): array
+    {
+        $programs = $user->programCodes();
+        if ($this->source_template_id && $this->sourceTemplate) {
+            $programs = array_values(array_intersect($programs, $this->sourceTemplate->sentPrograms()));
+        }
+
+        return $programs;
+    }
+
     // Its copy in the Shared Library, when the owner has shared it.
     public function libraryEntry()
     {

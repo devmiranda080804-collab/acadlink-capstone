@@ -312,7 +312,7 @@
                                     @if($account->role === 'secretary')
                                         All Programs
                                     @else
-                                        <span title="{{ \App\Support\Programs::label($account->program) }}">{{ $account->program }}</span>
+                                        <span title="{{ collect($account->programCodes())->map(fn ($c) => \App\Support\Programs::label($c))->implode('; ') }}">{{ $account->programs_label ?: '—' }}</span>
                                     @endif
                                 </td>
                                 <td>{{ $account->email }}</td>
@@ -326,7 +326,7 @@
                                                     '{{ addslashes($account->first_name ?? '') }}',
                                                     '{{ addslashes($account->last_name ?? '') }}',
                                                     '{{ $account->role }}',
-                                                    '{{ $account->program }}',
+                                                    '{{ implode(',', $account->programCodes()) }}',
                                                     '{{ $account->academic_year }}',
                                                     '{{ addslashes($account->google_email ?? '') }}'
                                                 )">
@@ -407,6 +407,10 @@
                 </div>
 
                 <div class="modal-row" id="program-year-row">
+                    <div class="modal-field" id="programs-field-wrap" style="grid-column:1 / -1;display:none;">
+                        <label>Programs <span style="color:#ef4444">*</span></label>
+                        @include('partials.program-checkboxes', ['id' => 'f-programs'])
+                    </div>
                     <div class="modal-field" id="program-field-wrap">
                         <label>Program <span style="color:#ef4444">*</span></label>
                         <select id="f-program" name="program">
@@ -465,18 +469,36 @@
     <script>
         function toggleProgramField(role) {
             var programWrap = document.getElementById('program-field-wrap');
+            var programsWrap = document.getElementById('programs-field-wrap');
             var yearWrap = document.getElementById('year-field-wrap');
             var select = document.getElementById('f-program');
 
-            if (role === 'secretary') {
-                programWrap.style.display = 'none';
-                yearWrap.style.gridColumn = '1 / -1';
-                select.value = '';
-            } else {
-                programWrap.style.display = '';
-                yearWrap.style.gridColumn = '';
-            }
+            // Faculty can teach in several programs; a Program Head leads one; a Secretary serves all.
+            programsWrap.style.display = role === 'faculty' ? '' : 'none';
+            programWrap.style.display = role === 'program_head' || role === '' ? '' : 'none';
+            yearWrap.style.gridColumn = role === 'program_head' || role === '' ? '' : '1 / -1';
+            if (role !== 'program_head') select.value = '';
+            if (role !== 'faculty') setProgramChecks([]);
         }
+
+        function setProgramChecks(codes) {
+            document.querySelectorAll('#f-programs input[type=checkbox]').forEach(function (box) {
+                box.checked = codes.indexOf(box.value) !== -1;
+            });
+        }
+
+        document.getElementById('accountForm').addEventListener('submit', function (e) {
+            var role = document.getElementById('f-role').value;
+            var error = document.getElementById('modal-error');
+            var message = '';
+            if (role === 'faculty' && !document.querySelector('#f-programs input:checked')) message = 'Choose at least one program.';
+            if (role === 'program_head' && !document.getElementById('f-program').value) message = 'Choose a program.';
+            if (message) {
+                e.preventDefault();
+                error.textContent = message;
+                error.style.display = 'block';
+            }
+        });
 
         function openCreateModal() {
             document.getElementById('modal-title').innerText = 'Create Account';
@@ -520,7 +542,10 @@
             document.getElementById('f-lastname').value = lastName;
 
             document.getElementById('f-role').value = role;
-            document.getElementById('f-program').value = program;
+            toggleProgramField(role);
+            var codes = program ? program.split(',') : [];
+            if (role === 'faculty') setProgramChecks(codes);
+            if (role === 'program_head') document.getElementById('f-program').value = codes[0] || '';
             document.getElementById('f-year').value = year;
             document.getElementById('f-google-email').value = googleEmail || '';
             toggleProgramField(role);

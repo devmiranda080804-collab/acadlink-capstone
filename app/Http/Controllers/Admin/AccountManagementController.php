@@ -39,7 +39,7 @@ class AccountManagementController extends Controller
         }
 
         if ($request->filled('program')) {
-            $query->where('program', $request->program);
+            $query->inProgram($request->program);
         }
 
         if ($request->filled('academic_year')) {
@@ -54,6 +54,16 @@ class AccountManagementController extends Controller
         return view('admin.account-management', compact('accounts', 'schoolYears', 'currentSchoolYear'));
     }
 
+    // Faculty can teach in several programs; a Program Head leads one; a Secretary serves all.
+    protected function programsFor(Request $request): array
+    {
+        return match ($request->role) {
+            'faculty'      => array_values(array_unique((array) $request->programs)),
+            'program_head' => [$request->program],
+            default        => [],
+        };
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -61,11 +71,14 @@ class AccountManagementController extends Controller
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
             'role'          => 'required|in:program_head,secretary,faculty',
-            'program'       => 'required_if:role,program_head,faculty|nullable|in:' . implode(',', Programs::codes()),
+            'program'       => 'required_if:role,program_head|nullable|in:' . implode(',', Programs::codes()),
+            'programs'      => 'required_if:role,faculty|nullable|array',
+            'programs.*'    => 'in:' . implode(',', Programs::codes()),
             'academic_year' => 'required',
             'google_email'  => 'nullable|email|max:255',
-        ]);
+        ], [], ['programs' => 'program']);
 
+        $programs = $this->programsFor($request);
         $temporaryPassword = Str::password(12);
 
         $user = User::create([
@@ -76,10 +89,11 @@ class AccountManagementController extends Controller
             'google_email'         => $request->google_email,
             'password'             => Hash::make($temporaryPassword),
             'role'                 => $request->role,
-            'program'              => in_array($request->role, ['program_head', 'faculty']) ? $request->program : null,
+            'program'              => $programs[0] ?? null,
             'academic_year'        => $request->academic_year,
             'must_change_password' => true,
         ]);
+        $user->syncPrograms($programs);
 
         AuditLog::record('Account Created', "Created {$user->role} account for {$user->name} ({$user->email})");
 
@@ -96,10 +110,12 @@ class AccountManagementController extends Controller
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'role'          => 'required|in:program_head,secretary,faculty',
-            'program'       => 'required_if:role,program_head,faculty|nullable|in:' . implode(',', Programs::codes()),
+            'program'       => 'required_if:role,program_head|nullable|in:' . implode(',', Programs::codes()),
+            'programs'      => 'required_if:role,faculty|nullable|array',
+            'programs.*'    => 'in:' . implode(',', Programs::codes()),
             'academic_year' => 'required',
             'google_email'  => 'nullable|email|max:255',
-        ]);
+        ], [], ['programs' => 'program']);
 
         $roleChanged = $user->role !== $request->role;
 
@@ -109,11 +125,11 @@ class AccountManagementController extends Controller
             'last_name'     => $request->last_name,
             'google_email'  => $request->google_email,
             'role'          => $request->role,
-            'program'       => in_array($request->role, ['program_head', 'faculty']) ? $request->program : null,
             'academic_year' => $request->academic_year,
         ]);
+        $programChange = $user->syncPrograms($this->programsFor($request));
 
-        AccountNotifier::sendDetailChanges($user);
+        AccountNotifier::sendDetailChanges($user, $programChange);
 
         if ($roleChanged) {
             \DB::table('sessions')->where('user_id', $user->id)->delete();

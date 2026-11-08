@@ -11,15 +11,15 @@ use App\Support\AcademicTerm;
 
 class DashboardController extends Controller
 {
-    protected function distributedForMyProgram(string $myProgram)
+    protected function distributedForMyProgram(array $myPrograms)
     {
-        return TemplateDocument::whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'));
+        return TemplateDocument::whereHas('programs', fn($p) => $p->whereIn('program', $myPrograms)->whereNotNull('distributed_at'));
     }
 
     public function index()
     {
         $facultyId = auth()->id();
-        $myProgram = auth()->user()->program;
+        $myProgram = auth()->user()->programCodes();
 
         // Templates distributed to my program, broken down by type
         $syllabusCount    = $this->distributedForMyProgram($myProgram)->where('type', 'syllabus')->count();
@@ -36,7 +36,7 @@ class DashboardController extends Controller
         // Recent announcements for their program
         $recentAnnouncements = Announcement::with('user')
             ->active()
-            ->whereHas('programs', fn($p) => $p->where('program', $myProgram))
+            ->whereHas('programs', fn($p) => $p->whereIn('program', $myProgram))
             ->latest()
             ->take(4)
             ->get();

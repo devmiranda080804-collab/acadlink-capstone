@@ -13,7 +13,6 @@ class AccountNotifier
     const TRACKED_FIELDS = [
         'name'          => 'Name',
         'role'          => 'Role',
-        'program'       => 'Program',
         'academic_year' => 'Academic Year',
         'google_email'  => 'Google Email',
     ];
@@ -28,10 +27,14 @@ class AccountNotifier
     }
 
     // Call right after $user->update(): emails the tracked fields that actually changed.
-    public static function sendDetailChanges(User $user): void
+    // $programs is what User::syncPrograms() returned.
+    public static function sendDetailChanges(User $user, ?array $programs = null): void
     {
         $previous = $user->getPrevious();
         $changes = [];
+        if ($programs) {
+            $changes[] = ['field' => 'Program', 'from' => $programs[0] ?: '—', 'to' => $programs[1] ?: '—'];
+        }
         foreach (self::TRACKED_FIELDS as $field => $label) {
             if (!$user->wasChanged($field)) {
                 continue;

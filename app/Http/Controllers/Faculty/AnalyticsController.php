@@ -12,7 +12,7 @@ class AnalyticsController extends Controller
     public function index(Request $request, AnalyticsService $analytics)
     {
         $facultyId = auth()->id();
-        $program = auth()->user()->program;
+        $program = auth()->user()->programCodes();
         $schoolYear = $request->query('school_year') ?: AcademicTerm::currentSchoolYear();
         $semester = $request->query('semester') ?: AcademicTerm::currentSemester();
 

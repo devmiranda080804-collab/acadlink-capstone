@@ -33,6 +33,26 @@ class SharedResource extends Model
             ?? (isset(TemplateType::catalog()[$this->type]) ? TemplateDocument::typeLabel($this->type) : 'Lecture Slides');
     }
 
+    // "program:BSA" (the whole program) or "course:12" (one course), limited to $programs.
+    // Returns ['program' => ..., 'course_id' => ...].
+    public static function resolveTarget(?string $target, array $programs): array
+    {
+        [$kind, $value] = array_pad(explode(':', (string) $target, 2), 2, null);
+
+        if ($kind === 'program' && in_array($value, $programs, true)) {
+            return ['program' => $value, 'course_id' => null];
+        }
+
+        if ($kind === 'course' && ctype_digit((string) $value)) {
+            $course = Course::whereKey((int) $value)->whereIn('program', $programs)->first();
+            if ($course) {
+                return ['program' => $course->program, 'course_id' => $course->id];
+            }
+        }
+
+        throw \Illuminate\Validation\ValidationException::withMessages(['target' => 'Choose a program or course you can share to.']);
+    }
+
     public function course()
     {
         return $this->belongsTo(Course::class);

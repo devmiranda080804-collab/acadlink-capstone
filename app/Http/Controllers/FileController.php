@@ -103,7 +103,7 @@ class FileController extends Controller
     protected function template(int $id, User $user): array
     {
         $t = TemplateDocument::with(['creator', 'programs'])->findOrFail($id);
-        $allowed = $this->isStaff($user) || ($user->program && $t->isDistributedTo($user->program));
+        $allowed = $this->isStaff($user) || collect($user->programCodes())->contains(fn ($code) => $t->isDistributedTo($code));
 
         return [$t, $allowed, $t->title, $t->creator->name ?? null, $t->created_at];
     }
@@ -111,7 +111,7 @@ class FileController extends Controller
     protected function material(int $id, User $user): array
     {
         $m = CourseMaterial::with(['course', 'uploader'])->findOrFail($id);
-        $allowed = $this->isStaff($user) || ($m->course && $user->program === $m->course->program);
+        $allowed = $this->isStaff($user) || ($m->course && $user->belongsToProgram($m->course->program));
 
         return [$m, $allowed, $m->title, $m->uploader->name ?? null, $m->created_at];
     }
@@ -119,7 +119,7 @@ class FileController extends Controller
     protected function topic(int $id, User $user): array
     {
         $t = CourseTopic::with(['course', 'creator'])->findOrFail($id);
-        $allowed = $this->isStaff($user) || ($t->course && $user->program === $t->course->program);
+        $allowed = $this->isStaff($user) || ($t->course && $user->belongsToProgram($t->course->program));
 
         return [$t, $allowed, $t->topic . ' (module)', $t->creator->name ?? null, $t->updated_at];
     }
@@ -127,7 +127,7 @@ class FileController extends Controller
     protected function shared(int $id, User $user): array
     {
         $r = SharedResource::with('sharer')->findOrFail($id);
-        $allowed = $user->role === 'admin' || $user->program === $r->program;
+        $allowed = $user->role === 'admin' || $user->belongsToProgram($r->program);
 
         return [$r, $allowed, $r->title, $r->sharer->name ?? null, $r->created_at];
     }

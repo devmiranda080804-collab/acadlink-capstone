@@ -99,14 +99,14 @@ class ContentModuleController extends Controller
             'canEdit'   => $module->canEdit($user),
             'config'    => (new OnlyOffice())->editorConfig($module, $user),
             'scriptUrl' => OnlyOffice::scriptUrl(),
-            'libraryModule'  => $module->created_by === $user->id && $module->file_path ? $module->load('libraryEntry') : null,
+            'libraryModule'  => $module->created_by === $user->id && $module->file_path && $module->libraryPrograms($user) ? $module->load('libraryEntry') : null,
             'libraryCourses' => $this->programCourses(),
         ]);
     }
 
     protected function programCourses()
     {
-        return Course::where('program', auth()->user()->program)->orderBy('code')->get();
+        return Course::whereIn('program', auth()->user()->programCodes())->orderBy('program')->orderBy('code')->get();
     }
 
     // Sharing to the library copies the file, so an open editor saves first (see the
@@ -134,13 +134,13 @@ class ContentModuleController extends Controller
     {
         $this->abortUnlessShareable($module);
 
-        $program = auth()->user()->program;
         $data = $request->validate([
             'title'       => 'required|string|max:255',
             'type'        => ['required', Rule::in(array_keys(SharedResource::typeOptions()))],
             'description' => 'nullable|string|max:500',
-            'course_id'   => ['nullable', 'integer', Rule::exists('courses', 'id')->where('program', $program)],
-        ], [], ['type' => 'category', 'course_id' => 'course']);
+            'target'      => 'required|string',
+        ], [], ['type' => 'category', 'target' => 'share to']);
+        $target = SharedResource::resolveTarget($data['target'], $module->libraryPrograms(auth()->user()));
 
         $path = 'shared-resources/' . bin2hex(random_bytes(20)) . '.' . $module->extension();
         Storage::disk('public')->copy($module->file_path, $path);
@@ -152,8 +152,8 @@ class ContentModuleController extends Controller
         SharedResource::updateOrCreate(
             ['source_module_id' => $module->id, 'shared_by' => auth()->id()],
             [
-                'program'     => $program,
-                'course_id'   => $data['course_id'] ?? null,
+                'program'     => $target['program'],
+                'course_id'   => $target['course_id'],
                 'title'       => $data['title'],
                 'type'        => $data['type'],
                 'description' => $data['description'] ?? null,
@@ -171,7 +171,7 @@ class ContentModuleController extends Controller
         return response()->json([
             'message' => $updating
                 ? 'The shared copy in the library was updated.'
-                : 'Shared to the library. Faculty in your program can now view and download it.',
+                : 'Shared to the library. Faculty in ' . $target['program'] . ' can now view and download it.',
         ]);
     }
 
@@ -179,6 +179,7 @@ class ContentModuleController extends Controller
     {
         abort_unless($module->created_by === auth()->id(), 403, 'Only the owner of this document can share it to the library.');
         abort_unless((bool) $module->file_path, 422, 'Only documents with a file can be shared to the library.');
+        abort_unless((bool) $module->libraryPrograms(auth()->user()), 403, 'The template this copy came from is not sent to any of your programs, so it cannot be shared.');
     }
 
     public function update(Request $request, ContentModule $module)
@@ -273,7 +274,7 @@ class ContentModuleController extends Controller
         $user = auth()->user();
 
         return User::where('role', 'faculty')
-            ->where('program', $user->program)
+            ->inProgram($user->programCodes())
             ->where('id', '!=', $user->id)
             ->whereNull('archived_at')
             ->orderBy('name')

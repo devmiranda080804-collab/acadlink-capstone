@@ -22,7 +22,7 @@ class SubmissionController extends Controller
 
         // Count of faculty in the program (for "X of Y submitted")
         $facultyCount = User::where('role', 'faculty')
-            ->where('program', $myProgram)
+            ->inProgram($myProgram)
             ->whereNull('archived_at')
             ->count();
 

@@ -16,11 +16,11 @@ class TemplateController extends Controller
     // no uploading, no Google Docs anywhere in this pipeline
     public function index()
     {
-        $myProgram = auth()->user()->program;
+        $myPrograms = auth()->user()->programCodes();
 
-        $templates = TemplateDocument::with('creator')
+        $templates = TemplateDocument::with(['creator', 'programs'])
             ->whereNull('superseded_at')
-            ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
+            ->whereHas('programs', fn($p) => $p->whereIn('program', $myPrograms)->whereNotNull('distributed_at'))
             ->latest()
             ->get();
 
@@ -45,16 +45,16 @@ class TemplateController extends Controller
             ->orderByRaw('COALESCE(last_edited_at, created_at) DESC')
             ->get();
 
-        $libraryCourses = Course::where('program', $myProgram)->orderBy('code')->get();
+        $libraryCourses = Course::whereIn('program', $myPrograms)->orderBy('program')->orderBy('code')->get();
 
-        return view('faculty.my-template', compact('templates', 'copies', 'libraryCourses'));
+        return view('faculty.my-template', compact('templates', 'copies', 'libraryCourses', 'myPrograms'));
     }
 
     // Makes a new personal copy each time and opens it in the editor. The official template
     // stays as it is.
     public function useTemplate(TemplateDocument $template)
     {
-        abort_unless($template->isApproved() && $template->superseded_at === null && $template->isDistributedTo((string) auth()->user()->program), 403);
+        abort_unless($template->isApproved() && $template->superseded_at === null && collect(auth()->user()->programCodes())->contains(fn ($code) => $template->isDistributedTo($code)), 403);
         abort_unless($template->isEditableFile(), 422, 'Only Word, Excel and PowerPoint templates can be copied for editing.');
 
         if (!OnlyOffice::isConfigured()) {

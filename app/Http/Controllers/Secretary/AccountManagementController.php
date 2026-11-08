@@ -35,7 +35,7 @@ class AccountManagementController extends Controller
         }
 
         if ($request->filled('program')) {
-            $query->where('program', $request->program);
+            $query->inProgram($request->program);
         }
 
         if ($request->filled('academic_year')) {
@@ -56,11 +56,13 @@ class AccountManagementController extends Controller
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
-            'program'       => 'required|in:' . implode(',', Programs::codes()),
+            'programs'      => 'required|array|min:1',
+            'programs.*'    => 'in:' . implode(',', Programs::codes()),
             'academic_year' => 'required',
             'google_email'  => 'nullable|email|max:255',
-        ]);
+        ], [], ['programs' => 'program']);
 
+        $programs = array_values(array_unique($request->programs));
         $temporaryPassword = Str::password(12);
 
         $user = User::create([
@@ -71,10 +73,11 @@ class AccountManagementController extends Controller
             'google_email'         => $request->google_email,
             'password'             => Hash::make($temporaryPassword),
             'role'                 => 'faculty',
-            'program'              => $request->program,
+            'program'              => $programs[0],
             'academic_year'        => $request->academic_year,
             'must_change_password' => true,
         ]);
+        $user->syncPrograms($programs);
         AuditLog::record('Account Created', "Created faculty account for {$user->name} ({$user->email})");
 
         Mail::to($user->email)->send(new NewAccountCredentials($user, $temporaryPassword));
@@ -89,21 +92,22 @@ class AccountManagementController extends Controller
         $request->validate([
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
-            'program'       => 'required|in:' . implode(',', Programs::codes()),
+            'programs'      => 'required|array|min:1',
+            'programs.*'    => 'in:' . implode(',', Programs::codes()),
             'academic_year' => 'required',
             'google_email'  => 'nullable|email|max:255',
-        ]);
+        ], [], ['programs' => 'program']);
 
         $user->update([
             'name'          => trim($request->first_name . ' ' . $request->last_name),
             'first_name'    => $request->first_name,
             'last_name'     => $request->last_name,
             'google_email'  => $request->google_email,
-            'program'       => $request->program,
             'academic_year' => $request->academic_year,
         ]);
+        $programChange = $user->syncPrograms($request->programs);
 
-        AccountNotifier::sendDetailChanges($user);
+        AccountNotifier::sendDetailChanges($user, $programChange);
 
         return back()->with('success', 'Account updated successfully.');
     }

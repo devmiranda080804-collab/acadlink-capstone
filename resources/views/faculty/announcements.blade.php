@@ -167,7 +167,7 @@
         <div class="content">
             <div class="page-header">
                 <div class="page-title">Announcements</div>
-                <div class="page-sub">Announcements for the <strong>{{ auth()->user()->program }}</strong> program</div>
+                <div class="page-sub">Announcements for the <strong>{{ auth()->user()->programs_label }}</strong> program</div>
             </div>
 
             @php
