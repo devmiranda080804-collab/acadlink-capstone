@@ -144,7 +144,11 @@ class FileController extends Controller
         $s = Submission::with(['requirement', 'faculty'])->findOrFail($id);
         $allowed = $this->isStaff($user)
             || $s->faculty_id === $user->id
-            || ($user->role === 'program_head' && $s->requirement && $s->requirement->program === $user->program);
+            || ($user->role === 'program_head' && $s->requirement && $s->requirement->program === $user->program)
+            // Faculty teaching the same course see the file that covers it.
+            || ($user->role === 'faculty' && $s->course_id && $s->requirement
+                && \App\Models\ProgramAssignment::where('course_id', $s->course_id)->where('faculty_id', $user->id)
+                    ->where('school_year', $s->requirement->termSchoolYear())->where('semester', $s->requirement->termSemester())->exists());
 
         return [$s, $allowed, $s->requirement->title ?? 'Submission', $s->faculty->name ?? null, $s->submitted_at ?? $s->created_at];
     }

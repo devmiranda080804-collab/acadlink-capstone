@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Course;
 use App\Models\CourseMaterial;
 use App\Models\SharedResource;
-use App\Models\SystemDocument;
 use App\Support\FileLinks;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,34 +21,9 @@ class SharedLibraryController extends Controller
         $items = collect();
 
         // Every item carries a "folder" (group/key/label/icon) so the view can arrange the
-        // library into sections: Official Documents, Program with whole-program resources
-        // by category, and Courses with each course's materials and shared resources together.
+        // library into sections: one per program with whole-program resources by category,
+        // and Courses with each course's materials and shared resources together.
         // Official templates stay in Templates; faculty share their edited copies here.
-
-        // Documents the Admin or Secretary published in the System CMS
-        SystemDocument::with('creator')
-            ->where('is_published', true)
-            ->get()
-            ->each(function ($d) use (&$items) {
-                $items->push([
-                    'id'           => $d->id,
-                    'source'       => 'official',
-                    'title'        => $d->title,
-                    'type'         => 'Official Document',
-                    'shared_by'    => $d->creator->name ?? 'The college',
-                    'desc'         => $d->description ?? 'From the college',
-                    'file_type'    => $d->file_type,
-                    'file_size'    => $d->readable_size,
-                    'view_url'     => FileLinks::view('system', $d->id),
-                    'download_url' => FileLinks::download('system', $d->id),
-                    'date'         => $d->updated_at,
-                    'can_delete'   => false,
-                    'folder_group' => 'official',
-                    'folder_key'   => 'official-documents',
-                    'folder_label' => 'Official Documents',
-                    'folder_icon'  => '📑',
-                ]);
-            });
 
         // Course materials (own program) — one folder per actual course
         CourseMaterial::with(['course', 'uploader'])
@@ -125,9 +99,8 @@ class SharedLibraryController extends Controller
 
         $courses = Course::whereIn('program', $myPrograms)->orderBy('program')->orderBy('code')->get();
 
-        // From the College, then one section per program, then the course folders.
-        $sections = ['official' => 'From the College']
-            + collect($myPrograms)->mapWithKeys(fn ($code) => ['program-' . $code => 'Program — ' . $code])->all()
+        // One section per program, then the course folders.
+        $sections = collect($myPrograms)->mapWithKeys(fn ($code) => ['program-' . $code => 'Program — ' . $code])->all()
             + ['courses' => 'Courses'];
 
         return view('faculty.shared-library', compact('items', 'folders', 'myProgram', 'myPrograms', 'sections', 'recentItems', 'recentDays', 'courses'));

@@ -1,9 +1,7 @@
 <div class="lib-card" data-title="{{ strtolower($item['title']) }}" data-folder="{{ $item['folder_key'] }}">
     <div class="lib-card-top">
         <span class="lib-icon">@if($item['file_type'] == 'gdoc') 📑 @elseif($item['file_type'] == 'pdf') 📄 @elseif(in_array($item['file_type'], ['xls','xlsx'])) 📊 @elseif(in_array($item['file_type'], ['ppt','pptx'])) 📊 @else 📝 @endif</span>
-        @if($item['source'] == 'official')
-            <span class="source-badge source-official">Official</span>
-        @elseif($item['source'] == 'material')
+        @if($item['source'] == 'material')
             <span class="source-badge source-material">Material</span>
         @else
             <span class="source-badge source-shared">Shared</span>

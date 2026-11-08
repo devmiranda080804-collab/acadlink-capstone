@@ -119,71 +119,19 @@
             <div class="page-header">
                 <div>
                     <div class="page-title">System CMS</div>
-                    <div class="page-sub">Official documents and content of the whole system. Faculty keep their own files separately in their CMS.</div>
+                    <div class="page-sub">Template elements and site content of the whole system.</div>
                 </div>
-                <button type="button" class="btn-create" onclick="openModal('create-overlay')">+ New Document</button>
             </div>
 
             @if($isAdmin)
                 <div class="cms-tabs">
-                    <button type="button" class="cms-tab active" data-panel="panel-documents" onclick="showPanel(this)">Documents</button>
+                    <button type="button" class="cms-tab active" data-panel="panel-elements" onclick="showPanel(this)">Template Elements</button>
                     <button type="button" class="cms-tab" data-panel="panel-site" onclick="showPanel(this)">Site Content</button>
                 </div>
             @endif
 
-            @unless($editorReady)
-                <div class="alert-error">The document editor is not available right now. You can still upload and download files.</div>
-            @endunless
-
-            <div class="cms-panel active" id="panel-documents">
-                <div class="doc-grid">
-                    @forelse($documents as $document)
-                        <div class="doc-card">
-                            <div class="doc-top">
-                                <span class="doc-icon">{{ ['docx' => '📝', 'doc' => '📝', 'xlsx' => '📊', 'pptx' => '📽️'][$document->extension()] ?? '📄' }}</span>
-                                <div class="doc-top-right">
-                                    <span class="doc-badge {{ $document->is_published ? 'published' : '' }}">{{ $document->is_published ? 'Visible to all' : 'Hidden' }}</span>
-                                    <button type="button" class="icon-btn icon-btn-plain" title="Details" aria-label="Details" aria-expanded="false" data-url="{{ url($base . '/documents/' . $document->id) }}" data-title="{{ $document->title }}" data-description="{{ $document->description }}" onclick="openDetails(this)">@include('documents.partials.icon', ['name' => 'info'])</button>
-                                </div>
-                            </div>
-                            <div class="doc-title">{{ $document->title }}</div>
-                            @if($document->description)
-                                <div class="doc-desc">{{ $document->description }}</div>
-                            @endif
-                            <div class="doc-meta">
-                                {{ strtoupper($document->file_type) }} • {{ $document->readable_size }}<br>
-                                @if($document->last_edited_at)
-                                    Edited {{ $document->last_edited_at->diffForHumans() }}{{ $document->lastEditor ? ' by ' . $document->lastEditor->name : '' }}
-                                @else
-                                    Added by {{ $document->creator->name ?? 'a former user' }} • {{ $document->created_at->format('M j, Y') }}
-                                @endif
-                            </div>
-                            <div class="doc-actions">
-                                @if($editorReady)
-                                    <a class="btn-doc primary" href="{{ url($base . '/documents/' . $document->id . '/edit') }}">{{ $document->isEditableFile() ? 'Open & Edit' : 'Open' }}</a>
-                                @endif
-                                @if($editorReady && $document->canBeConverted())
-                                    <button type="button" class="btn-doc" data-url="{{ url($base . '/documents/' . $document->id . '/convert') }}" onclick="convertDocument(this)">Convert to Word</button>
-                                @endif
-                                <a class="icon-btn" href="{{ \App\Support\FileLinks::download('system', $document->id) }}" title="Download" aria-label="Download">@include('documents.partials.icon', ['name' => 'download'])</a>
-                                @if($document->isEditableFile())
-                                    <button type="button" class="icon-btn" title="Version history" aria-label="Version history" data-url="{{ url($base . '/documents/' . $document->id . '/versions') }}" data-title="{{ $document->title }}" onclick="openHistory(this)">@include('documents.partials.icon', ['name' => 'history'])</button>
-                                @endif
-                                <form method="POST" action="{{ url($base . '/documents/' . $document->id . '/publish') }}">
-                                    @csrf
-                                    <button type="submit" class="btn-doc" title="{{ $document->is_published ? 'Only the Admin and Secretary can open it' : 'Let all users open it' }}">{{ $document->is_published ? 'Hide' : 'Show to All' }}</button>
-                                </form>
-                                <form method="POST" action="{{ url($base . '/documents/' . $document->id) }}" data-confirm="Delete {{ $document->title }}? This can't be undone." data-confirm-title="Delete document?" data-confirm-button="Delete">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="icon-btn icon-btn-danger" title="Delete" aria-label="Delete">@include('documents.partials.icon', ['name' => 'trash'])</button>
-                                </form>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="empty-state">No system documents yet. Click "+ New Document" to upload or create one.</div>
-                    @endforelse
-                </div>
+            <div class="cms-panel active" id="panel-elements">
+                @include('system-cms.partials.template-elements')
             </div>
 
             @if($isAdmin)
@@ -231,44 +179,6 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="create-overlay">
-        <div class="modal-box">
-            <form method="POST" action="{{ url($base . '/documents') }}" enctype="multipart/form-data">
-                @csrf
-                <div class="modal-heading">New System Document</div>
-                <div class="mode-choice">
-                    <label id="mode-upload"><input type="radio" name="mode" value="upload" @checked(old('mode', 'upload') === 'upload') onchange="updateMode()">⬆ Upload a file</label>
-                    <label id="mode-blank"><input type="radio" name="mode" value="blank" @checked(old('mode') === 'blank') onchange="updateMode()">✚ Start a new one</label>
-                </div>
-                <div class="modal-field">
-                    <label for="new-title">Title *</label>
-                    <input type="text" id="new-title" name="title" maxlength="255" value="{{ old('title') }}" placeholder="e.g. Faculty Manual 2026" required>
-                </div>
-                <div class="modal-field">
-                    <label for="new-description">Description</label>
-                    <textarea id="new-description" name="description" rows="2" maxlength="1000">{{ old('description') }}</textarea>
-                </div>
-                <div class="modal-field" id="field-file">
-                    <label for="new-file">File *</label>
-                    <input type="file" id="new-file" name="file" accept=".{{ implode(',.', \App\Http\Controllers\SystemCmsController::UPLOAD_TYPES) }}">
-                    <div class="site-hint">Word, Excel, PowerPoint or PDF, max 20MB. PDF and .doc files open as view only.</div>
-                </div>
-                <div class="modal-field" id="field-blank">
-                    <label for="new-type">Type *</label>
-                    <select id="new-type" name="blank_type">
-                        @foreach(\App\Http\Controllers\SystemCmsController::BLANK_TYPES as $key => $label)
-                            <option value="{{ $key }}" @selected(old('blank_type') === $key)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="modal-buttons">
-                    <button type="button" class="btn-doc" onclick="closeModal('create-overlay')">Cancel</button>
-                    <button type="submit" class="btn-save">Create</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script>
         function openModal(id) { document.getElementById(id).classList.add('open'); }
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
@@ -281,25 +191,11 @@
             document.querySelectorAll('.cms-panel').forEach(function (p) { p.classList.toggle('active', p.id === tab.dataset.panel); });
         }
 
-        function updateMode() {
-            var upload = document.querySelector('input[name="mode"][value="upload"]').checked;
-            document.getElementById('mode-upload').classList.toggle('selected', upload);
-            document.getElementById('mode-blank').classList.toggle('selected', !upload);
-            document.getElementById('field-file').style.display = upload ? '' : 'none';
-            document.getElementById('field-blank').style.display = upload ? 'none' : '';
-            document.getElementById('new-file').required = upload;
-        }
-        updateMode();
-
-        @if($errors->hasAny(['title', 'file', 'blank_type', 'mode']) && old('mode'))
-            openModal('create-overlay');
-        @endif
         @if($isAdmin && session('site_saved'))
             showPanel(document.querySelector('.cms-tab[data-panel="panel-site"]'));
         @endif
     </script>
 
-@include('documents.partials.tools')
 
 <div id="logout-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center;">
         <div style="background:#fff;border-radius:10px;padding:24px 26px;width:360px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,0.25);font-family:Arial,sans-serif;">

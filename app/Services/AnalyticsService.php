@@ -41,9 +41,18 @@ class AnalyticsService
         $outstanding = [];
 
         foreach ($requirements as $req) {
-            $expectedCount = $facultyId ? 1 : $facultyCount($req->program);
-            $submittedIds = $req->submissions->pluck('faculty_id')->all();
-            $onTimeCount = $req->submissions->where('status', 'submitted')->count();
+            if ($req->per_course) {
+                $faculty = $facultyId ? User::find($facultyId) : null;
+                $courses = $req->courses($faculty);
+                $files = $req->submissions()->whereIn('course_id', $courses->pluck('id'))->get();
+                $expectedCount = $courses->count();
+                $submittedIds = $files->pluck('course_id')->unique()->all();
+                $onTimeCount = $files->where('status', 'submitted')->count();
+            } else {
+                $expectedCount = $facultyId ? 1 : $facultyCount($req->program);
+                $submittedIds = $req->submissions->pluck('faculty_id')->all();
+                $onTimeCount = $req->submissions->where('status', 'submitted')->count();
+            }
 
             $byType[$req->type] ??= ['expected' => 0, 'submitted' => 0, 'on_time' => 0];
             $byType[$req->type]['expected'] += $expectedCount;
@@ -54,7 +63,19 @@ class AnalyticsService
             $totalSubmitted += count($submittedIds);
             $totalOnTime += $onTimeCount;
 
-            if (!$facultyId) {
+            if (!$facultyId && $req->per_course) {
+                foreach ($courses->whereNotIn('id', $submittedIds) as $course) {
+                    $outstanding[] = [
+                        'faculty'     => $course->code . ' (' . \App\Models\ProgramAssignment::with('faculty')->where('course_id', $course->id)
+                            ->where('school_year', $req->termSchoolYear())->where('semester', $req->termSemester())->get()
+                            ->map(fn ($a) => $a->faculty?->name)->filter()->implode(', ') . ')',
+                        'requirement' => $req->title,
+                        'type'        => $req->type,
+                        'deadline'    => $req->deadline?->format('Y-m-d'),
+                        'is_overdue'  => $req->is_overdue,
+                    ];
+                }
+            } elseif (!$facultyId) {
                 $missingFaculty = User::where('role', 'faculty')->whereNull('archived_at')
                     ->inProgram($req->program)
                     ->whereNotIn('id', $submittedIds)

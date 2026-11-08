@@ -281,22 +281,10 @@
                                     <div>
                                         <div class="file-name">
                                             {{ $material->title }}
-                                            @if(array_key_exists($material->type, \App\Models\CourseMaterial::FILING_DOCUMENTS))
-                                                @if($material->is_validated)
-                                                    <span class="filing-badge validated" title="Checked and validated by {{ $material->checker?->name ?? 'the Secretary' }} on {{ $material->filing_checked_at?->format('M d, Y') }}">✓ Validated by Secretary</span>
-                                                @elseif($material->is_returned)
-                                                    <span class="filing-badge returned">Returned by Secretary</span>
-                                                @else
-                                                    <span class="filing-badge pending">Waiting for Secretary's check</span>
-                                                @endif
-                                            @endif
                                         </div>
                                         <div class="file-meta">
                                             {{ strtoupper($material->file_type) }} • {{ $material->version }} • {{ $material->readable_size }} • {{ $material->created_at->format('M d, Y') }}
                                         </div>
-                                        @if($material->is_returned)
-                                            <div class="filing-reason"><strong>{{ $material->checker?->name ?? 'Secretary' }}, {{ $material->filing_checked_at?->format('M d, Y') }}:</strong> {{ $material->filing_return_reason }}<br><em>Upload a corrected copy in this folder to replace it.</em></div>
-                                        @endif
                                     </div>
                                 </div>
                                 <div class="file-actions">

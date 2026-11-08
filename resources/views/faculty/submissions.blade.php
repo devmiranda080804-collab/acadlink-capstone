@@ -90,6 +90,17 @@
         .file-link:hover { text-decoration: underline; }
 
         .upload-form { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+        .course-row { border-top: 1px solid #f0f0f0; margin-top: 10px; padding-top: 10px; }
+        .course-row .upload-form { margin-top: 8px; }
+        .course-row-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+        .course-code { font-size: 12px; font-weight: 700; color: #0f2557; }
+        .course-title { font-size: 12px; color: #444; flex: 1; min-width: 0; }
+        .course-covered { color: #047857; font-weight: 600; }
+        .course-empty { font-size: 12px; color: #888; margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
+        .return-note { font-size: 11.5px; color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 7px 10px; margin-top: 6px; }
+        .filing-validated { background: #d1fae5; color: #065f46; }
+        .filing-returned { background: #fee2e2; color: #991b1b; }
+        .filing-missing { background: #f3f4f6; color: #6b7280; }
         .file-picker { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
         .file-picker input[type=file] { display: none; }
         .btn-choose { display: flex; align-items: center; gap: 5px; background: #fff; color: #333; border: 1px solid #d0d0d0; font-size: 11.5px; font-weight: 600; padding: 7px 12px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
@@ -239,11 +250,14 @@
                 @php
                     $daysLeft = $req['days_left'];
                     $sub = $req['submission'];
+                    $lateMine = $sub && $sub->status === 'late';
 
-                    if ($sub) {
+                    if ($req['returned'] > 0) {
+                        $cardClass = 'overdue'; $badgeClass = 'badge-overdue'; $badgeText = $req['returned'] . ' returned to you';
+                    } elseif ($req['done']) {
                         $cardClass = 'done';
-                        $badgeClass = $sub->status === 'late' ? 'badge-overdue' : 'badge-ok';
-                        $badgeText = $sub->status === 'late' ? 'Submitted Late' : 'Submitted';
+                        $badgeClass = $lateMine ? 'badge-overdue' : 'badge-ok';
+                        $badgeText = $lateMine ? 'Submitted Late' : ($req['per_course'] ? 'All courses submitted' : 'Submitted');
                     } elseif ($daysLeft < 0) {
                         $cardClass = 'overdue'; $badgeClass = 'badge-overdue'; $badgeText = abs($daysLeft) . ' day(s) overdue';
                     } elseif ($req['is_due_soon']) {
@@ -260,7 +274,7 @@
                         <div class="req-top">
                             <div>
                                 <div class="req-title"><span class="priority-badge priority-{{ $req['priority'] }}">{{ \App\Models\SubmissionRequirement::priorityLabel($req['priority']) }}</span>{{ $req['title'] }}</div>
-                                <div class="req-type">@if(count($myPrograms) > 1)<strong class="req-program">{{ $req['program'] }}</strong> · @endif{{ $req['type'] }} · Due {{ $req['deadline']->format('M d, Y') }}</div>
+                                <div class="req-type">@if(count($myPrograms) > 1)<strong class="req-program">{{ $req['program'] }}</strong> · @endif{{ $req['type'] }} · Due {{ $req['deadline']->format('M d, Y') }}@if($req['per_course']) · For each course you teach in {{ $req['term'] }}@endif</div>
                             </div>
                             <span class="req-deadline-badge {{ $badgeClass }}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -272,39 +286,54 @@
                             <div class="req-desc">{{ $req['description'] }}</div>
                         @endif
 
-                        @if($sub)
-                            <div class="my-status-row">
-                                <div class="my-status-info">
-                                    You submitted: <a class="file-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}" target="_blank">{{ $sub->file_name }}</a>
-                                    (<a class="file-link" href="{{ \App\Support\FileLinks::download('submission', $sub->id) }}">Download</a>)
-                                    <span class="my-status-badge status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
+                        @if($req['per_course'])
+                            @forelse($req['courses'] as $row)
+                                @php $cs = $row['submission']; $mine = $cs && $cs->faculty_id === auth()->id(); @endphp
+                                <div class="course-row">
+                                    <div class="course-row-head">
+                                        <span class="course-code">{{ $row['course']->code }}</span>
+                                        <span class="course-title">{{ $row['course']->title }}</span>
+                                        @if($cs)
+                                            @if($cs->is_validated)
+                                                <span class="my-status-badge filing-validated">Validated</span>
+                                            @elseif($cs->is_returned)
+                                                <span class="my-status-badge filing-returned">Returned</span>
+                                            @else
+                                                <span class="my-status-badge status-{{ $cs->status }}">{{ ucfirst($cs->status) }}</span>
+                                            @endif
+                                        @else
+                                            <span class="my-status-badge filing-missing">Not yet submitted</span>
+                                        @endif
+                                    </div>
+                                    @if($cs)
+                                        <div class="my-status-info">
+                                            {{ $mine ? 'You submitted' : 'Submitted by ' . ($cs->faculty->name ?? 'a former faculty member') }}
+                                            on {{ ($cs->submitted_at ?? $cs->created_at)->format('M d, Y') }}:
+                                            <a class="file-link" href="{{ \App\Support\FileLinks::view('submission', $cs->id) }}" target="_blank">{{ $cs->file_name }}</a>
+                                            @unless($mine)<span class="course-covered">· Enough for this course</span>@endunless
+                                        </div>
+                                        @if($cs->is_returned)
+                                            <div class="return-note"><strong>Returned by {{ $cs->checker->name ?? 'the Secretary' }}:</strong> {{ $cs->filing_return_reason }}</div>
+                                        @endif
+                                    @endif
+                                    @if(!$cs || $mine)
+                                        @include('faculty.partials.submission-upload', ['requirementId' => $req['id'], 'courseId' => $row['course']->id, 'label' => $cs ? 'Replace' : 'Submit'])
+                                    @endif
                                 </div>
-                            </div>
-                            <form class="upload-form" method="POST" action="{{ url('/faculty/submissions/' . $req['id']) }}" enctype="multipart/form-data">
-                                @csrf
-                                <div class="file-picker">
-                                    <button type="button" class="btn-choose" onclick="this.nextElementSibling.nextElementSibling.click()">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                        Choose File
-                                    </button>
-                                    <span class="file-picker-name">No file chosen</span>
-                                    <input type="file" name="file" accept=".pdf,.doc,.docx" required onchange="this.previousElementSibling.textContent = this.files[0] ? this.files[0].name : 'No file chosen'">
-                                </div>
-                                <button type="submit" class="btn-submit">Re-submit</button>
-                            </form>
+                            @empty
+                                <div class="course-empty">You have no assigned {{ $req['program'] }} courses in {{ $req['term'] }}, so there is nothing to submit here.</div>
+                            @endforelse
                         @else
-                            <form class="upload-form" method="POST" action="{{ url('/faculty/submissions/' . $req['id']) }}" enctype="multipart/form-data">
-                                @csrf
-                                <div class="file-picker">
-                                    <button type="button" class="btn-choose" onclick="this.nextElementSibling.nextElementSibling.click()">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                                        Choose File
-                                    </button>
-                                    <span class="file-picker-name">No file chosen</span>
-                                    <input type="file" name="file" accept=".pdf,.doc,.docx" required onchange="this.previousElementSibling.textContent = this.files[0] ? this.files[0].name : 'No file chosen'">
+                            @if($sub)
+                                <div class="my-status-row">
+                                    <div class="my-status-info">
+                                        You submitted: <a class="file-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}" target="_blank">{{ $sub->file_name }}</a>
+                                        (<a class="file-link" href="{{ \App\Support\FileLinks::download('submission', $sub->id) }}">Download</a>)
+                                        <span class="my-status-badge status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
+                                    </div>
                                 </div>
-                                <button type="submit" class="btn-submit">Submit</button>
-                            </form>
+                            @endif
+                            @include('faculty.partials.submission-upload', ['requirementId' => $req['id'], 'label' => $sub ? 'Re-submit' : 'Submit'])
                         @endif
                     </div>
                 </div>

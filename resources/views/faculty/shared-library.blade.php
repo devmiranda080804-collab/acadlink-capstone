@@ -77,7 +77,6 @@
         .lib-card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
         .lib-icon { font-size: 26px; line-height: 1; }
         .source-badge { font-size: 9.5px; font-weight: 700; padding: 3px 9px; border-radius: 10px; white-space: nowrap; }
-        .source-official { background: #dbeafe; color: #1e40af; }
         .source-material { background: #d1fae5; color: #065f46; }
         .source-shared { background: #ede9fe; color: #6d28d9; }
         .lib-title { font-size: 13.5px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }

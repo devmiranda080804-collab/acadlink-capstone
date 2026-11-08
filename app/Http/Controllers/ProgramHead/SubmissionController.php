@@ -15,7 +15,7 @@ class SubmissionController extends Controller
     {
         $myProgram = auth()->user()->program;
 
-        $requirements = SubmissionRequirement::with('submissions.faculty')
+        $requirements = SubmissionRequirement::with(['submissions.faculty', 'submissions.course'])
             ->where('program', $myProgram)
             ->orderByPriority()
             ->get();
@@ -25,6 +25,14 @@ class SubmissionController extends Controller
             ->inProgram($myProgram)
             ->whereNull('archived_at')
             ->count();
+
+        // A per-course requirement expects one file for each course taught in its term.
+        foreach ($requirements as $req) {
+            $req->setAttribute('expected', $req->per_course ? $req->courses()->count() : $facultyCount);
+            $req->setAttribute('submitted_count', $req->per_course
+                ? $req->submissions->whereNotNull('course_id')->unique('course_id')->count()
+                : $req->submissions->count());
+        }
 
         return view('program-head.submissions', compact('requirements', 'facultyCount', 'myProgram'));
     }
@@ -47,6 +55,9 @@ class SubmissionController extends Controller
             'title'       => $request->title,
             'description' => $request->description,
             'type'        => $request->type,
+            'per_course'  => $request->boolean('per_course'),
+            'school_year' => \App\Support\AcademicTerm::currentSchoolYear(),
+            'semester'    => \App\Support\AcademicTerm::currentSemester(),
             'priority'    => $request->priority,
             'deadline'    => $request->deadline,
         ]);
@@ -73,6 +84,10 @@ class SubmissionController extends Controller
         ]);
 
         $requirement->update($request->only(['title', 'description', 'type', 'priority', 'deadline']));
+        // Who submits what can only change before anything is submitted.
+        if (!$requirement->submissions()->exists()) {
+            $requirement->update(['per_course' => $request->boolean('per_course')]);
+        }
 
         return back()->with('success', 'Requirement updated.');
     }

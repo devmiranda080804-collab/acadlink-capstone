@@ -224,7 +224,7 @@
             @php
                 $overdueTotal = $requirements->filter(fn($r) => $r->days_left < 0)->count();
                 $soonTotal = $requirements->filter(fn($r) => $r->is_due_soon)->count();
-                $fullySubmittedTotal = $requirements->filter(fn($r) => $facultyCount > 0 && $r->submissions->count() >= $facultyCount)->count();
+                $fullySubmittedTotal = $requirements->filter(fn($r) => $r->expected > 0 && $r->submitted_count >= $r->expected)->count();
             @endphp
 
             <div class="stats-grid">
@@ -265,9 +265,9 @@
             @forelse($requirements as $req)
                 @php
                     $daysLeft = $req->days_left;
-                    $submittedCount = $req->submissions->count();
+                    $submittedCount = $req->submitted_count;
                     $lateCount = $req->submissions->where('status', 'late')->count();
-                    $pct = $facultyCount > 0 ? round(($submittedCount / $facultyCount) * 100) : 0;
+                    $pct = $req->expected > 0 ? round(min(1, $submittedCount / $req->expected) * 100) : 0;
 
                     if ($daysLeft < 0) { $cardClass = 'overdue'; $badgeClass = 'badge-overdue'; $badgeText = abs($daysLeft) . ' day(s) overdue'; }
                     elseif ($req->is_due_soon) { $cardClass = 'soon'; $badgeClass = 'badge-soon'; $badgeText = $daysLeft == 0 ? 'Due today' : $daysLeft . ' day(s) left'; }
@@ -281,7 +281,7 @@
                         <div class="req-top">
                             <div>
                                 <div class="req-title"><span class="priority-badge priority-{{ $req->priority }}">{{ \App\Models\SubmissionRequirement::priorityLabel($req->priority) }}</span>{{ $req->title }}</div>
-                                <div class="req-type">{{ \App\Models\SubmissionRequirement::typeLabel($req->type) }} · Due {{ $req->deadline->format('M d, Y') }}</div>
+                                <div class="req-type">{{ \App\Models\SubmissionRequirement::typeLabel($req->type) }} · Due {{ $req->deadline->format('M d, Y') }} · {{ $req->per_course ? 'For each course in ' . $req->termLabel() : 'One per faculty member' }}</div>
                             </div>
                             <span class="req-deadline-badge {{ $badgeClass }}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -295,7 +295,7 @@
 
                         <div class="req-progress">
                             <div class="progress-track"><div class="progress-fill" style="width: {{ $pct }}%;"></div></div>
-                            <span class="progress-text">{{ $submittedCount }} / {{ $facultyCount }} submitted{{ $lateCount > 0 ? " ({$lateCount} late)" : '' }}</span>
+                            <span class="progress-text">{{ $submittedCount }} / {{ $req->expected }} {{ $req->per_course ? 'courses' : '' }} submitted{{ $lateCount > 0 ? " ({$lateCount} late)" : '' }}</span>
                         </div>
 
                         <div class="req-actions">
@@ -307,7 +307,7 @@
                         <div class="submitters-list" id="submitters-{{ $req->id }}">
                             @forelse($req->submissions as $sub)
                                 <div class="submitter-row">
-                                    <span class="submitter-name">{{ $sub->faculty->name }}</span>
+                                    <span class="submitter-name">@if($sub->course)<strong>{{ $sub->course->code }}</strong> · @elseif($req->per_course)<em>No course chosen</em> · @endif{{ $sub->faculty->name ?? 'A former faculty member' }}</span>
                                     <div style="display:flex; align-items:center; gap:8px;">
                                         <a class="submitter-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}" target="_blank">View</a>
                                         <a class="submitter-link" href="{{ \App\Support\FileLinks::download('submission', $sub->id) }}">Download</a>
@@ -361,6 +361,15 @@
                         @endforeach
                     </select>
                     <div class="modal-hint">Urgent and Important requirements are listed first for faculty.</div>
+                </div>
+
+                <div class="modal-field">
+                    <input type="hidden" name="per_course" value="0">
+                    <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">
+                        <input type="checkbox" name="per_course" value="1" id="f-per-course" checked style="width:auto;margin:0;">
+                        Submit for each course
+                    </label>
+                    <div class="modal-hint" id="f-per-course-hint">Faculty submit one file for every course they teach this term, and it counts in the Secretary's Course Filing. Uncheck for something each faculty member submits once, like a clearance.</div>
                 </div>
 
                 <div class="modal-field">
@@ -457,6 +466,8 @@
             removeHiddenTypeOption();
             document.getElementById('f-type').selectedIndex = 0;
             document.getElementById('f-priority').value = 'standard';
+            document.getElementById('f-per-course').checked = true;
+            document.getElementById('f-per-course').disabled = false;
             document.getElementById('req-overlay').classList.add('open');
         }
 
@@ -483,6 +494,9 @@
             }
             typeSelect.value = req.type;
             document.getElementById('f-priority').value = req.priority || 'standard';
+            document.getElementById('f-per-course').checked = !!req.per_course;
+            // Who submits what can only change before anything is submitted.
+            document.getElementById('f-per-course').disabled = !!(req.submissions && req.submissions.length);
             document.getElementById('req-overlay').classList.add('open');
         }
 

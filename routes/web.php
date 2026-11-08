@@ -7,7 +7,6 @@ use App\Http\Controllers\ProgramHead\AccountManagementController as PHAccountMan
 use App\Http\Controllers\Secretary\AccountManagementController as SecAccountManagementController;
 use App\Http\Controllers\ChangePasswordController;
 use App\Http\Controllers\FileController;
-use App\Http\Controllers\ProgramHead\OfficialDocumentController;
 use App\Http\Controllers\OnlyOfficeController;
 use App\Http\Controllers\SystemCmsController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
@@ -199,14 +198,6 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
     Route::get('/settings', [AdminSettingsController::class, 'index']);
     Route::put('/settings', [AdminSettingsController::class, 'update']);
     Route::get('/system-cms', [SystemCmsController::class, 'index']);
-    Route::post('/system-cms/documents', [SystemCmsController::class, 'store']);
-    Route::get('/system-cms/documents/{document}/edit', [SystemCmsController::class, 'edit']);
-    Route::put('/system-cms/documents/{document}', [SystemCmsController::class, 'update']);
-    Route::post('/system-cms/documents/{document}/publish', [SystemCmsController::class, 'togglePublish']);
-    Route::get('/system-cms/documents/{document}/versions', [SystemCmsController::class, 'versions']);
-    Route::post('/system-cms/documents/{document}/versions/{version}/restore', [SystemCmsController::class, 'restoreVersion']);
-    Route::post('/system-cms/documents/{document}/convert', [SystemCmsController::class, 'convert']);
-    Route::delete('/system-cms/documents/{document}', [SystemCmsController::class, 'destroy']);
     Route::put('/system-cms/site', [SystemCmsController::class, 'updateSite']);
     Route::post('/template-types', [AdminTemplateTypeController::class, 'store']);
     Route::put('/template-types/{templateType}', [AdminTemplateTypeController::class, 'update']);
@@ -221,7 +212,8 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
 */
 
 Route::middleware('role:program_head')->prefix('program-head')->group(function () {
-    Route::get('/official-documents', [OfficialDocumentController::class, 'index']);
+    // Official documents are managed by the Admin/Dean in the System CMS.
+    Route::redirect('/official-documents', '/program-head/dashboard');
     Route::get('/dashboard', [PHDashboardController::class, 'index']);
     Route::get('/template-review', [TemplateReviewController::class, 'index']);
     Route::get('/course-oversight', [CourseOversightController::class, 'index']);
@@ -268,15 +260,8 @@ Route::middleware('role:program_head')->prefix('program-head')->group(function (
 */
 
 Route::middleware('role:secretary')->prefix('secretary')->group(function () {
-    Route::get('/system-cms', [SystemCmsController::class, 'index']);
-    Route::post('/system-cms/documents', [SystemCmsController::class, 'store']);
-    Route::get('/system-cms/documents/{document}/edit', [SystemCmsController::class, 'edit']);
-    Route::put('/system-cms/documents/{document}', [SystemCmsController::class, 'update']);
-    Route::post('/system-cms/documents/{document}/publish', [SystemCmsController::class, 'togglePublish']);
-    Route::get('/system-cms/documents/{document}/versions', [SystemCmsController::class, 'versions']);
-    Route::post('/system-cms/documents/{document}/versions/{version}/restore', [SystemCmsController::class, 'restoreVersion']);
-    Route::post('/system-cms/documents/{document}/convert', [SystemCmsController::class, 'convert']);
-    Route::delete('/system-cms/documents/{document}', [SystemCmsController::class, 'destroy']);
+    // The System CMS is the Admin/Dean's; the old address goes to the dashboard.
+    Route::redirect('/system-cms', '/secretary/dashboard');
     Route::post('/template-distribution/{template}/edit', [TemplateDistributionController::class, 'startEditing']);
     Route::get('/template-distribution/{template}/editor', [TemplateDistributionController::class, 'editor']);
     Route::post('/template-distribution/{template}/submit', [TemplateDistributionController::class, 'submitDraft']);
@@ -289,7 +274,7 @@ Route::middleware('role:secretary')->prefix('secretary')->group(function () {
     Route::post('/template-distribution/{template}/new-version', [TemplateDistributionController::class, 'newVersion']);
     Route::delete('/template-distribution/{template}', [TemplateDistributionController::class, 'destroy']);
     Route::get('/course-filing', [CourseFilingController::class, 'index']);
-    Route::post('/course-filing/materials/{material}/review', [CourseFilingController::class, 'review']);
+    Route::post('/course-filing/submissions/{submission}/review', [CourseFilingController::class, 'review']);
 
     // Account Management
     Route::get('/account-management', [SecAccountManagementController::class, 'index']);

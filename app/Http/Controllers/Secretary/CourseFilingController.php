@@ -5,26 +5,50 @@ namespace App\Http\Controllers\Secretary;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Course;
-use App\Models\CourseMaterial;
 use App\Models\CourseOutcome;
+use App\Models\ProgramAssignment;
+use App\Models\Submission;
+use App\Models\SubmissionRequirement;
+use App\Support\AcademicTerm;
 use App\Support\FileLinks;
 use Illuminate\Http\Request;
 
+// Course Filing: for each course taught in a term, the files faculty submitted for their
+// program's per-course requirements (Submissions and Deadline), and the Secretary's check.
+// The Program Head's files in Course Oversight are reference material and are not counted.
 class CourseFilingController extends Controller
 {
     public function index(Request $request)
     {
         $program = $request->get('program');
+        $schoolYear = $request->get('school_year', AcademicTerm::currentSchoolYear());
+        $semester = $request->get('semester', AcademicTerm::currentSemester());
+        $isCurrentTerm = $schoolYear === AcademicTerm::currentSchoolYear() && $semester === AcademicTerm::currentSemester();
 
-        $courses = Course::when($program, fn($q) => $q->where('program', $program))
+        // Courses with a faculty member assigned in the term.
+        $courseIds = ProgramAssignment::where('school_year', $schoolYear)->where('semester', $semester)->pluck('course_id');
+        $courses = Course::whereIn('id', $courseIds)
+            ->when($program, fn($q) => $q->where('program', $program))
             ->orderBy('program')
             ->curriculumOrder()
             ->get();
 
-        $materialsByCourse = CourseMaterial::whereIn('course_id', $courses->pluck('id'))
-            ->whereIn('type', array_keys(CourseMaterial::FILING_DOCUMENTS))
-            ->with(['uploader:id,name', 'checker:id,name'])
-            ->latest()
+        // The term's per-course requirements; older ones without a term follow the current term.
+        $requirementsByProgram = SubmissionRequirement::where('per_course', true)
+            ->whereIn('program', $courses->pluck('program')->unique())
+            ->where(function ($q) use ($schoolYear, $semester, $isCurrentTerm) {
+                $q->where(fn($t) => $t->where('school_year', $schoolYear)->where('semester', $semester));
+                if ($isCurrentTerm) {
+                    $q->orWhereNull('school_year');
+                }
+            })
+            ->orderBy('deadline')
+            ->get()
+            ->groupBy('program');
+
+        $submissionsByCourse = Submission::whereIn('requirement_id', $requirementsByProgram->flatten()->pluck('id'))
+            ->whereIn('course_id', $courses->pluck('id'))
+            ->with(['faculty:id,name', 'checker:id,name'])
             ->get()
             ->groupBy('course_id');
 
@@ -33,31 +57,32 @@ class CourseFilingController extends Controller
             ->get()
             ->groupBy('course_id');
 
-        $filing = $courses->map(function ($course) use ($materialsByCourse, $outcomesByCourse) {
-            $materials = $materialsByCourse->get($course->id, collect());
+        $filing = $courses->map(function ($course) use ($requirementsByProgram, $submissionsByCourse, $outcomesByCourse) {
+            $submissions = $submissionsByCourse->get($course->id, collect());
 
-            // Two columns per course: what was submitted (filed by the Program Head in
-            // Course Oversight) and what the Secretary has checked and validated.
+            // Two columns per course: what faculty submitted (Submission) and what the
+            // Secretary has checked and validated.
             $documents = [];
-            foreach (CourseMaterial::FILING_DOCUMENTS as $type => $label) {
-                $files = $materials->where('type', $type)->values();
+            foreach ($requirementsByProgram->get($course->program, collect()) as $requirement) {
+                $file = $submissions->firstWhere('requirement_id', $requirement->id);
                 $documents[] = [
-                    'type'   => $type,
-                    'label'  => $label,
-                    'status' => $this->documentStatus($files),
-                    'files'  => $files->map(fn($m) => [
-                        'id'            => $m->id,
-                        'title'         => $m->title,
-                        'version'       => $m->version,
-                        'file_type'     => strtoupper($m->file_type),
-                        'uploader'      => $m->uploader?->name ?? 'Unknown',
-                        'uploaded_at'   => $m->created_at->format('M d, Y'),
-                        'status'        => $m->filing_status ?? 'pending',
-                        'checker'       => $m->checker?->name,
-                        'checked_at'    => $m->filing_checked_at?->format('M d, Y g:i A'),
-                        'return_reason' => $m->filing_return_reason,
-                        'view_url'      => FileLinks::view('material', $m->id),
-                    ])->all(),
+                    'type'     => $requirement->id,
+                    'label'    => $requirement->title,
+                    'deadline' => $requirement->deadline->format('M d, Y'),
+                    'status'   => !$file ? 'missing' : ($file->filing_status ?? 'pending'),
+                    'files'    => $file ? [[
+                        'id'            => $file->id,
+                        'title'         => $file->file_name,
+                        'version'       => $file->status === 'late' ? 'Late' : 'On time',
+                        'file_type'     => strtoupper($file->file_type),
+                        'uploader'      => $file->faculty?->name ?? 'a former faculty member',
+                        'uploaded_at'   => ($file->submitted_at ?? $file->created_at)->format('M d, Y'),
+                        'status'        => $file->filing_status ?? 'pending',
+                        'checker'       => $file->checker?->name,
+                        'checked_at'    => $file->filing_checked_at?->format('M d, Y g:i A'),
+                        'return_reason' => $file->filing_return_reason,
+                        'view_url'      => FileLinks::view('submission', $file->id),
+                    ]] : [],
                 ];
             }
 
@@ -80,9 +105,9 @@ class CourseFilingController extends Controller
                 'documents'         => $documents,
                 'submitted'         => $submitted,
                 'validated'         => $validated,
-                'to_check'          => $materials->whereNull('filing_status')->count(),
+                'to_check'          => collect($documents)->where('status', 'pending')->count(),
                 'has_obe_alignment' => $hasObeAlignment,
-                // Complete only counts files the Secretary has validated, not just uploaded.
+                // Complete only counts files the Secretary has validated, not just submitted.
                 'completion_pct'    => round((($validated + ($hasObeAlignment ? 1 : 0)) / $needed) * 100),
             ];
         });
@@ -93,27 +118,30 @@ class CourseFilingController extends Controller
             'complete'  => $filing->where('completion_pct', 100)->count(),
         ];
 
-        return view('secretary.course-filing', compact('filing', 'program', 'totals'));
+        $schoolYears = collect(AcademicTerm::schoolYearOptions())
+            ->merge(ProgramAssignment::distinct()->pluck('school_year'))
+            ->push($schoolYear)->unique()->sort()->values();
+
+        return view('secretary.course-filing', compact('filing', 'program', 'totals', 'schoolYear', 'semester', 'schoolYears'));
     }
 
-    // Validate a file, return it to the uploader with a reason, or undo the check.
-    public function review(Request $request, CourseMaterial $material)
+    // Validate a file, return it to the faculty member with a reason, or undo the check.
+    public function review(Request $request, Submission $submission)
     {
-        abort_unless(array_key_exists($material->type, CourseMaterial::FILING_DOCUMENTS), 404);
+        abort_unless($submission->course_id && $submission->requirement?->per_course, 404);
 
         $data = $request->validate([
             'action' => 'required|in:validate,return,reset',
             'reason' => 'required_if:action,return|nullable|string|max:500',
         ], [
-            'reason.required_if' => 'Please write the reason for returning this file so the uploader knows what to fix.',
+            'reason.required_if' => 'Please write the reason for returning this file so the faculty member knows what to fix.',
         ]);
 
-        $course = $material->course;
-        $label = CourseMaterial::FILING_DOCUMENTS[$material->type];
-        $where = "{$label} \"{$material->title}\" of {$course->code}";
+        $course = $submission->course;
+        $where = "{$submission->requirement->title} \"{$submission->file_name}\" of {$course->code}";
 
         if ($data['action'] === 'reset') {
-            $material->update([
+            $submission->update([
                 'filing_status'        => null,
                 'filing_checked_by'    => null,
                 'filing_checked_at'    => null,
@@ -123,8 +151,8 @@ class CourseFilingController extends Controller
             $message = 'The file is back to "waiting for your check".';
         } else {
             $returned = $data['action'] === 'return';
-            $material->update([
-                'filing_status'        => $returned ? CourseMaterial::FILING_RETURNED : CourseMaterial::FILING_VALIDATED,
+            $submission->update([
+                'filing_status'        => $returned ? Submission::FILING_RETURNED : Submission::FILING_VALIDATED,
                 'filing_checked_by'    => auth()->id(),
                 'filing_checked_at'    => now(),
                 'filing_return_reason' => $returned ? trim($data['reason']) : null,
@@ -134,29 +162,10 @@ class CourseFilingController extends Controller
                 ($returned ? "Returned {$where}: " . trim($data['reason']) : "Checked and validated {$where}")
             );
             $message = $returned
-                ? "Returned to {$material->uploader?->name} with your reason."
+                ? "Returned to {$submission->faculty?->name} with your reason."
                 : 'Marked as checked and validated.';
         }
 
         return back()->with('success', $message)->with('open_course', $course->id);
-    }
-
-    // missing: nothing filed; returned: a file was sent back and nothing newer was filed
-    // yet; validated: every current file is validated; pending: still waiting to be checked.
-    protected function documentStatus($files): string
-    {
-        if ($files->isEmpty()) {
-            return 'missing';
-        }
-
-        // A returned file stops counting once a newer file of the same document is filed.
-        $current = $files->reject(fn($m) => $m->is_returned
-            && $files->contains(fn($other) => $other->created_at->gt($m->created_at)));
-
-        if ($current->contains(fn($m) => $m->is_returned)) {
-            return 'returned';
-        }
-
-        return $current->every(fn($m) => $m->is_validated) ? 'validated' : 'pending';
     }
 }

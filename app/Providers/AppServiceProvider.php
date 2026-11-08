@@ -65,6 +65,13 @@ class AppServiceProvider extends ServiceProvider
                 if ($role === 'faculty') {
                     $permissions['cms'] = false;
                 }
+                // The System CMS (template elements and site content) belongs to the Admin/Dean.
+                if ($role === 'secretary') {
+                    $permissions['system-cms'] = false;
+                }
+                if ($role === 'program_head') {
+                    $permissions['official-documents'] = false;
+                }
 
                 $view->with('navPermissions', $permissions);
                 $view->with('unreadAnnouncementsCount', Announcement::unreadCountFor(Auth::user()));

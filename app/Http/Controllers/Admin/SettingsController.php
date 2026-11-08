@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Setting;
-use App\Models\TemplateType;
 use App\Support\AcademicTerm;
 use App\Support\ExamPrintOptions;
 use App\Support\Signatories;
@@ -20,8 +19,6 @@ class SettingsController extends Controller
             'deanName'  => Setting::get(Signatories::DEAN_NAME),
             'deanTitle' => Setting::get(Signatories::DEAN_TITLE),
             'examPrint' => ExamPrintOptions::collegeDefaults(),
-            'templateTypes' => TemplateType::orderBy('id')->get(),
-            'templateTypeUsage' => TemplateType::usageCounts(),
             'term'      => [
                 'manual'      => AcademicTerm::isManual(),
                 'school_year' => Setting::get(AcademicTerm::SETTING_SCHOOL_YEAR) ?? AcademicTerm::currentSchoolYear(),

@@ -30,7 +30,7 @@ class SystemDocument extends Model
 
     public static function canManage(User $user): bool
     {
-        return in_array($user->role, ['admin', 'secretary'], true);
+        return $user->role === 'admin';
     }
 
     public function canView(User $user): bool

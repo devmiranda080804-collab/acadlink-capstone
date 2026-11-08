@@ -216,7 +216,7 @@
 
         <div class="content">
             <div class="page-title">Course Filing</div>
-            <div class="page-sub">Each course's files as filed by the Program Head (Submission), and whether you have checked and validated them (Checked and Validated)</div>
+            <div class="page-sub">For each course taught in {{ $semester }}, A.Y. {{ $schoolYear }}: the files faculty submitted for their program's per-course requirements in Submissions and Deadline (Submission), and whether you have checked and validated them (Checked and Validated)</div>
 
             <div class="summary-row">
                 <div class="summary-card">
@@ -234,7 +234,17 @@
             </div>
 
             <div class="filters-row">
-                <form method="GET">
+                <form method="GET" style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <select name="school_year" class="filter-select" onchange="this.form.submit()" aria-label="School year">
+                        @foreach($schoolYears as $sy)
+                            <option value="{{ $sy }}" @selected($sy === $schoolYear)>A.Y. {{ $sy }}</option>
+                        @endforeach
+                    </select>
+                    <select name="semester" class="filter-select" onchange="this.form.submit()" aria-label="Semester">
+                        @foreach(['First Semester', 'Second Semester', 'Summer'] as $sem)
+                            <option value="{{ $sem }}" @selected($sem === $semester)>{{ $sem }}</option>
+                        @endforeach
+                    </select>
                     <select name="program" class="filter-select" onchange="this.form.submit()">
                         <option value="">All Programs</option>
                         @foreach(\App\Support\Programs::options() as $code => $label)
@@ -251,9 +261,6 @@
                 </select>
             </div>
 
-            @php
-                $docCount = count(\App\Models\CourseMaterial::FILING_DOCUMENTS);
-            @endphp
             <div class="filing-panel">
                 <table class="filing-table">
                     <thead>
@@ -272,6 +279,7 @@
                         @forelse($filing as $row)
                             @php
                                 $pct = $row['completion_pct'];
+                                $docCount = count($row['documents']);
                                 $returnedDocs = collect($row['documents'])->where('status', 'returned')->count();
                             @endphp
                             <tr class="cf-row"
@@ -282,10 +290,10 @@
                                 <td>{{ $row['title'] }}</td>
                                 <td><span class="program-tag" title="{{ \App\Support\Programs::label($row['program']) }}">{{ $row['program'] }}</span></td>
                                 <td class="center col-split">
-                                    <div class="split-count">{{ $row['submitted'] }} <span>of {{ $docCount }} filed</span></div>
+                                    <div class="split-count">{{ $row['submitted'] }} <span>of {{ $docCount }} submitted</span></div>
                                     <div class="doc-dots">
                                         @foreach($row['documents'] as $doc)
-                                            <span class="doc-dot {{ $doc['status'] === 'missing' ? '' : 'filed' }}" title="{{ $doc['label'] }}: {{ $doc['status'] === 'missing' ? 'not filed yet' : 'filed' }}"></span>
+                                            <span class="doc-dot {{ $doc['status'] === 'missing' ? '' : 'filed' }}" title="{{ $doc['label'] }}: {{ $doc['status'] === 'missing' ? 'not submitted yet' : 'submitted' }}"></span>
                                         @endforeach
                                     </div>
                                 </td>
@@ -325,7 +333,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="empty-row">No courses found.</td></tr>
+                            <tr><td colspan="8" class="empty-row">No courses have a faculty member assigned in this term.</td></tr>
                         @endforelse
                         <tr id="cf-no-match" style="display:none;"><td colspan="8" class="empty-row">No courses match this filter.</td></tr>
                     </tbody>
@@ -348,7 +356,7 @@
                 <table class="cf-table">
                     <thead>
                         <tr>
-                            <th style="width:16%;">Document</th>
+                            <th style="width:16%;">Requirement</th>
                             <th class="col-split" style="width:42%;">Submission</th>
                             <th class="col-split" style="width:42%;">Checked and Validated</th>
                         </tr>
@@ -359,8 +367,8 @@
             <div class="cf-foot">
                 <span class="legend"><span class="doc-dot pending"></span> Waiting for your check</span>
                 <span class="legend"><span class="doc-dot validated"></span> Checked and validated</span>
-                <span class="legend"><span class="doc-dot returned"></span> Returned to the Program Head</span>
-                <span style="margin-left:auto;">A returned file is replaced when the Program Head files a new one in Course Oversight.</span>
+                <span class="legend"><span class="doc-dot returned"></span> Returned to the faculty member</span>
+                <span style="margin-left:auto;">A returned file is replaced when the faculty member submits a corrected one in Submissions and Deadline.</span>
             </div>
         </div>
     </div>
@@ -371,7 +379,7 @@
             <input type="hidden" name="action" value="return">
             <input type="hidden" name="material_id" id="cf-return-material" value="{{ old('material_id') }}">
             <h3 id="cf-return-title">Return file</h3>
-            <p>Return <strong id="cf-return-file"></strong> to <strong id="cf-return-to"></strong>. Tell them what to fix so they can file a corrected copy.</p>
+            <p>Return <strong id="cf-return-file"></strong> to <strong id="cf-return-to"></strong>. Tell them what to fix so they can submit a corrected copy.</p>
             <textarea name="reason" id="cf-return-reason" maxlength="500" placeholder="e.g. The syllabus is missing the grading system and the Week 10–18 topics." required>{{ old('reason') }}</textarea>
             @error('reason')<div class="field-error">{{ $message }}</div>@enderror
             <div class="row">
@@ -399,7 +407,7 @@
     <script>
         var CF_COURSES = @json($filing->keyBy('id'));
         var CF_CSRF = @json(csrf_token());
-        var CF_REVIEW_URL = @json(url('/secretary/course-filing/materials')) ;
+        var CF_REVIEW_URL = @json(url('/secretary/course-filing/submissions'));
 
         function cfEsc(s) {
             return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -444,18 +452,19 @@
             cfOpenCourse = courseId;
             document.getElementById('cf-review-title').textContent = c.code + ' — ' + c.title;
             document.getElementById('cf-review-sub').textContent = c.program + ' · ' + c.submitted + ' of ' + c.documents.length
-                + ' documents filed · ' + c.validated + ' of ' + c.documents.length + ' checked and validated';
+                + ' requirements submitted · ' + c.validated + ' of ' + c.documents.length + ' checked and validated';
 
             var html = '';
+            if (!c.documents.length) html = '<tr><td colspan="3" class="cf-none">The Program Head has no per-course requirements for ' + cfEsc(c.program) + ' in this term yet.</td></tr>';
             c.documents.forEach(function (d) {
                 var sub = '', chk = '';
                 if (!d.files.length) {
-                    sub = '<span class="cf-none">Not filed yet</span>';
+                    sub = '<span class="cf-none">Not submitted yet · due ' + cfEsc(d.deadline) + '</span>';
                     chk = '<span class="cf-none">—</span>';
                 } else {
                     d.files.forEach(function (f) {
                         sub += '<div class="cf-file"><div class="cf-file-name">' + cfEsc(f.title) + '</div>'
-                            + '<div class="cf-file-meta">' + cfEsc(f.file_type) + ' · ' + cfEsc(f.version) + ' · Filed by '
+                            + '<div class="cf-file-meta">' + cfEsc(f.file_type) + ' · ' + cfEsc(f.version) + ' · Submitted by '
                             + cfEsc(f.uploader) + ' on ' + cfEsc(f.uploaded_at)
                             + '<a href="' + cfEsc(f.view_url) + '" target="_blank">View</a></div></div>';
                         chk += '<div class="cf-check">' + cfCheckCell(f) + '</div>';

@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\FileVersion;
 use App\Models\Setting;
 use App\Models\SystemDocument;
+use App\Models\TemplateType;
 use App\Services\DocumentTools;
 use App\Services\OnlyOffice;
 use App\Support\SiteContent;
@@ -30,8 +31,8 @@ class SystemCmsController extends Controller
         return view('system-cms.index', [
             'base'        => $this->base(),
             'isAdmin'     => auth()->user()->role === 'admin',
-            'documents'   => SystemDocument::with(['creator', 'lastEditor'])->latest()->get(),
-            'editorReady' => OnlyOffice::isConfigured(),
+            'templateTypes' => TemplateType::orderBy('id')->get(),
+            'templateTypeUsage' => TemplateType::usageCounts(),
         ]);
     }
 
@@ -142,7 +143,7 @@ class SystemCmsController extends Controller
 
         AuditLog::record('System Document Updated', $document->title . ($document->is_published ? ' made visible to all' : ' hidden') . ' by ' . auth()->user()->name);
 
-        return back()->with('success', $document->is_published ? 'Now visible to all users.' : 'Hidden. Only the Admin and Secretary can open it now.');
+        return back()->with('success', $document->is_published ? 'Now visible to all users.' : 'Hidden. Only the Admin can open it now.');
     }
 
     public function destroy(SystemDocument $document)
@@ -207,6 +208,6 @@ class SystemCmsController extends Controller
 
     protected function base(): string
     {
-        return auth()->user()->role === 'admin' ? '/admin/system-cms' : '/secretary/system-cms';
+        return '/admin/system-cms';
     }
 }

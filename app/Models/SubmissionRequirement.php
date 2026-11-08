@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Support\AcademicTerm;
 use Illuminate\Database\Eloquent\Model;
 
 class SubmissionRequirement extends Model
 {
     protected $fillable = [
-        'created_by', 'program', 'title', 'description', 'type', 'priority', 'deadline',
+        'created_by', 'program', 'title', 'description', 'type', 'per_course', 'school_year', 'semester', 'priority', 'deadline',
     ];
 
     // Highest first — the order lists are sorted in.
@@ -41,8 +42,53 @@ class SubmissionRequirement extends Model
     }
 
     protected $casts = [
-        'deadline' => 'date',
+        'deadline'   => 'date',
+        'per_course' => 'boolean',
     ];
+
+    // The term the requirement belongs to. Older requirements have none and follow the current one.
+    public function termSchoolYear(): string
+    {
+        return $this->school_year ?: AcademicTerm::currentSchoolYear();
+    }
+
+    public function termSemester(): string
+    {
+        return $this->semester ?: AcademicTerm::currentSemester();
+    }
+
+    public function termLabel(): string
+    {
+        return $this->termSemester() . ', A.Y. ' . $this->termSchoolYear();
+    }
+
+    // The courses of this requirement's program that have a faculty member assigned in its
+    // term, or only $faculty's own courses. These are what a per-course requirement covers.
+    public function courses(?User $faculty = null)
+    {
+        $courseIds = ProgramAssignment::where('school_year', $this->termSchoolYear())
+            ->where('semester', $this->termSemester())
+            ->when($faculty, fn ($q) => $q->where('faculty_id', $faculty->id))
+            ->pluck('course_id');
+
+        return Course::whereIn('id', $courseIds)->where('program', $this->program)->orderBy('code')->get();
+    }
+
+    // Whether $faculty still has something to submit: a course of theirs with no file yet
+    // (anyone teaching it may submit), or their own file when it is one per faculty member.
+    public function isMissingFor(User $faculty): bool
+    {
+        if (!$this->per_course) {
+            return !$this->submissions()->where('faculty_id', $faculty->id)->exists();
+        }
+
+        $courseIds = $this->courses($faculty)->pluck('id');
+        if ($courseIds->isEmpty()) {
+            return false;
+        }
+
+        return $this->submissions()->whereIn('course_id', $courseIds)->distinct()->count('course_id') < $courseIds->count();
+    }
 
     public function creator()
     {
@@ -110,9 +156,7 @@ class SubmissionRequirement extends Model
                     return false;
                 }
 
-                return !Submission::where('requirement_id', $req->id)
-                    ->where('faculty_id', $user->id)
-                    ->exists();
+                return $req->isMissingFor($user);
             })
             ->count();
     }
