@@ -135,6 +135,10 @@
         .delete-target strong { color: #1a1a2e; }
 
         svg { display: inline-block; vertical-align: middle; }
+        .file-type-options { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+        .file-type-option { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; cursor: pointer; margin: 0; }
+        .file-type-option input { width: auto; margin: 0; }
+        .file-type-option span { color: #999; font-size: 11px; }
     </style>
 </head>
 <body>
@@ -195,6 +199,8 @@
             <span class="label">Current role</span>
             <div class="topnav-right">
                 <span class="role-badge">Program Head</span>
+                @include('partials.program-switcher')
+                @include('partials.notification-bell')
                 <div class="user-info">
                     <div class="user-text">
                         <div class="user-name">{{ auth()->user()->name }}</div>
@@ -281,7 +287,7 @@
                         <div class="req-top">
                             <div>
                                 <div class="req-title"><span class="priority-badge priority-{{ $req->priority }}">{{ \App\Models\SubmissionRequirement::priorityLabel($req->priority) }}</span>{{ $req->title }}</div>
-                                <div class="req-type">{{ \App\Models\SubmissionRequirement::typeLabel($req->type) }} · Due {{ $req->deadline->format('M d, Y') }} · {{ $req->per_course ? 'For each course in ' . $req->termLabel() : 'One per faculty member' }}</div>
+                                <div class="req-type">{{ \App\Models\SubmissionRequirement::typeLabel($req->type) }} · {{ $req->fileTypesLabel() }} · Due {{ $req->deadline->format('M d, Y') }} · {{ $req->per_course ? 'For each course in ' . $req->termLabel() : 'One per faculty member' }}</div>
                             </div>
                             <span class="req-deadline-badge {{ $badgeClass }}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -310,13 +316,23 @@
                                     <span class="submitter-name">@if($sub->course)<strong>{{ $sub->course->code }}</strong> · @elseif($req->per_course)<em>No course chosen</em> · @endif{{ $sub->faculty->name ?? 'A former faculty member' }}</span>
                                     <div style="display:flex; align-items:center; gap:8px;">
                                         <a class="submitter-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}" target="_blank">View</a>
-                                        <a class="submitter-link" href="{{ \App\Support\FileLinks::download('submission', $sub->id) }}">Download</a>
                                         <span class="submitter-status status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
                                     </div>
                                 </div>
                             @empty
-                                <div style="font-size:12px; color:#bbb;">No one has submitted yet.</div>
+                                @if($req->covered->isEmpty())
+                                    <div style="font-size:12px; color:#bbb;">No one has submitted yet.</div>
+                                @endif
                             @endforelse
+                            @foreach($req->covered as $sub)
+                                <div class="submitter-row">
+                                    <span class="submitter-name">{{ $sub->faculty->name }} <span style="color:#6b7280;font-size:11px;">· counted from {{ $sub->requirement->program }} – {{ $sub->requirement->title }} (teaches in more than one program)</span></span>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <a class="submitter-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}" target="_blank">View</a>
+                                        <span class="submitter-status status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 </div>
@@ -361,6 +377,19 @@
                         @endforeach
                     </select>
                     <div class="modal-hint">Urgent and Important requirements are listed first for faculty.</div>
+                </div>
+
+                <div class="modal-field">
+                    <label>File type <span style="color:#ef4444">*</span></label>
+                    <div class="file-type-options">
+                        @foreach(\App\Models\SubmissionRequirement::FILE_TYPES as $key => $ft)
+                            <label class="file-type-option">
+                                <input type="checkbox" name="file_types[]" value="{{ $key }}" class="f-file-type" @checked(in_array($key, \App\Models\SubmissionRequirement::DEFAULT_FILE_TYPES, true))>
+                                {{ $ft['label'] }} <span>({{ implode(', ', array_map(fn ($e) => '.' . $e, $ft['extensions'])) }})</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <div class="modal-hint">Faculty can only upload these types. PDF and Word are chosen by default.</div>
                 </div>
 
                 <div class="modal-field">
@@ -455,6 +484,18 @@
             document.querySelectorAll('#f-type option[data-hidden-type]').forEach((o) => o.remove());
         }
 
+        const FILE_TYPE_DEFAULTS = @json(\App\Models\SubmissionRequirement::DEFAULT_FILE_TYPES);
+        function setFileTypes(types) {
+            document.querySelectorAll('.f-file-type').forEach((box) => { box.checked = types.includes(box.value); });
+        }
+        // At least one type must stay chosen.
+        document.getElementById('req-form').addEventListener('submit', function (e) {
+            if (!document.querySelector('.f-file-type:checked')) {
+                e.preventDefault();
+                showToast('Choose at least one file type faculty can submit.', 'error');
+            }
+        });
+
         function openAddModal() {
             document.getElementById('modal-title').textContent = 'Add Requirement';
             document.getElementById('req-form').action = BASE;
@@ -468,6 +509,7 @@
             document.getElementById('f-priority').value = 'standard';
             document.getElementById('f-per-course').checked = true;
             document.getElementById('f-per-course').disabled = false;
+            setFileTypes(FILE_TYPE_DEFAULTS);
             document.getElementById('req-overlay').classList.add('open');
         }
 
@@ -495,6 +537,7 @@
             typeSelect.value = req.type;
             document.getElementById('f-priority').value = req.priority || 'standard';
             document.getElementById('f-per-course').checked = !!req.per_course;
+            setFileTypes(req.file_types && req.file_types.length ? req.file_types : FILE_TYPE_DEFAULTS);
             // Who submits what can only change before anything is submitted.
             document.getElementById('f-per-course').disabled = !!(req.submissions && req.submissions.length);
             document.getElementById('req-overlay').classList.add('open');

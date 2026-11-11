@@ -54,14 +54,12 @@ class AccountManagementController extends Controller
         return view('admin.account-management', compact('accounts', 'schoolYears', 'currentSchoolYear'));
     }
 
-    // Faculty can teach in several programs; a Program Head leads one; a Secretary serves all.
+    // Faculty and Program Heads can have several programs; a Secretary serves all.
     protected function programsFor(Request $request): array
     {
-        return match ($request->role) {
-            'faculty'      => array_values(array_unique((array) $request->programs)),
-            'program_head' => [$request->program],
-            default        => [],
-        };
+        return in_array($request->role, ['faculty', 'program_head'], true)
+            ? array_values(array_unique((array) $request->programs))
+            : [];
     }
 
     public function store(Request $request)
@@ -71,8 +69,7 @@ class AccountManagementController extends Controller
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
             'role'          => 'required|in:program_head,secretary,faculty',
-            'program'       => 'required_if:role,program_head|nullable|in:' . implode(',', Programs::codes()),
-            'programs'      => 'required_if:role,faculty|nullable|array',
+            'programs'      => 'required_if:role,faculty,program_head|nullable|array',
             'programs.*'    => 'in:' . implode(',', Programs::codes()),
             'academic_year' => 'required',
             'google_email'  => 'nullable|email|max:255',
@@ -110,8 +107,7 @@ class AccountManagementController extends Controller
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'role'          => 'required|in:program_head,secretary,faculty',
-            'program'       => 'required_if:role,program_head|nullable|in:' . implode(',', Programs::codes()),
-            'programs'      => 'required_if:role,faculty|nullable|array',
+            'programs'      => 'required_if:role,faculty,program_head|nullable|array',
             'programs.*'    => 'in:' . implode(',', Programs::codes()),
             'academic_year' => 'required',
             'google_email'  => 'nullable|email|max:255',

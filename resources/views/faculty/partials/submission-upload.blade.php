@@ -10,7 +10,7 @@
             Choose File
         </button>
         <span class="file-picker-name">No file chosen</span>
-        <input type="file" name="file" accept=".pdf,.doc,.docx" required onchange="this.previousElementSibling.textContent = this.files[0] ? this.files[0].name : 'No file chosen'">
+        <input type="file" name="file" accept="{{ $accept ?? '.pdf,.doc,.docx' }}" required onchange="this.previousElementSibling.textContent = this.files[0] ? this.files[0].name : 'No file chosen'">
     </div>
     <button type="submit" class="btn-submit">{{ $label }}</button>
 </form>

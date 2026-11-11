@@ -144,7 +144,11 @@ class FileController extends Controller
         $s = Submission::with(['requirement', 'faculty'])->findOrFail($id);
         $allowed = $this->isStaff($user)
             || $s->faculty_id === $user->id
-            || ($user->role === 'program_head' && $s->requirement && $s->requirement->program === $user->program)
+            || ($user->role === 'program_head' && $s->requirement && $user->belongsToProgram($s->requirement->program))
+            // A shared faculty member's file counts in each of their programs, so those
+            // programs' heads may open it too (panel comment #27).
+            || ($user->role === 'program_head' && $s->requirement && $s->faculty
+                && $s->requirement->counterparts()->contains(fn ($r) => $user->belongsToProgram($r->program) && $s->faculty->belongsToProgram($r->program)))
             // Faculty teaching the same course see the file that covers it.
             || ($user->role === 'faculty' && $s->course_id && $s->requirement
                 && \App\Models\ProgramAssignment::where('course_id', $s->course_id)->where('faculty_id', $user->id)

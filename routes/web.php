@@ -9,6 +9,7 @@ use App\Http\Controllers\ChangePasswordController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\OnlyOfficeController;
 use App\Http\Controllers\SystemCmsController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\TemplateTypeController as AdminTemplateTypeController;
 use App\Http\Controllers\ForgotPasswordController;
@@ -79,6 +80,12 @@ Route::whereIn('source', ['modules', 'system-documents', 'templates'])->whereNum
 // Images on the login page, shown before anyone has signed in.
 Route::get('/site-content/{key}', [SystemCmsController::class, 'image']);
 
+// The bell at the top of every page.
+Route::middleware('auth')->group(function () {
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll']);
+    Route::get('/notifications/{id}', [NotificationController::class, 'open']);
+});
+
 Route::middleware('auth')->prefix('files')->whereIn('source', ['template', 'material', 'topic', 'shared', 'repository', 'submission', 'module', 'system', 'version'])->group(function () {
     Route::get('/{source}/{id}', [FileController::class, 'show'])->whereNumber('id');
     Route::get('/{source}/{id}/raw', [FileController::class, 'raw'])->whereNumber('id');
@@ -111,12 +118,19 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::post('/exam-generator/{exam}/finalize', [ExamGeneratorController::class, 'finalize']);
     Route::get('/exam-generator/{exam}/download', [ExamGeneratorController::class, 'download']);
     Route::get('/exam-generator/{exam}/answer-key', [ExamGeneratorController::class, 'answerKey']);
+    Route::post('/exam-generator/{exam}/print-options', [ExamGeneratorController::class, 'savePrintOptions']);
+    Route::get('/exam-generator/{exam}/preview', [ExamGeneratorController::class, 'preview']);
+    Route::get('/exam-generator/{exam}/preview/file', [ExamGeneratorController::class, 'previewFile']);
     Route::delete('/exam-generator/{exam}', [ExamGeneratorController::class, 'destroy']);
     Route::get('/shared-library', [SharedLibraryController::class, 'index']);
     Route::post('/shared-library', [SharedLibraryController::class, 'store']);
     Route::delete('/shared-library/{resource}', [SharedLibraryController::class, 'destroy']);
+    Route::get('/shared-library/{resource}/edit', [SharedLibraryController::class, 'edit']);
+    Route::get('/shared-library/{resource}/versions', [SharedLibraryController::class, 'versions']);
+    Route::post('/shared-library/{resource}/versions/{version}/restore', [SharedLibraryController::class, 'restoreVersion']);
     Route::get('/course-coordination', [CourseCoordinationController::class, 'index']);
     Route::post('/course-coordination/course-topics', [CourseCoordinationController::class, 'storeCourseTopic']);
+    Route::post('/course-coordination/module-key-points', [CourseCoordinationController::class, 'suggestKeyPoints']);
     Route::post('/course-coordination/course-topics/{courseTopic}', [CourseCoordinationController::class, 'updateCourseTopic']);
     Route::delete('/course-coordination/course-topics/{courseTopic}', [CourseCoordinationController::class, 'destroyCourseTopic']);
     Route::post('/course-coordination/materials', [CourseCoordinationController::class, 'storeMaterial']);
@@ -176,6 +190,9 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
     Route::post('/template-approvals/{template}/send', [TemplateApprovalController::class, 'send']);
     Route::post('/template-approvals/{template}/return', [TemplateApprovalController::class, 'returnToSecretary']);
     Route::get('/template-approvals/{template}/versions', [TemplateApprovalController::class, 'versions']);
+    Route::get('/template-approvals/{template}/review', [TemplateApprovalController::class, 'review']);
+    Route::post('/template-approvals/{template}/prepare', [TemplateApprovalController::class, 'prepare']);
+    Route::get('/template-approvals/{template}/status', [TemplateApprovalController::class, 'saveStatus']);
     Route::delete('/template-approvals/{template}', [TemplateApprovalController::class, 'destroy']);
 
     Route::get('/audit-logs', [AuditLogController::class, 'index']);
@@ -211,7 +228,13 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('role:program_head')->prefix('program-head')->group(function () {
+Route::middleware(['role:program_head', \App\Http\Middleware\UseActiveProgram::class])->prefix('program-head')->group(function () {
+    Route::post('/active-program', function (\Illuminate\Http\Request $request) {
+        abort_unless(in_array($request->program, auth()->user()->programCodes(), true), 403);
+        $request->session()->put(\App\Http\Middleware\UseActiveProgram::SESSION_KEY, $request->program);
+
+        return back()->with('success', 'Now showing ' . $request->program . '.');
+    });
     // Official documents are managed by the Admin/Dean in the System CMS.
     Route::redirect('/official-documents', '/program-head/dashboard');
     Route::get('/dashboard', [PHDashboardController::class, 'index']);

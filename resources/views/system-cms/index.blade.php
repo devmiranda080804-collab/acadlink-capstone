@@ -101,6 +101,7 @@
             <span class="label">Current role</span>
             <div class="topnav-right">
                 <span class="role-badge">{{ $isAdmin ? 'Admin/Dean' : 'Secretary' }}</span>
+                @include('partials.notification-bell')
                 <div class="user-info">
                     <div class="user-text">
                         <div class="user-name">{{ auth()->user()->name }}</div>

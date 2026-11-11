@@ -55,22 +55,31 @@ class ProgramAssignmentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'course_id'   => 'required|exists:courses,id',
-            'faculty_id'  => 'required|exists:users,id',
-            'school_year' => 'required|string',
-            'semester'    => 'required|string',
-        ]);
+            'course_id'     => 'required|exists:courses,id',
+            'faculty_ids'   => 'required|array|min:1',
+            'faculty_ids.*' => 'integer|exists:users,id',
+            'school_year'   => 'required|string',
+            'semester'      => 'required|string',
+        ], ['faculty_ids.required' => 'Choose at least one faculty member.']);
 
-        ProgramAssignment::firstOrCreate([
-            'course_id'   => $request->course_id,
-            'faculty_id'  => $request->faculty_id,
-            'school_year' => $request->school_year,
-            'semester'    => $request->semester,
-        ], [
-            'assigned_by' => auth()->id(),
-        ]);
+        $course = Course::findOrFail($request->course_id);
+        // Only faculty of the course's program, as the form shows.
+        $faculty = User::whereIn('id', $request->faculty_ids)->where('role', 'faculty')->inProgram($course->program)->get();
+        abort_if($faculty->count() !== count(array_unique($request->faculty_ids)), 422, 'Only faculty of ' . $course->program . ' can be assigned to ' . $course->code . '.');
 
-        return back()->with('success', 'Faculty assigned to course.');
+        $added = 0;
+        foreach ($faculty as $member) {
+            $added += ProgramAssignment::firstOrCreate([
+                'course_id'   => $course->id,
+                'faculty_id'  => $member->id,
+                'school_year' => $request->school_year,
+                'semester'    => $request->semester,
+            ], [
+                'assigned_by' => auth()->id(),
+            ])->wasRecentlyCreated ? 1 : 0;
+        }
+
+        return back()->with('success', $added . ' faculty ' . ($added === 1 ? 'member' : 'members') . ' assigned to ' . $course->code . '.');
     }
 
     public function destroy(ProgramAssignment $assignment)

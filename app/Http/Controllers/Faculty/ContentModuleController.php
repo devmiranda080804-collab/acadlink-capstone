@@ -148,8 +148,12 @@ class ContentModuleController extends Controller
         $entry = SharedResource::where('source_module_id', $module->id)->where('shared_by', auth()->id())->first();
         $updating = (bool) $entry;
         $oldPath = $entry?->file_path;
+        // Others may have edited the shared file; their version stays in its history.
+        if ($entry && $entry->file_path && Storage::disk('public')->exists($entry->file_path)) {
+            $entry->keepCurrentVersion();
+        }
 
-        SharedResource::updateOrCreate(
+        $shared = SharedResource::updateOrCreate(
             ['source_module_id' => $module->id, 'shared_by' => auth()->id()],
             [
                 'program'     => $target['program'],
@@ -163,6 +167,8 @@ class ContentModuleController extends Controller
                 'file_size'   => Storage::disk('public')->size($path),
             ]
         );
+        // Open editors must not keep the replaced file.
+        $shared->forceFill(['document_key' => null])->save();
 
         if ($oldPath) {
             Storage::disk('public')->delete($oldPath);

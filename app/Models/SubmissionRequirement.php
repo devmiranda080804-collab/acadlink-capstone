@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class SubmissionRequirement extends Model
 {
     protected $fillable = [
-        'created_by', 'program', 'title', 'description', 'type', 'per_course', 'school_year', 'semester', 'priority', 'deadline',
+        'created_by', 'program', 'title', 'description', 'type', 'file_types', 'per_course', 'school_year', 'semester', 'priority', 'deadline',
     ];
 
     // Highest first — the order lists are sorted in.
@@ -44,7 +44,47 @@ class SubmissionRequirement extends Model
     protected $casts = [
         'deadline'   => 'date',
         'per_course' => 'boolean',
+        'file_types' => 'array',
     ];
+
+    // File types the Program Head can accept for a requirement.
+    const FILE_TYPES = [
+        'pdf'        => ['label' => 'PDF',        'extensions' => ['pdf']],
+        'word'       => ['label' => 'Word',       'extensions' => ['doc', 'docx']],
+        'excel'      => ['label' => 'Excel',      'extensions' => ['xls', 'xlsx']],
+        'powerpoint' => ['label' => 'PowerPoint', 'extensions' => ['ppt', 'pptx']],
+        'image'      => ['label' => 'Image',      'extensions' => ['jpg', 'jpeg', 'png']],
+    ];
+
+    // Used when none is chosen, and by every requirement made before the choice existed.
+    const DEFAULT_FILE_TYPES = ['pdf', 'word'];
+
+    public function allowedFileTypes(): array
+    {
+        $types = array_values(array_intersect(array_keys(self::FILE_TYPES), (array) $this->file_types));
+
+        return $types ?: self::DEFAULT_FILE_TYPES;
+    }
+
+    public function allowedExtensions(): array
+    {
+        return array_merge(...array_map(fn ($t) => self::FILE_TYPES[$t]['extensions'], $this->allowedFileTypes()));
+    }
+
+    // "PDF or Word", "PDF, Word or Excel".
+    public function fileTypesLabel(): string
+    {
+        $labels = array_map(fn ($t) => self::FILE_TYPES[$t]['label'], $this->allowedFileTypes());
+        $last = array_pop($labels);
+
+        return $labels ? implode(', ', $labels) . ' or ' . $last : $last;
+    }
+
+    // For the file picker: ".pdf,.doc,.docx".
+    public function acceptAttribute(): string
+    {
+        return implode(',', array_map(fn ($e) => '.' . $e, $this->allowedExtensions()));
+    }
 
     // The term the requirement belongs to. Older requirements have none and follow the current one.
     public function termSchoolYear(): string
@@ -79,7 +119,7 @@ class SubmissionRequirement extends Model
     public function isMissingFor(User $faculty): bool
     {
         if (!$this->per_course) {
-            return !$this->submissions()->where('faculty_id', $faculty->id)->exists();
+            return !$this->groupSubmissionFor($faculty);
         }
 
         $courseIds = $this->courses($faculty)->pluck('id');
@@ -88,6 +128,66 @@ class SubmissionRequirement extends Model
         }
 
         return $this->submissions()->whereIn('course_id', $courseIds)->distinct()->count('course_id') < $courseIds->count();
+    }
+
+    // Group count for faculty shared by several programs (panel comment #27): the same kind
+    // of requirement, for the same term, in the faculty member's other programs. One file
+    // sent to any of them counts for all, so a shared faculty member submits once.
+    // Per-course requirements are left out: each course already belongs to one program.
+    public function counterparts()
+    {
+        if ($this->per_course || $this->type === 'other') {
+            return collect();
+        }
+
+        return static::where('id', '!=', $this->id)
+            ->where('program', '!=', $this->program)
+            ->where('type', $this->type)
+            ->where('per_course', false)
+            ->get()
+            ->filter(fn ($other) => $other->termLabel() === $this->termLabel())
+            ->values();
+    }
+
+    // The file that counts for $faculty here: their own, or the one they sent for the same
+    // kind of requirement in another of their programs.
+    public function groupSubmissionFor(User $faculty): ?Submission
+    {
+        $own = $this->relationLoaded('submissions')
+            ? $this->submissions->firstWhere('faculty_id', $faculty->id)
+            : $this->submissions()->where('faculty_id', $faculty->id)->first();
+        if ($own) {
+            return $own;
+        }
+
+        $ids = $this->counterparts()->whereIn('program', $faculty->programCodes())->pluck('id');
+
+        return $ids->isEmpty() ? null : Submission::with('requirement')
+            ->whereIn('requirement_id', $ids)
+            ->where('faculty_id', $faculty->id)
+            ->latest('id')
+            ->first();
+    }
+
+    // Files from other programs that count here, keyed by faculty id: shared faculty of this
+    // program who submitted the same kind of requirement elsewhere but not here.
+    public function coveringSubmissions()
+    {
+        $ids = $this->counterparts()->pluck('id');
+        if ($ids->isEmpty()) {
+            return collect();
+        }
+
+        $ownFaculty = $this->submissions()->pluck('faculty_id')->all();
+
+        return Submission::with(['requirement', 'faculty'])
+            ->whereIn('requirement_id', $ids)
+            ->whereNotIn('faculty_id', $ownFaculty)
+            ->latest('id')
+            ->get()
+            ->filter(fn ($s) => $s->faculty && !$s->faculty->archived_at && $s->faculty->role === 'faculty' && $s->faculty->belongsToProgram($this->program))
+            ->unique('faculty_id')
+            ->keyBy('faculty_id');
     }
 
     public function creator()

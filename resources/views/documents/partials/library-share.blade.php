@@ -78,7 +78,7 @@
         document.getElementById('library-close').textContent = 'Cancel';
         document.getElementById('library-submit').textContent = entry ? 'Update in Library' : 'Share';
         document.getElementById('library-note').textContent = entry
-            ? 'This document is already in the Shared Library. Your latest version will replace the shared copy.'
+            ? 'This document is already in the Shared Library. Your latest version will replace the shared copy, including changes others made there; the earlier copy stays in its version history.'
             : 'Faculty in the program you choose can view and download a copy of your latest version. Your own document stays private and only you can edit it.';
         document.getElementById('library-title').value = entry ? entry.title : button.dataset.title;
         document.getElementById('library-description').value = entry ? (entry.description || '') : '';

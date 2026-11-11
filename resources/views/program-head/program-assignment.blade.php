@@ -143,6 +143,8 @@
             <span class="label">Current role</span>
             <div class="topnav-right">
                 <span class="role-badge">Program Head</span>
+                @include('partials.program-switcher')
+                @include('partials.notification-bell')
                 <div class="user-info">
                     <div class="user-text">
                         <div class="user-name">{{ auth()->user()->name }}</div>
@@ -257,13 +259,8 @@
                 <div class="modal-sub" id="modal-course-label">—</div>
 
                 <div class="modal-field">
-                    <label>Faculty <span style="color:#ef4444">*</span></label>
-                    <select name="faculty_id" id="f-faculty-select" required>
-                        <option value="">Select faculty...</option>
-                        @foreach($facultyList as $f)
-                            <option value="{{ $f->id }}" data-name="{{ $f->name }}">{{ $f->name }}</option>
-                        @endforeach
-                    </select>
+                    <label>Faculty <span style="color:#ef4444">*</span> <span style="font-weight:400;color:#888;">— tick everyone teaching this course</span></label>
+                    @include('partials.assign-faculty-list', ['facultyList' => $facultyList])
                 </div>
 
                 <div class="modal-actions">
@@ -279,16 +276,7 @@
             document.getElementById('f-course-id').value = courseId;
             document.getElementById('modal-course-label').textContent = 'Course: ' + courseCode + ' — ' + '{{ $schoolYear }} · {{ $semester }}';
 
-            var assignedSet = (assignedFacultyIds || []).map(String);
-            var select = document.getElementById('f-faculty-select');
-            select.value = '';
-            Array.from(select.options).forEach(function(opt) {
-                if (!opt.value) return;
-
-                var already = assignedSet.indexOf(opt.value) !== -1;
-                opt.disabled = already;
-                opt.textContent = (already ? '✓ ' : '') + opt.dataset.name + (already ? ' — Already assigned' : '');
-            });
+            resetAssignFaculty(assignedFacultyIds);
 
             document.getElementById('assign-overlay').classList.add('open');
         }

@@ -207,6 +207,7 @@
             <span class="label">Current role</span>
             <div class="topnav-right">
                 <span class="role-badge">Admin/Dean</span>
+                @include('partials.notification-bell')
                 <div class="user-info">
                     <div class="user-text">
                         <div class="user-name">{{ auth()->user()->name }}</div>
@@ -411,15 +412,6 @@
                         <label>Programs <span style="color:#ef4444">*</span></label>
                         @include('partials.program-checkboxes', ['id' => 'f-programs'])
                     </div>
-                    <div class="modal-field" id="program-field-wrap">
-                        <label>Program <span style="color:#ef4444">*</span></label>
-                        <select id="f-program" name="program">
-                            <option value="" disabled selected>Select program</option>
-                            @foreach(\App\Support\Programs::options() as $code => $label)
-                                <option value="{{ $code }}">{{ $code }} — {{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
                     <div class="modal-field" id="year-field-wrap">
                         <label>Academic Year <span style="color:#ef4444">*</span></label>
                         <select id="f-year" name="academic_year">
@@ -468,17 +460,11 @@
 
     <script>
         function toggleProgramField(role) {
-            var programWrap = document.getElementById('program-field-wrap');
-            var programsWrap = document.getElementById('programs-field-wrap');
-            var yearWrap = document.getElementById('year-field-wrap');
-            var select = document.getElementById('f-program');
-
-            // Faculty can teach in several programs; a Program Head leads one; a Secretary serves all.
-            programsWrap.style.display = role === 'faculty' ? '' : 'none';
-            programWrap.style.display = role === 'program_head' || role === '' ? '' : 'none';
-            yearWrap.style.gridColumn = role === 'program_head' || role === '' ? '' : '1 / -1';
-            if (role !== 'program_head') select.value = '';
-            if (role !== 'faculty') setProgramChecks([]);
+            var withPrograms = role === 'faculty' || role === 'program_head';
+            // Faculty and Program Heads can have several programs; a Secretary serves all.
+            document.getElementById('programs-field-wrap').style.display = withPrograms ? '' : 'none';
+            document.getElementById('year-field-wrap').style.gridColumn = '1 / -1';
+            if (!withPrograms) setProgramChecks([]);
         }
 
         function setProgramChecks(codes) {
@@ -491,8 +477,7 @@
             var role = document.getElementById('f-role').value;
             var error = document.getElementById('modal-error');
             var message = '';
-            if (role === 'faculty' && !document.querySelector('#f-programs input:checked')) message = 'Choose at least one program.';
-            if (role === 'program_head' && !document.getElementById('f-program').value) message = 'Choose a program.';
+            if ((role === 'faculty' || role === 'program_head') && !document.querySelector('#f-programs input:checked')) message = 'Choose at least one program.';
             if (message) {
                 e.preventDefault();
                 error.textContent = message;
@@ -519,7 +504,6 @@
                 document.getElementById(id).value = '';
             });
             document.getElementById('f-role').selectedIndex = 0;
-            document.getElementById('f-program').selectedIndex = 0;
             document.getElementById('f-year').value = @json($currentSchoolYear);
             document.getElementById('modal-error').style.display = 'none';
             toggleProgramField('');
@@ -544,8 +528,7 @@
             document.getElementById('f-role').value = role;
             toggleProgramField(role);
             var codes = program ? program.split(',') : [];
-            if (role === 'faculty') setProgramChecks(codes);
-            if (role === 'program_head') document.getElementById('f-program').value = codes[0] || '';
+            if (role === 'faculty' || role === 'program_head') setProgramChecks(codes);
             document.getElementById('f-year').value = year;
             document.getElementById('f-google-email').value = googleEmail || '';
             toggleProgramField(role);

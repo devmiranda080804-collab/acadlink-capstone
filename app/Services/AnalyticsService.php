@@ -50,8 +50,13 @@ class AnalyticsService
                 $onTimeCount = $files->where('status', 'submitted')->count();
             } else {
                 $expectedCount = $facultyId ? 1 : $facultyCount($req->program);
-                $submittedIds = $req->submissions->pluck('faculty_id')->all();
-                $onTimeCount = $req->submissions->where('status', 'submitted')->count();
+                // Shared faculty count once for the group: their file for the same kind of
+                // requirement in another of their programs counts here too (comment #27).
+                $covered = $facultyId
+                    ? ($req->submissions->isEmpty() && ($faculty = User::find($facultyId)) && ($c = $req->groupSubmissionFor($faculty)) ? collect([$c]) : collect())
+                    : $req->coveringSubmissions()->values();
+                $submittedIds = $req->submissions->pluck('faculty_id')->merge($covered->pluck('faculty_id'))->unique()->values()->all();
+                $onTimeCount = $req->submissions->where('status', 'submitted')->count() + $covered->where('status', 'submitted')->count();
             }
 
             $byType[$req->type] ??= ['expected' => 0, 'submitted' => 0, 'on_time' => 0];

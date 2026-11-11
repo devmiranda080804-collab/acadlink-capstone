@@ -242,6 +242,12 @@ class ExamGeneratorController extends Controller
             'sections.*.questions.*.bloom_level'   => ['nullable', Rule::in(BloomLevels::LEVELS)],
             'sections.*.questions.*.children'      => 'array',
             'sections.*.questions.*.bank_archived_at' => 'nullable|date',
+            // Archived questions: out of the exam (no TOS count, not printed) but kept.
+            'archived'                     => 'nullable|array|max:500',
+            'archived.*.type'              => ['required', Rule::in(array_keys(BloomLevels::TYPES))],
+            'archived.*.question_text'     => 'required|string',
+            'archived.*.from_section'      => 'nullable|string|max:255',
+            'archived.*.archived_at'       => 'nullable|date',
         ]);
 
         // No topic may get more items than its TOS sets (a draft can still be short).
@@ -266,6 +272,9 @@ class ExamGeneratorController extends Controller
                 'title'            => $request->title,
                 'duration_minutes' => $request->duration_minutes,
             ]);
+            if ($request->has('archived')) {
+                $exam->update(['archived_questions' => array_map(fn ($q) => $this->archivedItem((array) $q), array_values($request->input('archived') ?? [])) ?: null]);
+            }
 
             // Sections/questions are replaced wholesale on every save — the builder
             // always sends its full in-memory structure, there's no partial-patch mode
@@ -300,6 +309,26 @@ class ExamGeneratorController extends Controller
         });
 
         return response()->json($exam->load('sections.questions.children'));
+    }
+
+    // Only the fields a question needs, so nothing else rides along in the saved list.
+    protected function archivedItem(array $q, bool $top = true): array
+    {
+        $item = [
+            'type'          => (string) ($q['type'] ?? ''),
+            'topic'         => $q['topic'] ?? null,
+            'question_text' => (string) ($q['question_text'] ?? ''),
+            'points'        => max(1, (int) ($q['points'] ?? 1)),
+            'options'       => is_array($q['options'] ?? null) ? $q['options'] : null,
+            'bloom_level'   => in_array($q['bloom_level'] ?? null, BloomLevels::LEVELS, true) ? $q['bloom_level'] : null,
+            'children'      => array_map(fn ($c) => $this->archivedItem((array) $c, false), array_values(array_filter((array) ($q['children'] ?? []), 'is_array'))),
+        ];
+        if ($top) {
+            $item['from_section'] = $q['from_section'] ?? null;
+            $item['archived_at'] = $q['archived_at'] ?? now()->toIso8601String();
+        }
+
+        return $item;
     }
 
     protected function createQuestion(int $sectionId, ?int $parentId, array $data, int $order, $levelsByTopic, array &$topicPositions, ?array $partLevels = null, int $sectionIndex = 0): void
@@ -544,6 +573,65 @@ class ExamGeneratorController extends Controller
         ])->deleteFileAfterSend(true);
     }
 
+    // Print Settings in the Exam Builder: saved on the exam, any time (draft or finalized).
+    public function savePrintOptions(Request $request, Exam $exam)
+    {
+        abort_unless($exam->faculty_id === auth()->id(), 403);
+        $request->validate(ExamPrintOptions::rules('font', 'size', 'paper', true, 'layout'));
+
+        $exam->update([
+            'print_font'      => $request->font,
+            'print_font_size' => (int) $request->size,
+            'print_paper'     => $request->paper,
+            'print_layout'    => $request->layout,
+        ]);
+
+        return response()->json(['message' => 'Print settings saved.', 'options' => ExamPrintOptions::forExam($exam)]);
+    }
+
+    // The exam (or its answer key) exactly as it will print, before or after finalizing.
+    // It only shows on screen; downloading still waits for Finalize.
+    public function preview(Request $request, Exam $exam)
+    {
+        abort_unless($exam->faculty_id === auth()->id(), 403);
+        $kind = $request->query('kind') === 'answer-key' ? 'answer-key' : 'exam';
+        $exam->load('programAssignment.course');
+        $finalized = $exam->isFinalized();
+        $name = $exam->programAssignment->course->code . '-' . $exam->grading_period . ($kind === 'exam' ? '-Exam' : '-AnswerKey') . '.docx';
+
+        return view('files.viewer', [
+            'file' => [
+                'title'    => ($kind === 'exam' ? 'Exam Preview' : 'Answer Key Preview') . ' — ' . $exam->title,
+                'name'     => $name,
+                'type'     => 'docx',
+                'size'     => 0,
+                'uploader' => null,
+                'date'     => null,
+            ],
+            'previewAs'   => 'docx',
+            'rawUrl'      => url("/faculty/exam-generator/{$exam->id}/preview/file?kind={$kind}"),
+            'downloadUrl' => $finalized ? url("/faculty/exam-generator/{$exam->id}/{$kind}") : null,
+            'notice'      => $finalized ? null : 'Draft — finalize the exam to download it',
+        ]);
+    }
+
+    public function previewFile(Request $request, Exam $exam)
+    {
+        abort_unless($exam->faculty_id === auth()->id(), 403);
+        $exam->load(['programAssignment.course', 'sections.questions.children']);
+
+        $builder = new ExamDocumentBuilder(ExamPrintOptions::forExam($exam));
+        $phpWord = $request->query('kind') === 'answer-key' ? $builder->buildAnswerKey($exam) : $builder->build($exam);
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'exampreview_');
+        IOFactory::createWriter($phpWord, 'Word2007')->save($tempPath);
+
+        return response()->file($tempPath, [
+            'Content-Type'  => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'Cache-Control' => 'private, no-store',
+        ])->deleteFileAfterSend(true);
+    }
+
     public function destroy(Exam $exam)
     {
         abort_unless($exam->faculty_id === auth()->id(), 403);
@@ -643,7 +731,7 @@ class ExamGeneratorController extends Controller
 
         try {
             $drafts = (new QuestionGeneratorService())->generate(
-                $request->type, $topic->topic, $topic->notes ?? '', $count, $modulePath, $bloomLevelsForPrompt, $existingTexts
+                $request->type, $topic->topic, trim(($topic->notes ?? '') . ($topic->keyPointList() ? "\n\nKey points of this topic:\n- " . implode("\n- ", $topic->keyPointList()) : '')), $count, $modulePath, $bloomLevelsForPrompt, $existingTexts
             );
         } catch (\RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);

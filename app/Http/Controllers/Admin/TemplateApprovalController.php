@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\TemplateDocument;
+use App\Services\DocxComments;
+use App\Services\OnlyOffice;
 use App\Support\FileLinks;
 use App\Support\Programs;
 use Illuminate\Http\Request;
@@ -24,6 +26,46 @@ class TemplateApprovalController extends Controller
             ->get();
 
         return view('admin.system-approvals', compact('templates'));
+    }
+
+    // The file on the left (with comments for a pending Word, Excel or PowerPoint file), and
+    // the decision on the right: approve and send, return with a reason, or send to more programs.
+    public function review(TemplateDocument $template)
+    {
+        abort_if($template->isDraft(), 404);
+
+        $template->load(['creator', 'reviewer', 'programs']);
+        $user = auth()->user();
+
+        // Programs the approved version of this template went to, suggested when approving.
+        $suggested = $template->sentPrograms() ?: (TemplateDocument::with('programs')
+            ->where('root_template_id', $template->root_template_id)
+            ->where('id', '!=', $template->id)
+            ->where('status', TemplateDocument::STATUS_APPROVED)
+            ->latest('id')
+            ->first()?->sentPrograms() ?? []);
+
+        return view('admin.template-review', [
+            'template'          => $template,
+            'sentPrograms'      => $template->sentPrograms(),
+            'suggestedPrograms' => $suggested,
+            'canComment'        => OnlyOffice::isConfigured() && $template->canComment($user),
+            'config'            => OnlyOffice::isConfigured() && $template->file_path ? (new OnlyOffice())->editorConfig($template, $user) : null,
+            'scriptUrl'         => OnlyOffice::scriptUrl(),
+        ]);
+    }
+
+    // Before a decision: ask an open editor to save the comments; status() says when they arrived.
+    public function prepare(TemplateDocument $template, OnlyOffice $onlyOffice)
+    {
+        $stamp = optional($template->last_edited_at)->toIso8601String();
+
+        return response()->json(['saving' => $template->isPending() && $onlyOffice->forceSave($template), 'stamp' => $stamp]);
+    }
+
+    public function saveStatus(TemplateDocument $template)
+    {
+        return response()->json(['stamp' => optional($template->fresh()->last_edited_at)->toIso8601String()]);
     }
 
     public function versions(TemplateDocument $template)
@@ -54,6 +96,9 @@ class TemplateApprovalController extends Controller
             'return_reason' => null,
         ]);
 
+        // Faculty get the template without the review comments.
+        $this->removeComments($template);
+
         // A newly approved version replaces the one faculty were using.
         TemplateDocument::where('root_template_id', $template->root_template_id)
             ->where('id', '!=', $template->id)
@@ -64,7 +109,7 @@ class TemplateApprovalController extends Controller
 
         AuditLog::record('Template Approved', "{$template->title} (v{$template->version}) approved by " . auth()->user()->name . ' and sent to ' . implode(', ', $programs));
 
-        return back()->with('success', 'Template approved and sent to: ' . implode(', ', $programs) . '.');
+        return redirect('/admin/template-approvals')->with('success', 'Template approved and sent to: ' . implode(', ', $programs) . '.');
     }
 
     // Send an already approved template to more programs.
@@ -77,7 +122,7 @@ class TemplateApprovalController extends Controller
 
         AuditLog::record('Template Sent', "{$template->title} sent to " . implode(', ', $programs) . ' by ' . auth()->user()->name);
 
-        return back()->with('success', 'Template sent to: ' . implode(', ', $programs) . '.');
+        return redirect('/admin/template-approvals')->with('success', 'Template sent to: ' . implode(', ', $programs) . '.');
     }
 
     public function returnToSecretary(Request $request, TemplateDocument $template)
@@ -95,7 +140,7 @@ class TemplateApprovalController extends Controller
 
         AuditLog::record('Template Returned', "{$template->title} returned to the Secretary by " . auth()->user()->name . ": {$request->reason}");
 
-        return back()->with('success', 'Template returned to the Secretary.');
+        return redirect('/admin/template-approvals')->with('success', 'Template returned to the Secretary.');
     }
 
     // Removing a sent template also takes it out of the Secretary's repository and
@@ -115,6 +160,23 @@ class TemplateApprovalController extends Controller
         );
 
         return back()->with('success', 'Template removed.');
+    }
+
+    protected function removeComments(TemplateDocument $template): void
+    {
+        if ($template->extension() !== 'docx' || !$template->file_path || !Storage::disk('public')->exists($template->file_path)) {
+            return;
+        }
+
+        $path = Storage::disk('public')->path($template->file_path);
+        if (DocxComments::strip($path)) {
+            clearstatcache(true, $path);
+            $template->forceFill([
+                'file_size'    => filesize($path),
+                // The editor must not reopen its cached copy with the comments.
+                'document_key' => OnlyOffice::newKey($template),
+            ])->save();
+        }
     }
 
     protected function validatedPrograms(Request $request): array

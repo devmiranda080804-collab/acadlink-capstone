@@ -8,7 +8,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class CourseTopic extends Model
 {
-    protected $fillable = ['course_id', 'grading_period', 'topic', 'weeks', 'hours', 'notes', 'module_path', 'module_file_name', 'order', 'created_by'];
+    protected $fillable = ['course_id', 'grading_period', 'topic', 'weeks', 'hours', 'notes', 'key_points', 'module_path', 'module_file_name', 'order', 'created_by'];
+
+    // The saved key points as a list (stored one per line).
+    public function keyPointList(): array
+    {
+        return \App\Services\ModuleKeyPointsService::clean($this->key_points);
+    }
 
     // Weeks are stored as numbers only: "3" for a single week, "1-2" for a range.
     const MAX_WEEK = 24;

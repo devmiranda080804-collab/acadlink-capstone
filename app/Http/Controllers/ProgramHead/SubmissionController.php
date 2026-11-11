@@ -27,11 +27,15 @@ class SubmissionController extends Controller
             ->count();
 
         // A per-course requirement expects one file for each course taught in its term.
+        // Shared faculty are counted once for the group: a file they sent for the same kind of
+        // requirement in another of their programs counts here too (panel comment #27).
         foreach ($requirements as $req) {
+            $covered = $req->per_course ? collect() : $req->coveringSubmissions();
+            $req->setAttribute('covered', $covered);
             $req->setAttribute('expected', $req->per_course ? $req->courses()->count() : $facultyCount);
             $req->setAttribute('submitted_count', $req->per_course
                 ? $req->submissions->whereNotNull('course_id')->unique('course_id')->count()
-                : $req->submissions->count());
+                : $req->submissions->unique('faculty_id')->count() + $covered->count());
         }
 
         return view('program-head.submissions', compact('requirements', 'facultyCount', 'myProgram'));
@@ -44,6 +48,8 @@ class SubmissionController extends Controller
             'description' => 'nullable|string|max:1000',
             'type'        => ['required', Rule::in(array_keys(SubmissionRequirement::typeOptions()))],
             'priority'    => ['required', Rule::in(array_keys(SubmissionRequirement::PRIORITIES))],
+            'file_types'   => 'nullable|array',
+            'file_types.*' => [Rule::in(array_keys(SubmissionRequirement::FILE_TYPES))],
             'deadline'    => 'required|date|after_or_equal:today',
         ], [
             'deadline.after_or_equal' => 'The deadline can\'t be earlier than today.',
@@ -55,6 +61,7 @@ class SubmissionController extends Controller
             'title'       => $request->title,
             'description' => $request->description,
             'type'        => $request->type,
+            'file_types'  => array_values(array_unique($request->file_types ?: SubmissionRequirement::DEFAULT_FILE_TYPES)),
             'per_course'  => $request->boolean('per_course'),
             'school_year' => \App\Support\AcademicTerm::currentSchoolYear(),
             'semester'    => \App\Support\AcademicTerm::currentSemester(),
@@ -78,12 +85,15 @@ class SubmissionController extends Controller
             'description' => 'nullable|string|max:1000',
             'type'        => ['required', Rule::in([...array_keys(SubmissionRequirement::typeOptions()), $requirement->type])],
             'priority'    => ['required', Rule::in(array_keys(SubmissionRequirement::PRIORITIES))],
+            'file_types'   => 'nullable|array',
+            'file_types.*' => [Rule::in(array_keys(SubmissionRequirement::FILE_TYPES))],
             'deadline'    => $deadlineChanged ? 'required|date|after_or_equal:today' : 'required|date',
         ], [
             'deadline.after_or_equal' => 'The deadline can\'t be earlier than today.',
         ]);
 
-        $requirement->update($request->only(['title', 'description', 'type', 'priority', 'deadline']));
+        $requirement->update($request->only(['title', 'description', 'type', 'priority', 'deadline'])
+            + ['file_types' => array_values(array_unique($request->file_types ?: SubmissionRequirement::DEFAULT_FILE_TYPES))]);
         // Who submits what can only change before anything is submitted.
         if (!$requirement->submissions()->exists()) {
             $requirement->update(['per_course' => $request->boolean('per_course')]);

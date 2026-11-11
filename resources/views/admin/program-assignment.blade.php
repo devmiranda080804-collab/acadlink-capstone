@@ -143,6 +143,7 @@
             <span class="label">Current role</span>
             <div class="topnav-right">
                 <span class="role-badge">Admin/Dean</span>
+                @include('partials.notification-bell')
                 <div class="user-info">
                     <div class="user-text">
                         <div class="user-name">{{ auth()->user()->name }}</div>
@@ -261,13 +262,8 @@
                 <div class="modal-sub" id="modal-course-label">—</div>
 
                 <div class="modal-field">
-                    <label>Faculty <span style="color:#ef4444">*</span></label>
-                    <select name="faculty_id" id="f-faculty-select" required>
-                        <option value="">Select faculty...</option>
-                        @foreach($facultyList as $f)
-                            <option value="{{ $f->id }}" data-name="{{ $f->name }}" data-programs="{{ implode(' ', $f->programCodes()) }}" data-label="{{ $f->programs_label }}">{{ $f->name }} ({{ $f->programs_label }})</option>
-                        @endforeach
-                    </select>
+                    <label>Faculty <span style="color:#ef4444">*</span> <span style="font-weight:400;color:#888;">— tick everyone teaching this course</span></label>
+                    @include('partials.assign-faculty-list', ['facultyList' => $facultyList, 'showPrograms' => true])
                 </div>
 
                 <div class="modal-actions">
@@ -283,24 +279,8 @@
             document.getElementById('f-course-id').value = courseId;
             document.getElementById('modal-course-label').textContent = 'Course: ' + courseCode + ' — ' + '{{ $schoolYear }} · {{ $semester }}';
 
-            var assignedSet = (assignedFacultyIds || []).map(String);
-            var select = document.getElementById('f-faculty-select');
-            select.value = '';
-            Array.from(select.options).forEach(function(opt) {
-                if (!opt.value) return; // skip the "Select faculty..." placeholder
-
-                // Only faculty from the same program as this course can be assigned to it
-                if ((opt.dataset.programs || '').split(' ').indexOf(courseProgram) === -1) {
-                    opt.hidden = true;
-                    opt.disabled = true;
-                    return;
-                }
-                opt.hidden = false;
-
-                var already = assignedSet.indexOf(opt.value) !== -1;
-                opt.disabled = already;
-                opt.textContent = (already ? '✓ ' : '') + opt.dataset.name + ' (' + opt.dataset.label + ')' + (already ? ' — Already assigned' : '');
-            });
+            // Only faculty from the same program as this course can be assigned to it.
+            resetAssignFaculty(assignedFacultyIds, courseProgram);
 
             document.getElementById('assign-overlay').classList.add('open');
         }

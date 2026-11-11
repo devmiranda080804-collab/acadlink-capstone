@@ -8,7 +8,7 @@ class Submission extends Model
 {
     protected $fillable = [
         'requirement_id', 'faculty_id', 'course_id', 'file_path', 'file_name',
-        'file_type', 'file_size', 'status', 'submitted_at',
+        'file_type', 'file_size', 'file_hash', 'status', 'submitted_at',
         'filing_status', 'filing_checked_by', 'filing_checked_at', 'filing_return_reason',
     ];
 

@@ -20,11 +20,12 @@
         {{ \App\Models\TemplateDocument::typeLabel($template->type) }}
         @if($template->version > 1) <span style="font-size:10px;font-weight:700;color:#6d28d9;background:#ede9fe;padding:1px 7px;border-radius:10px;margin-left:6px;">v{{ $template->version }}</span> @endif
     </div>
-    <div class="tmpl-card-meta">Submitted by {{ $template->creator->name ?? 'Unknown' }} • {{ $template->created_at->format('Y-m-d') }}</div>
+    <div class="tmpl-card-meta">Uploaded by {{ $template->creator->name ?? 'Unknown' }}<br>{{ \App\Support\DisplayTime::format($template->created_at) }}</div>
 
     @if($template->isReturned())
         <div class="return-reason">
             <strong>Returned by {{ $template->reviewer->name ?? 'the Dean' }}:</strong> {{ $template->return_reason }}
+            @if($template->isEditableFile())<div style="margin-top:4px;font-size:11px;">Click <strong>Edit in System</strong> to see the Dean's comments in the document.</div>@endif
         </div>
     @endif
 

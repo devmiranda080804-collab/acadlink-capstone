@@ -116,6 +116,12 @@ class TemplateDocument extends Model
         return $user->role === 'secretary' && $this->isDraft() && $this->isEditableFile();
     }
 
+    // The Dean reviews a submitted template by commenting on it, like in Google Docs.
+    public function canComment(User $user): bool
+    {
+        return $user->role === 'admin' && $this->isPending() && $this->isEditableFile();
+    }
+
     // A save can still arrive just after the Secretary submits; never after the Dean approves.
     public function acceptsEditorSave(): bool
     {

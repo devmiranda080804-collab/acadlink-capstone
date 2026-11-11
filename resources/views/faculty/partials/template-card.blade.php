@@ -13,7 +13,9 @@
         @if($template->version > 1) <span class="version-tag">v{{ $template->version }}</span> @endif
     </div>
     <div class="card-meta">
-        {{ strtoupper($template->file_type) }} • {{ $template->readable_size }} • Provided by {{ $template->creator->name }}
+        {{ strtoupper($template->file_type) }} • {{ $template->readable_size }}<br>
+        Uploaded by {{ $template->creator->name ?? 'Unknown' }}<br>
+        {{ \App\Support\DisplayTime::format($template->created_at) }}
     </div>
 
     <div class="card-actions">

@@ -84,6 +84,10 @@
         .lib-meta { font-size: 10.5px; color: #aaa; margin-bottom: 12px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
         .lib-meta .dot { color: #ddd; }
         .lib-actions { display: flex; gap: 6px; }
+        .lib-collab { font-size: 10.5px; color: #6b7280; line-height: 1.5; margin: -6px 0 10px; }
+        .btn-collab { display: flex; align-items: center; justify-content: center; gap: 6px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-size: 11.5px; font-weight: 700; padding: 7px 10px; border-radius: 5px; text-decoration: none; margin-bottom: 6px; }
+        .btn-collab:hover { background: #d1fae5; }
+        .btn-collab svg { width: 13px; height: 13px; }
         .btn-view { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #0f2557; color: #fff; border: none; font-size: 11.5px; font-weight: 600; padding: 7px 12px; border-radius: 5px; text-decoration: none; }
         .btn-view:hover { background: #1a3a7a; }
         .btn-del { background: #fff; border: 1px solid #e0e0e0; color: #999; cursor: pointer; padding: 7px 10px; border-radius: 5px; }
@@ -181,6 +185,7 @@
             <span class="label">Current role</span>
             <div class="topnav-right">
                 <span class="role-badge">Faculty</span>
+                @include('partials.notification-bell')
                 <div class="user-info">
                     <div class="user-text">
                         <div class="user-name">{{ auth()->user()->name }}</div>
@@ -318,11 +323,6 @@
                 </div>
 
                 <div class="modal-field">
-                    <label>Description</label>
-                    <textarea name="description" placeholder="Brief description of the resource..."></textarea>
-                </div>
-
-                <div class="modal-field">
                     <label>File <span style="color:#ef4444">*</span></label>
                     <input type="file" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" required>
                     <div class="modal-hint">Allowed: PDF, Word, Excel, PowerPoint · Max 20MB</div>
@@ -423,6 +423,7 @@
         document.getElementById('logout-confirm-overlay').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
     </script>
 
+    @include('documents.partials.tools')
     @include('partials.system-feedback')
 </body>
 </html>

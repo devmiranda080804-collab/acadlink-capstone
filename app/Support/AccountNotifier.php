@@ -19,6 +19,12 @@ class AccountNotifier
 
     public static function send(User $user, string $event, array $changes = []): void
     {
+        if ($event === 'details' && $changes) {
+            Notify::send($user, 'Your account was updated',
+                collect($changes)->map(fn ($c) => $c['field'] . ': ' . $c['to'])->implode(' · '),
+                Notify::rolePath('/dashboard'), 'account');
+        }
+
         try {
             Mail::to($user->email)->send(new AccountUpdated($user, $event, $changes, auth()->user()));
         } catch (\Throwable $e) {

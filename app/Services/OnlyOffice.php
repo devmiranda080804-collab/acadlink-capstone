@@ -40,6 +40,8 @@ class OnlyOffice
     {
         $type = $document->extension();
         $canEdit = $document->canEdit($user);
+        // A reviewer can leave comments without changing the text (e.g. the Dean on a template).
+        $canComment = $canEdit || (method_exists($document, 'canComment') && $document->canComment($user));
         $route = ['source' => $document::ONLYOFFICE_SOURCE, 'id' => $document->id];
 
         $config = [
@@ -49,10 +51,10 @@ class OnlyOffice
                 'key' => $this->keyFor($document),
                 'title' => $document->file_name,
                 'url' => $this->appUrl(URL::temporarySignedRoute('onlyoffice.file', now()->addDay(), $route, absolute: false)),
-                'permissions' => ['edit' => $canEdit, 'download' => true, 'print' => true],
+                'permissions' => ['edit' => $canEdit, 'comment' => $canComment, 'download' => true, 'print' => true],
             ],
             'editorConfig' => [
-                'mode' => $canEdit ? 'edit' : 'view',
+                'mode' => $canComment ? 'edit' : 'view',
                 'lang' => 'en',
                 'callbackUrl' => $this->appUrl(route('onlyoffice.callback', $route, absolute: false)),
                 'user' => ['id' => (string) $user->id, 'name' => $user->name],

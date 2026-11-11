@@ -481,6 +481,16 @@
         .sec-select input { width: 14px; height: 14px; accent-color: #0f2557; cursor: pointer; }
         .bulk-bar { display: none; align-items: center; gap: 10px; flex-wrap: wrap; background: #0f2557; color: #fff; border-radius: 8px; padding: 9px 14px; margin-bottom: 12px; font-size: 12.5px; position: sticky; top: 8px; z-index: 5; }
         .bulk-bar.show { display: flex; }
+        .eb-archived { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px 16px; margin-top: 14px; }
+        .eb-archived summary { cursor: pointer; font-weight: 700; font-size: 13px; color: #0f2557; }
+        .eb-archived-hint { font-size: 11.5px; color: #777; margin: 6px 0 10px; }
+        .eb-archived-item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+        .eb-archived-text { font-size: 12.5px; color: #222; white-space: pre-wrap; }
+        .eb-archived-meta { font-size: 11px; color: #888; margin-top: 4px; }
+        .eb-archived-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+        .eb-archived-actions select { font-size: 12px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 5px; }
+        .eb-archived-actions button { font-size: 12px; padding: 4px 10px; border-radius: 5px; border: 1px solid #0f2557; background: #fff; color: #0f2557; cursor: pointer; font-weight: 600; }
+        .eb-archived-actions button.danger { border-color: #fca5a5; color: #ef4444; }
         .bulk-bar .bulk-count { font-weight: 700; margin-right: auto; }
         .bulk-bar button { border: 1px solid rgba(255,255,255,.45); background: transparent; color: #fff; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 5px; cursor: pointer; }
         .bulk-bar button:hover { background: rgba(255,255,255,.12); }
@@ -739,6 +749,7 @@
             <span class="label">Current role</span>
             <div class="topnav-right">
                 <span class="role-badge">Faculty</span>
+                @include('partials.notification-bell')
                 <div class="user-info">
                     <div class="user-text">
                         <div class="user-name">{{ auth()->user()->name }}</div>
@@ -871,6 +882,7 @@
                     <div class="eb-btn-group">
                         <button class="btn-eb-save" onclick="saveExam()" id="btn-save-exam" disabled>💾 Save</button>
                         <button class="btn-eb-preview" onclick="previewExam()" id="btn-preview-exam" disabled>👁 Preview</button>
+                        <button class="btn-eb-preview" onclick="openDownloadOptions('settings')" id="btn-print-settings" disabled>🖨 Print Settings</button>
                         <button class="btn-eb-preview" onclick="openExamTos()" id="btn-view-tos" disabled>📋 TOS</button>
                         <button class="btn-eb-preview" onclick="finalizeExam()" id="btn-finalize-exam" disabled>🔒 Finalize</button>
                         <a class="btn-eb-preview" href="#" id="btn-download-exam" onclick="openDownloadOptions('exam'); return false;" disabled style="display:none;pointer-events:none;opacity:0.5;">⬇ Download</a>
@@ -891,11 +903,12 @@
                 {{-- Sections content --}}
                 <div class="bulk-bar" id="eb-bulk-bar" role="region" aria-label="Selected questions">
                     <span class="bulk-count" id="eb-bulk-count">0 selected</span>
-                    <button type="button" onclick="selectAllQuestions(true)">Select all</button>
-                    <button type="button" onclick="selectAllQuestions(false)">Clear</button>
+                    <button type="button" id="eb-select-toggle" onclick="toggleSelectAllQuestions()">Select all</button>
+                    <button type="button" onclick="archiveSelectedQuestions()">📦 Archive selected</button>
                     <button type="button" class="bulk-danger" onclick="deleteSelectedQuestions()">🗑 Delete selected</button>
                 </div>
                 <div id="eb-sections-content"></div>
+                <div id="eb-archived"></div>
                 <div class="tab-empty" id="eb-no-exam-notice">
                     <div class="empty-icon">📝</div>
                     Select an exam above, or use <strong>+ New Exam</strong> to start one.
@@ -1115,7 +1128,7 @@
     <div class="modal-overlay" id="download-options-overlay">
         <div class="modal" style="width:440px;">
             <div class="modal-title" id="download-options-title">Download Options</div>
-            <div style="font-size:12px;color:#666;margin-bottom:14px;">The file comes with the CBMA header and footer. Your choice is saved for this exam, so the exam and its answer key match.</div>
+            <div style="font-size:12px;color:#666;margin-bottom:14px;" id="download-options-sub">The file comes with the CBMA header and footer. Your choice is saved for this exam, so the exam and its answer key match.</div>
             <div class="modal-row">
                 <div class="modal-field">
                     <label for="dl-font">Font style</label>
@@ -1245,7 +1258,11 @@
         <div class="modal" style="width:760px;max-height:85vh;overflow-y:auto;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                 <div class="modal-title" style="margin:0;">Exam Preview</div>
-                <button type="button" class="btn-cancel" onclick="closePreview()">Close</button>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+                    <button type="button" class="btn-cancel" onclick="openPrintPreview('exam')" title="See the exam as it will print, with the CBMA header — even before finalizing">📄 Print Preview</button>
+                    <button type="button" class="btn-cancel" onclick="openPrintPreview('answer-key')" title="See the answer key as it will print">🔑 Answer Key</button>
+                    <button type="button" class="btn-cancel" onclick="closePreview()">Close</button>
+                </div>
             </div>
             <div id="preview-body"></div>
         </div>
@@ -1267,7 +1284,7 @@
     <script>
         const CSRF = document.querySelector('meta[name="csrf-token"]').content;
         const QUESTION_TYPES = @json(\App\Support\BloomLevels::TYPES);
-        const EXAM_PRINT_DEFAULTS = @json(\App\Support\ExamPrintOptions::collegeDefaults());
+        const EXAM_PRINT_DEFAULTS = @json(\App\Support\ExamPrintOptions::DEFAULTS);
         const TOPICS_BY_ASSIGNMENT = @json($topicsByAssignment);
         const TOS_BY_ASSIGNMENT = @json($tosByAssignment);
         const ASSIGNMENTS = @json($assignments->map(fn($a) => ['id' => $a->id, 'label' => $a->course->code . ' — ' . $a->course->title]));
@@ -1644,6 +1661,7 @@
             // out editing, so faculty can still fix a typo or add a question afterward.
             document.getElementById('btn-save-exam').disabled = false;
             document.getElementById('btn-preview-exam').disabled = false;
+            document.getElementById('btn-print-settings').disabled = false;
             document.getElementById('btn-view-tos').disabled = false;
             document.getElementById('btn-finalize-exam').disabled = finalized;
             document.getElementById('btn-add-section').disabled = false;
@@ -1697,6 +1715,7 @@
             document.getElementById('eb-type-label').textContent = '—';
             document.getElementById('btn-save-exam').disabled = true;
             document.getElementById('btn-preview-exam').disabled = true;
+            document.getElementById('btn-print-settings').disabled = true;
             document.getElementById('btn-view-tos').disabled = true;
             document.getElementById('btn-finalize-exam').disabled = true;
             document.getElementById('btn-add-section').disabled = true;
@@ -1708,7 +1727,7 @@
             answerKeyBtn.style.display = 'none';
             answerKeyBtn.style.pointerEvents = 'none';
             document.getElementById('btn-delete-exam').disabled = true;
-            document.getElementById('eb-sections-content').innerHTML = '';
+            document.getElementById('eb-sections-content').innerHTML = ''; document.getElementById('eb-archived').innerHTML = '';
             document.getElementById('eb-section-links').innerHTML = '';
             document.getElementById('eb-tos-progress').innerHTML = '';
         }
@@ -1813,6 +1832,7 @@
             renderTosProgress();
             refreshDuplicateBadges();
             refreshBulkBar();
+            renderArchived();
         }
 
         function renderSectionsBar() {
@@ -2202,6 +2222,130 @@
             var n = selectedQuestionCount();
             document.getElementById('eb-bulk-bar').classList.toggle('show', n > 0);
             document.getElementById('eb-bulk-count').textContent = n + (n === 1 ? ' question selected' : ' questions selected');
+            document.getElementById('eb-select-toggle').textContent = n > 0 && n === totalQuestionCount() ? 'Unselect all' : 'Select all';
+        }
+        function totalQuestionCount() {
+            var n = 0;
+            if (currentExam) currentExam.sections.forEach(function(sec) { n += (sec.questions || []).length; });
+            return n;
+        }
+        // Selects every question; when all are already selected, unselects them all.
+        function toggleSelectAllQuestions() {
+            selectAllQuestions(selectedQuestionCount() !== totalQuestionCount());
+        }
+
+        // ── Archive: questions leave the exam (no TOS count, not printed) but are kept ──
+        function plainQuestion(q) {
+            var copy = serializeQuestion(q);
+            delete copy.bank_archived_at;
+            return copy;
+        }
+        function snapshotExam() {
+            return JSON.stringify({ sections: currentExam.sections, archived: currentExam.archived_questions || [] });
+        }
+        function restoreSnapshot(snap) {
+            var data = JSON.parse(snap);
+            currentExam.sections = data.sections;
+            currentExam.archived_questions = data.archived;
+            renderEB({ skipSort: true });
+        }
+        function archiveSelectedQuestions() {
+            var n = selectedQuestionCount();
+            if (!n) return;
+            var noun = n === 1 ? ' question' : ' questions';
+            confirmAction('Move ' + n + noun + ' out of this exam? They stop counting toward the TOS and won\'t print, but you can restore them anytime from "Archived questions" below.', async function() {
+                var before = snapshotExam();
+                var stamp = new Date().toISOString();
+                currentExam.archived_questions = currentExam.archived_questions || [];
+                currentExam.sections.forEach(function(sec) {
+                    (sec.questions || []).forEach(function(q) {
+                        if (!q._selected) return;
+                        var item = plainQuestion(q);
+                        item.from_section = sec.title || null;
+                        item.archived_at = stamp;
+                        currentExam.archived_questions.unshift(item);
+                    });
+                    sec.questions = (sec.questions || []).filter(function(q) { return !q._selected; });
+                });
+                renderEB();
+                if (await saveExam(true)) {
+                    showToast(n + noun + ' archived.', 'success');
+                } else {
+                    restoreSnapshot(before);
+                }
+            }, { title: 'Archive selected questions?', confirmText: 'Archive' });
+        }
+        async function restoreArchivedQuestion(index) {
+            var list = currentExam.archived_questions || [];
+            var item = list[index];
+            var select = document.getElementById('eb-archived-target-' + index);
+            var sec = select ? findSection(select.value) : null;
+            if (!item || !sec) return;
+            var before = snapshotExam();
+            var q = JSON.parse(JSON.stringify(item));
+            delete q.from_section;
+            delete q.archived_at;
+            q.children = q.children || [];
+            sec.questions = sec.questions || [];
+            sec.questions.push(q);
+            list.splice(index, 1);
+            var over = tosCountIssues(false).concat(exactDuplicateIssues());
+            if (over.length) {
+                restoreSnapshot(before);
+                openSaveResult(false, "This question can't go back into the exam yet:\n" + over.join('\n') + '\nRemove or archive another question first.');
+                return;
+            }
+            renderEB();
+            if (await saveExam(true)) {
+                showToast('Question restored to ' + (sec.title || 'the test') + '.', 'success');
+            } else {
+                restoreSnapshot(before);
+            }
+        }
+        function deleteArchivedQuestion(index) {
+            confirmAction('Delete this archived question for good? This cannot be undone.', async function() {
+                var before = snapshotExam();
+                currentExam.archived_questions.splice(index, 1);
+                renderArchived();
+                if (await saveExam(true)) {
+                    showToast('Archived question deleted.', 'success');
+                } else {
+                    restoreSnapshot(before);
+                }
+            }, { title: 'Delete archived question?', confirmText: 'Delete' });
+        }
+        function renderArchived() {
+            var box = document.getElementById('eb-archived');
+            var list = (currentExam && currentExam.archived_questions) || [];
+            if (!list.length) { box.innerHTML = ''; return; }
+            var wasOpen = !!box.querySelector('details[open]');
+            var options = currentExam.sections.map(function(sec, i) {
+                var name = 'Test ' + toRoman(i + 1);
+                var title = (sec.title || '').trim();
+                return '<option value="' + escapeHtml(String(sec.id)) + '">' + escapeHtml(title && title !== name ? name + ' — ' + title : name) + '</option>';
+            }).join('');
+            box.innerHTML = '<details class="eb-archived"' + (wasOpen ? ' open' : '') + '>' +
+                '<summary>📦 Archived questions (' + list.length + ')</summary>' +
+                '<div class="eb-archived-hint">These are out of the exam: they don\'t count toward the TOS and won\'t print. Restore one to put it back into a test.</div>' +
+                list.map(function(item, i) {
+                    var type = (QUESTION_TYPES[item.type] || {}).label || item.type;
+                    var when = item.archived_at ? new Date(item.archived_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+                    var meta = [type, item.topic ? 'Topic: ' + item.topic : null, item.from_section ? 'From ' + item.from_section : null, when ? 'Archived ' + when : null]
+                        .filter(Boolean).map(escapeHtml).join(' · ');
+                    return '<div class="eb-archived-item">' +
+                        '<div class="eb-archived-text">' + escapeHtml(item.question_text || '(no question text)') + '</div>' +
+                        '<div class="eb-archived-meta">' + meta + '</div>' +
+                        '<div class="eb-archived-actions">' +
+                            (options
+                                ? '<label for="eb-archived-target-' + i + '" style="font-size:11.5px;color:#555;">Restore to</label>' +
+                                  '<select id="eb-archived-target-' + i + '">' + options + '</select>' +
+                                  '<button type="button" onclick="restoreArchivedQuestion(' + i + ')">↩ Restore</button>'
+                                : '<span style="font-size:11.5px;color:#888;">Add a test first to restore it.</span>') +
+                            '<button type="button" class="danger" onclick="deleteArchivedQuestion(' + i + ')">🗑 Delete forever</button>' +
+                        '</div>' +
+                    '</div>';
+                }).join('') +
+            '</details>';
         }
         function toggleQuestionSelect(secId, qi, checked) {
             var sec = findSection(secId);
@@ -2659,6 +2803,7 @@
             var body = {
                 title: document.getElementById('eb-title-input').value,
                 duration_minutes: currentExam.duration_minutes || null,
+                archived: currentExam.archived_questions || [],
                 sections: currentExam.sections.map(function(sec) {
                     return {
                         title: sec.title,
@@ -2746,11 +2891,14 @@
                 document.getElementById('preview-overlay').classList.add('open');
                 return;
             }
-            var html = '<div style="max-width:700px;margin:0 auto;font-family:Arial, sans-serif;">' +
+            // Shown in the exam's own Print Settings font and size (1pt = 1.333px).
+            var printFont = currentExam.print_font || EXAM_PRINT_DEFAULTS.font;
+            var printSize = (currentExam.print_font_size || EXAM_PRINT_DEFAULTS.size) * 4 / 3;
+            var html = '<div style="max-width:700px;margin:0 auto;font-family:&quot;' + escapeHtml(printFont) + '&quot;, sans-serif;font-size:' + printSize + 'px;">' +
                 '<div style="text-align:center;margin-bottom:20px;">' +
-                    '<div style="font-weight:700;font-size:16px;">' + escapeHtml(currentExam.program_assignment.course.title) + '</div>' +
-                    '<div style="font-size:13px;color:#555;">' + escapeHtml(currentExam.title) + ' — ' + currentExam.grading_period + ' Examination</div>' +
-                    '<div style="font-size:11px;color:#888;">Name: _______________________  Score: _______</div>' +
+                    '<div style="font-weight:700;font-size:1.25em;">' + escapeHtml(currentExam.program_assignment.course.title) + '</div>' +
+                    '<div style="font-size:1em;color:#555;">' + escapeHtml(currentExam.title) + ' — ' + currentExam.grading_period + ' Examination</div>' +
+                    '<div style="font-size:0.9em;color:#888;">Name: _______________________  Score: _______</div>' +
                 '</div>';
 
             // Numbers must run continuously across sections (Test 1 ending at 30 means
@@ -2759,9 +2907,9 @@
             var previewGlobalNum = 1;
             currentExam.sections.forEach(function(sec, si) {
                 html += '<div style="margin-bottom:20px;">' +
-                    '<div style="font-weight:700;font-size:13.5px;margin-bottom:4px;">Test ' + toRoman(si + 1) + ' — ' + escapeHtml(sec.title) + '</div>' +
-                    (sec.instructions ? '<div style="font-style:italic;font-size:11.5px;color:#666;margin-bottom:8px;">' + escapeHtml(sec.instructions) + '</div>' : '') +
-                    '<ol start="' + previewGlobalNum + '" style="font-size:12.5px;padding-left:20px;">';
+                    '<div style="font-weight:700;font-size:1.05em;margin-bottom:4px;">Test ' + toRoman(si + 1) + ' — ' + escapeHtml(sec.title) + '</div>' +
+                    (sec.instructions ? '<div style="font-style:italic;font-size:0.95em;color:#666;margin-bottom:8px;">' + escapeHtml(sec.instructions) + '</div>' : '') +
+                    '<ol start="' + previewGlobalNum + '" style="font-size:1em;padding-left:20px;">';
                 (sec.questions || []).forEach(function(q) {
                     previewGlobalNum++;
                     html += '<li style="margin-bottom:8px;">' + escapeHtml(q.question_text || '(no question text)') +
@@ -2778,6 +2926,18 @@
             document.getElementById('preview-body').innerHTML = html;
             document.getElementById('preview-overlay').classList.add('open');
         }
+        // Saves first so the preview shows what's on screen, then opens the printed
+        // version in a new tab. Works for drafts too; only downloading needs Finalize.
+        async function openPrintPreview(kind) {
+            if (!currentExam) return;
+            var tab = window.open('', '_blank'); // opened now so the browser doesn't block it
+            if (!(await saveExam(true))) {
+                if (tab) tab.close();
+                return;
+            }
+            var url = '/faculty/exam-generator/' + currentExam.id + '/preview?kind=' + kind;
+            if (tab) tab.location = url; else window.location.href = url;
+        }
         function closePreview() { document.getElementById('preview-overlay').classList.remove('open'); }
         document.getElementById('preview-overlay').addEventListener('click', function(e) { if (e.target === this) closePreview(); });
 
@@ -2785,15 +2945,20 @@
         var downloadKind = 'exam';
 
         function openDownloadOptions(kind) {
-            if (!currentExam || !currentExam.finalized_at && currentExam.status !== 'finalized') return;
+            if (!currentExam) return;
+            if (kind !== 'settings' && !currentExam.finalized_at && currentExam.status !== 'finalized') return;
             downloadKind = kind;
-            document.getElementById('download-options-title').textContent = kind === 'exam' ? 'Download Exam' : 'Download Answer Key';
+            document.getElementById('download-options-title').textContent = kind === 'settings' ? 'Print Settings' : (kind === 'exam' ? 'Download Exam' : 'Download Answer Key');
+            document.getElementById('download-options-sub').textContent = kind === 'settings'
+                ? 'How this exam and its answer key will print. Print Preview and the download both follow these settings.'
+                : 'The file comes with the CBMA header and footer. Your choice is saved for this exam, so the exam and its answer key match.';
+            document.getElementById('download-options-submit').textContent = kind === 'settings' ? 'Save' : '⬇ Download';
             document.getElementById('dl-font').value = currentExam.print_font || EXAM_PRINT_DEFAULTS.font;
             document.getElementById('dl-size').value = String(currentExam.print_font_size || EXAM_PRINT_DEFAULTS.size);
             document.getElementById('dl-paper').value = currentExam.print_paper || EXAM_PRINT_DEFAULTS.paper;
             document.getElementById('dl-layout').value = currentExam.print_layout || EXAM_PRINT_DEFAULTS.layout;
             // The answer key has one layout, so the choice only shows for the exam.
-            document.getElementById('dl-layout-field').style.display = kind === 'exam' ? '' : 'none';
+            document.getElementById('dl-layout-field').style.display = kind === 'answer-key' ? 'none' : '';
             updateDownloadPreview();
             document.getElementById('download-options-overlay').classList.add('open');
         }
@@ -2818,6 +2983,15 @@
             currentExam.print_font = font;
             currentExam.print_font_size = parseInt(size, 10);
             currentExam.print_paper = paper;
+            if (downloadKind === 'settings') {
+                var button = document.getElementById('download-options-submit');
+                button.disabled = true;
+                api('/faculty/exam-generator/' + currentExam.id + '/print-options', { method: 'POST', body: { font: font, size: parseInt(size, 10), paper: paper, layout: layout } })
+                    .then(function(res) { closeDownloadOptions(); showToast(res.message || 'Print settings saved.', 'success'); })
+                    .catch(function(e) { showToast(e.message, 'error'); })
+                    .finally(function() { button.disabled = false; });
+                return;
+            }
             closeDownloadOptions();
             window.location.href = '/faculty/exam-generator/' + currentExam.id + '/' + downloadKind +
                 '?font=' + encodeURIComponent(font) + '&size=' + encodeURIComponent(size) + '&paper=' + encodeURIComponent(paper) + '&layout=' + encodeURIComponent(layout);

@@ -183,6 +183,7 @@
             <span class="label">Current role</span>
             <div class="topnav-right">
                 <span class="role-badge">Faculty</span>
+                @include('partials.notification-bell')
                 <div class="user-info">
                     <div class="user-text">
                         <div class="user-name">{{ auth()->user()->name }}</div>
@@ -205,9 +206,9 @@
             <div class="page-sub">Requirements sorted by nearest deadline</div>
 
             @php
-                $overdueTotal = $requirements->filter(fn($r) => !$r['submission'] && $r['days_left'] < 0)->count();
-                $soonTotal = $requirements->filter(fn($r) => !$r['submission'] && $r['is_due_soon'])->count();
-                $submittedTotal = $requirements->filter(fn($r) => $r['submission'])->count();
+                $overdueTotal = $requirements->filter(fn($r) => !$r['done'] && $r['days_left'] < 0)->count();
+                $soonTotal = $requirements->filter(fn($r) => !$r['done'] && $r['is_due_soon'])->count();
+                $submittedTotal = $requirements->filter(fn($r) => $r['done'])->count();
             @endphp
 
             <div class="stats-grid">
@@ -257,7 +258,7 @@
                     } elseif ($req['done']) {
                         $cardClass = 'done';
                         $badgeClass = $lateMine ? 'badge-overdue' : 'badge-ok';
-                        $badgeText = $lateMine ? 'Submitted Late' : ($req['per_course'] ? 'All courses submitted' : 'Submitted');
+                        $badgeText = $lateMine ? 'Submitted Late' : ($req['per_course'] ? 'All courses submitted' : ($req['covered_by'] ? 'Counted from ' . $req['covered_by']->requirement->program : 'Submitted'));
                     } elseif ($daysLeft < 0) {
                         $cardClass = 'overdue'; $badgeClass = 'badge-overdue'; $badgeText = abs($daysLeft) . ' day(s) overdue';
                     } elseif ($req['is_due_soon']) {
@@ -274,7 +275,7 @@
                         <div class="req-top">
                             <div>
                                 <div class="req-title"><span class="priority-badge priority-{{ $req['priority'] }}">{{ \App\Models\SubmissionRequirement::priorityLabel($req['priority']) }}</span>{{ $req['title'] }}</div>
-                                <div class="req-type">@if(count($myPrograms) > 1)<strong class="req-program">{{ $req['program'] }}</strong> · @endif{{ $req['type'] }} · Due {{ $req['deadline']->format('M d, Y') }}@if($req['per_course']) · For each course you teach in {{ $req['term'] }}@endif</div>
+                                <div class="req-type">@if(count($myPrograms) > 1)<strong class="req-program">{{ $req['program'] }}</strong> · @endif{{ $req['type'] }} · <span class="req-file-types">{{ $req['file_types'] }}</span> · Due {{ $req['deadline']->format('M d, Y') }}@if($req['per_course']) · For each course you teach in {{ $req['term'] }}@endif</div>
                             </div>
                             <span class="req-deadline-badge {{ $badgeClass }}">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -317,7 +318,7 @@
                                         @endif
                                     @endif
                                     @if(!$cs || $mine)
-                                        @include('faculty.partials.submission-upload', ['requirementId' => $req['id'], 'courseId' => $row['course']->id, 'label' => $cs ? 'Replace' : 'Submit'])
+                                        @include('faculty.partials.submission-upload', ['requirementId' => $req['id'], 'accept' => $req['accept'], 'courseId' => $row['course']->id, 'label' => $cs ? 'Replace' : 'Submit'])
                                     @endif
                                 </div>
                             @empty
@@ -332,8 +333,16 @@
                                         <span class="my-status-badge status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
                                     </div>
                                 </div>
+                            @elseif($cov = $req['covered_by'])
+                                <div class="my-status-row">
+                                    <div class="my-status-info">
+                                        Already counted: you submitted <a class="file-link" href="{{ \App\Support\FileLinks::view('submission', $cov->id) }}" target="_blank">{{ $cov->file_name }}</a>
+                                        for <strong>{{ $cov->requirement->program }}</strong> – {{ $cov->requirement->title }}.
+                                        <span class="course-covered">You teach in more than one program, so one file is enough. Submit here only if {{ $req['program'] }} needs a different file.</span>
+                                    </div>
+                                </div>
                             @endif
-                            @include('faculty.partials.submission-upload', ['requirementId' => $req['id'], 'label' => $sub ? 'Re-submit' : 'Submit'])
+                            @include('faculty.partials.submission-upload', ['requirementId' => $req['id'], 'accept' => $req['accept'], 'label' => $sub ? 'Re-submit' : ($req['covered_by'] ? 'Submit a different file' : 'Submit')])
                         @endif
                     </div>
                 </div>

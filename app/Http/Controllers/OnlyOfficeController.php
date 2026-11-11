@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ContentModule;
+use App\Models\SharedResource;
 use App\Models\SystemDocument;
 use App\Models\TemplateDocument;
 use App\Models\User;
@@ -90,6 +91,7 @@ class OnlyOfficeController extends Controller
             ContentModule::ONLYOFFICE_SOURCE => ContentModule::class,
             SystemDocument::ONLYOFFICE_SOURCE => SystemDocument::class,
             TemplateDocument::ONLYOFFICE_SOURCE => TemplateDocument::class,
+            SharedResource::ONLYOFFICE_SOURCE => SharedResource::class,
             default => abort(404),
         };
 

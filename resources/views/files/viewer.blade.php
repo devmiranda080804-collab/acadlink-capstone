@@ -17,6 +17,7 @@
         .viewer-meta { font-size: 11.5px; color: #c8d6ec; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .btn-download { display: inline-flex; align-items: center; gap: 6px; background: #fff; color: #0f2557; text-decoration: none; font-size: 12.5px; font-weight: 700; padding: 9px 16px; border-radius: 6px; flex-shrink: 0; }
         .btn-download:hover { background: #e8eefb; }
+        .viewer-notice { background: #fef3c7; color: #92400e; font-size: 12px; font-weight: 700; padding: 8px 12px; border-radius: 6px; flex-shrink: 0; }
         .btn-download svg { width: 14px; height: 14px; }
 
         .viewer-body { flex: 1; min-height: 0; display: flex; justify-content: center; overflow: auto; padding: 16px; }
@@ -41,7 +42,8 @@
 <body>
     @php
         $icon = match ($previewAs) { 'pdf' => '📄', 'image' => '🖼️', 'docx' => '📝', default => '📎' };
-        $size = $file['size'] >= 1048576 ? round($file['size'] / 1048576, 1) . ' MB' : round($file['size'] / 1024, 1) . ' KB';
+        $size = !$file['size'] ? null : ($file['size'] >= 1048576 ? round($file['size'] / 1048576, 1) . ' MB' : round($file['size'] / 1024, 1) . ' KB');
+        $notice = $notice ?? null;
         $meta = collect([
             $file['name'],
             strtoupper($file['type']),
@@ -57,10 +59,14 @@
             <div class="viewer-title">{{ $file['title'] }}</div>
             <div class="viewer-meta" title="{{ $meta }}">{{ $meta }}</div>
         </div>
-        <a class="btn-download" href="{{ $downloadUrl }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Download
-        </a>
+        @if($downloadUrl)
+            <a class="btn-download" href="{{ $downloadUrl }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download
+            </a>
+        @elseif($notice)
+            <span class="viewer-notice">{{ $notice }}</span>
+        @endif
     </div>
 
     <div class="viewer-body">
@@ -73,8 +79,12 @@
             <div class="viewer-empty" id="docx-fallback" style="display:none;">
                 <div class="viewer-empty-icon">📝</div>
                 <div class="viewer-empty-title">This document can't be shown here</div>
-                <div class="viewer-empty-text">Download it to open it in Microsoft Word.</div>
-                <a class="btn-download-primary" href="{{ $downloadUrl }}">Download</a>
+                @if($downloadUrl)
+                    <div class="viewer-empty-text">Download it to open it in Microsoft Word.</div>
+                    <a class="btn-download-primary" href="{{ $downloadUrl }}">Download</a>
+                @else
+                    <div class="viewer-empty-text">Please reload this page to try again.</div>
+                @endif
             </div>
         @else
             <div class="viewer-empty">

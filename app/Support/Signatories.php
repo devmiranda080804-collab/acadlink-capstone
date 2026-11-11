@@ -18,7 +18,7 @@ class Signatories
     public static function programHead(?string $program): array
     {
         $head = $program
-            ? User::where('role', 'program_head')->where('program', $program)->whereNull('archived_at')->orderBy('id')->first()
+            ? User::where('role', 'program_head')->inProgram($program)->whereNull('archived_at')->orderBy('id')->first()
             : null;
 
         return ['name' => $head?->name, 'title' => 'Program Head' . ($program ? ', ' . $program : '')];

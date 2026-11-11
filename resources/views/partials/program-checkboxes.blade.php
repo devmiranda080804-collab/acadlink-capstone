@@ -11,4 +11,4 @@
         <label title="{{ $label }}"><input type="checkbox" name="programs[]" value="{{ $code }}"> {{ $code }}</label>
     @endforeach
 </div>
-<div class="program-checks-hint">Choose every program this faculty member teaches in.</div>
+<div class="program-checks-hint">Choose every program this person teaches in or leads.</div>

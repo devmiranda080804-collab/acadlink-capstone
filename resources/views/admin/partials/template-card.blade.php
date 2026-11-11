@@ -22,7 +22,7 @@
         {{ \App\Models\TemplateDocument::typeLabel($template->type) }}
         @if($template->version > 1) <span class="version-tag">v{{ $template->version }}</span> @endif
     </div>
-    <div class="tmpl-card-meta">Submitted by {{ $template->creator->name ?? 'Unknown' }} • {{ $template->created_at->format('Y-m-d') }}</div>
+    <div class="tmpl-card-meta">Uploaded by {{ $template->creator->name ?? 'Unknown' }}<br>{{ \App\Support\DisplayTime::format($template->created_at) }}</div>
 
     @if($template->isReturned() && $template->return_reason)
         <div class="return-reason"><strong>Returned:</strong> {{ $template->return_reason }}</div>
@@ -39,20 +39,10 @@
     {{-- Two rows so the buttons always fit inside the card: the main decision on top,
          then View and the small tools. --}}
     <div class="action-buttons">
-        @if($template->isPending())
-            <div class="action-row">
-                <button type="button" class="btn-approve" onclick="openSendModal({{ $template->id }}, @js($template->title), 'approve', @js($suggestedPrograms))">Approve &amp; Send</button>
-                <button type="button" class="btn-return" onclick="openReturnModal({{ $template->id }}, @js($template->title))">Return</button>
-            </div>
-        @elseif($template->isApproved())
-            <div class="action-row">
-                <button type="button" class="btn-approve" onclick="openSendModal({{ $template->id }}, @js($template->title), 'send', @js($sentPrograms))">{{ $sentPrograms ? 'Send to More Programs' : 'Send to Programs' }}</button>
-            </div>
-        @endif
         <div class="action-row">
-            <a class="btn-view" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank">
+            <a class="btn-view" href="{{ url('/admin/template-approvals/' . $template->id . '/review') }}" title="{{ $template->isPending() ? 'Open the file to comment, approve and send, or return it' : 'Open the file' }}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                View
+                {{ $template->isPending() ? 'Review' : 'View' }}
             </a>
             <a class="btn-icon-sm" href="{{ \App\Support\FileLinks::download('template', $template->id) }}" title="Download">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>

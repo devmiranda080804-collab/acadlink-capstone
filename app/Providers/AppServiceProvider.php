@@ -26,6 +26,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \App\Support\SystemNotifications::register();
+
         // PhpWord writes text into the .docx XML unescaped by default, so a topic or
         // question containing "&" or "<" produced a file Word refuses to open.
         \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
@@ -80,6 +82,7 @@ class AppServiceProvider extends ServiceProvider
                 // templates the Dean sends, so these counts only apply to them.
                 if ($role === 'faculty') {
                     $view->with('urgentSubmissionsCount', SubmissionRequirement::urgentCountFor(Auth::user()));
+                    \App\Support\SystemNotifications::remindDeadlines(Auth::user());
                     $view->with('newTemplatesCount', TemplateDocument::newCountFor(Auth::user()));
                 }
             }

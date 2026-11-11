@@ -15,7 +15,7 @@ class DocumentTools
     public function history(Model $document, string $restoreBase): array
     {
         return $document->fileVersions()->with('editor')->latest('id')->get()->map(fn (FileVersion $version) => [
-            'saved_at'     => ($version->saved_at ?? $version->created_at)->format('M j, Y g:i A'),
+            'saved_at'     => \App\Support\DisplayTime::format($version->saved_at ?? $version->created_at),
             'editor'       => $version->editor->name ?? null,
             'size'         => $this->readable($version->file_size),
             'download_url' => FileLinks::download('version', $version->id),

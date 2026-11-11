@@ -9,6 +9,7 @@ use App\Models\CourseTopic;
 use App\Models\ProgramAssignment;
 use App\Models\TemplateDocument;
 use App\Services\AcademicDocumentValidator;
+use App\Services\ModuleKeyPointsService;
 use App\Support\AcademicTerm;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -84,6 +85,7 @@ class CourseCoordinationController extends Controller
             'week_to'        => 'nullable|integer|gte:week_from|max:' . CourseTopic::MAX_WEEK,
             'hours'          => 'required|integer|min:1',
             'notes'          => 'nullable|string|max:5000',
+            'key_points'     => 'nullable|string|max:5000',
             // Required when first adding a topic — Teaching Notes alone is not
             // enough grounding for the Assessment Generator's AI question
             // drafting. Editing an existing topic can still leave it as-is
@@ -95,6 +97,10 @@ class CourseCoordinationController extends Controller
         $course = Course::whereIn('id', $this->assignedCourseIds())
             ->where('id', $request->course_id)
             ->firstOrFail();
+
+        if ($duplicate = $this->duplicateTopic($course->id, $request->topic)) {
+            return back()->withErrors(['topic' => $duplicate])->withInput()->with('active_tab', 'topics');
+        }
 
         $nextOrder = CourseTopic::where('course_id', $course->id)
             ->where('grading_period', $request->grading_period)
@@ -112,6 +118,7 @@ class CourseCoordinationController extends Controller
             'weeks'            => CourseTopic::weeksValue((int) $request->week_from, $request->filled('week_to') ? (int) $request->week_to : null),
             'hours'            => $request->hours,
             'notes'            => $moduleData['extracted_notes'] ?? $request->notes,
+            'key_points'       => self::keyPointsValue($request->key_points),
             'module_path'      => $moduleData['module_path'],
             'module_file_name' => $moduleData['module_file_name'],
             'order'            => $nextOrder,
@@ -131,14 +138,20 @@ class CourseCoordinationController extends Controller
             'week_to'   => 'nullable|integer|gte:week_from|max:' . CourseTopic::MAX_WEEK,
             'hours'  => 'required|integer|min:1',
             'notes'  => 'nullable|string|max:5000',
+            'key_points' => 'nullable|string|max:5000',
             'module' => 'nullable|file|mimes:pdf,docx|max:20480',
         ], self::TOPIC_MESSAGES, self::TOPIC_FIELD_NAMES);
+
+        if ($duplicate = $this->duplicateTopic($courseTopic->course_id, $request->topic, $courseTopic->id)) {
+            return back()->withErrors(['topic' => $duplicate])->withInput()->with('active_tab', 'topics');
+        }
 
         $data = [
             'topic' => $request->topic,
             'weeks' => CourseTopic::weeksValue((int) $request->week_from, $request->filled('week_to') ? (int) $request->week_to : null),
             'hours' => $request->hours,
             'notes' => $request->notes,
+            'key_points' => self::keyPointsValue($request->key_points),
         ];
 
         if ($request->hasFile('module')) {
@@ -160,6 +173,68 @@ class CourseCoordinationController extends Controller
         $courseTopic->update($data);
 
         return back()->with('success', 'Topic updated.')->with('active_tab', 'topics');
+    }
+
+    // Called when the instructor picks a module in the topic form: the AI reads it and
+    // suggests key points. Nothing is saved here; the list goes back into the form.
+    public function suggestKeyPoints(Request $request)
+    {
+        $request->validate([
+            'module' => 'required|file|mimes:pdf,docx|max:20480',
+            'topic'  => 'nullable|string|max:255',
+        ], self::TOPIC_MESSAGES, self::TOPIC_FIELD_NAMES);
+
+        $file = $request->file('module');
+        $isPdf = strtolower($file->getClientOriginalExtension()) === 'pdf';
+        $text = $isPdf ? null : $this->extractDocxText($file->getRealPath());
+
+        if (! $isPdf && trim((string) $text) === '') {
+            return response()->json(['points' => [], 'message' => 'No text was found in this Word file, so no key points could be suggested.'], 422);
+        }
+
+        try {
+            $points = app(ModuleKeyPointsService::class)->suggest((string) $request->topic, $isPdf ? $file->getRealPath() : null, $text);
+        } catch (\RuntimeException $e) {
+            return response()->json(['points' => [], 'message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json(['points' => [], 'message' => 'The AI couldn\'t read this module right now. You can type the key points yourself or try again.'], 422);
+        }
+
+        if (! $points) {
+            return response()->json(['points' => [], 'message' => 'The AI found no key points in this module. You can type them yourself.'], 422);
+        }
+
+        return response()->json(['points' => $points]);
+    }
+
+    // Saved one point per line; an empty list is saved as null.
+    protected static function keyPointsValue(?string $value): ?string
+    {
+        $points = ModuleKeyPointsService::clean($value);
+
+        return $points ? implode("\n", $points) : null;
+    }
+
+    // A topic name can appear only once in a course, in any grading period. Case, spacing
+    // and punctuation don't make a different topic.
+    protected function duplicateTopic(int $courseId, string $topic, ?int $exceptId = null): ?string
+    {
+        $key = self::topicKey($topic);
+        $existing = CourseTopic::where('course_id', $courseId)
+            ->when($exceptId, fn ($q) => $q->where('id', '!=', $exceptId))
+            ->get(['id', 'topic', 'grading_period'])
+            ->first(fn ($t) => self::topicKey($t->topic) === $key);
+
+        return $existing
+            ? '"' . $existing->topic . '" is already a topic of this course (' . $existing->grading_period . '). Use a different topic name, or edit the existing one.'
+            : null;
+    }
+
+    protected static function topicKey(string $topic): string
+    {
+        return trim(preg_replace('/[^\p{L}\p{N}]+/u', ' ', mb_strtolower($topic)));
     }
 
     // Stores the uploaded module file. PDFs are kept as-is — the Assessment

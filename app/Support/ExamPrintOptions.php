@@ -3,11 +3,10 @@
 namespace App\Support;
 
 use App\Models\Exam;
-use App\Models\Setting;
 use Illuminate\Validation\Rule;
 
-// Font, paper and layout for the downloaded exam and answer key. The college default is set by
-// the Admin (Settings); each exam keeps the faculty's own choice from Download Options.
+// Font, paper and layout for the printed exam and answer key. Each exam keeps the faculty's own
+// choice from Print Settings in the Exam Builder; until one is chosen, DEFAULTS are used.
 class ExamPrintOptions
 {
     public const FONTS = ['Arial', 'Times New Roman', 'Calibri', 'Tahoma'];
@@ -30,21 +29,6 @@ class ExamPrintOptions
 
     public const DEFAULTS = ['font' => 'Arial', 'size' => 12, 'paper' => 'long', 'layout' => 'standard'];
 
-    public const SETTING_FONT = 'exam.font';
-    public const SETTING_SIZE = 'exam.font_size';
-    public const SETTING_PAPER = 'exam.paper';
-    public const SETTING_LAYOUT = 'exam.layout';
-
-    public static function collegeDefaults(): array
-    {
-        return self::clean([
-            'font'  => Setting::get(self::SETTING_FONT),
-            'size'  => Setting::get(self::SETTING_SIZE),
-            'paper' => Setting::get(self::SETTING_PAPER),
-            'layout' => Setting::get(self::SETTING_LAYOUT),
-        ], self::DEFAULTS);
-    }
-
     public static function forExam(Exam $exam): array
     {
         return self::clean([
@@ -52,7 +36,7 @@ class ExamPrintOptions
             'size'  => $exam->print_font_size,
             'paper' => $exam->print_paper,
             'layout' => $exam->print_layout,
-        ], self::collegeDefaults());
+        ], self::DEFAULTS);
     }
 
     // Validation rules for the fields under the given names.

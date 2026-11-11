@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Setting;
 use App\Support\AcademicTerm;
-use App\Support\ExamPrintOptions;
 use App\Support\Signatories;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,7 +17,6 @@ class SettingsController extends Controller
         return view('admin.settings', [
             'deanName'  => Setting::get(Signatories::DEAN_NAME),
             'deanTitle' => Setting::get(Signatories::DEAN_TITLE),
-            'examPrint' => ExamPrintOptions::collegeDefaults(),
             'term'      => [
                 'manual'      => AcademicTerm::isManual(),
                 'school_year' => Setting::get(AcademicTerm::SETTING_SCHOOL_YEAR) ?? AcademicTerm::currentSchoolYear(),
@@ -55,23 +53,6 @@ class SettingsController extends Controller
             AuditLog::record('Settings Updated', "Academic term changed from {$before} to {$after} by " . auth()->user()->name);
 
             return back()->with('success', "Academic term saved. The system now uses {$after}.");
-        }
-
-        if ($request->input('section') === 'exam_print') {
-            $request->validate(
-                ExamPrintOptions::rules('exam_font', 'exam_font_size', 'exam_paper', true, 'exam_layout'),
-                [],
-                ['exam_font' => 'Font style', 'exam_font_size' => 'Font size', 'exam_paper' => 'Paper size', 'exam_layout' => 'Layout']
-            );
-
-            Setting::put(ExamPrintOptions::SETTING_FONT, $request->exam_font);
-            Setting::put(ExamPrintOptions::SETTING_SIZE, (string) $request->exam_font_size);
-            Setting::put(ExamPrintOptions::SETTING_PAPER, $request->exam_paper);
-            Setting::put(ExamPrintOptions::SETTING_LAYOUT, $request->exam_layout);
-
-            AuditLog::record('Settings Updated', 'Exam printing defaults updated by ' . auth()->user()->name);
-
-            return back()->with('success', 'Exam printing defaults saved.');
         }
 
         $request->validate([

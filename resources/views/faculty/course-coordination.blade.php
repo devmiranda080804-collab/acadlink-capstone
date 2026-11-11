@@ -154,6 +154,10 @@
 
 
         svg { display: inline-block; vertical-align: middle; }
+        .topic-key-points { margin-top:4px; font-size:11.5px; color:#555; }
+        .topic-key-points summary { cursor:pointer; color:#1d4ed8; }
+        .topic-key-points ul { margin:4px 0 0 18px; padding:0; }
+        .topic-key-points li { margin:2px 0; }
     </style>
 </head>
 <body>
@@ -222,6 +226,7 @@
             <span class="label">Current role</span>
             <div class="topnav-right">
                 <span class="role-badge">Faculty</span>
+                @include('partials.notification-bell')
                 <div class="user-info">
                     <div class="user-text">
                         <div class="user-name">{{ auth()->user()->name }}</div>
@@ -419,6 +424,16 @@
                                                 @else · <span style="color:#bbb;">no notes/module yet</span>
                                                 @endif
                                             </div>
+                                            @if($keyPoints = $topic->keyPointList())
+                                                <details class="topic-key-points">
+                                                    <summary>{{ count($keyPoints) }} key {{ count($keyPoints) === 1 ? 'point' : 'points' }}</summary>
+                                                    <ul>
+                                                        @foreach($keyPoints as $point)
+                                                            <li>{{ $point }}</li>
+                                                        @endforeach
+                                                    </ul>
+                                                </details>
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="file-actions">
@@ -517,7 +532,12 @@
                 <div class="modal-field">
                     <label>Module <span id="topic-field-module-hint" style="font-size:10px;color:#999;">(PDF or Word — PDF is read directly by AI; Word content is auto-extracted into Teaching Notes above)</span></label>
                     <div id="topic-current-module" style="font-size:11.5px;color:#666;margin-bottom:4px;display:none;"></div>
-                    <input type="file" name="module" id="topic-field-module" accept=".pdf,.docx">
+                    <input type="file" name="module" id="topic-field-module" accept=".pdf,.docx" onchange="suggestKeyPoints()">
+                </div>
+                <div class="modal-field">
+                    <label>Key Points <span style="font-size:10px;color:#999;">(AI suggests these from the module you pick — one per line, edit as needed)</span></label>
+                    <textarea name="key_points" id="topic-field-key-points" rows="5" placeholder="Pick a module above and the AI will list its key points here." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
+                    <div class="field-note" id="topic-key-points-status" style="display:none;"></div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeTopicModal()">Cancel</button>
@@ -778,7 +798,57 @@
             document.getElementById('topic-field-hours').value = '';
             document.getElementById('topic-hours-note').textContent = 'Computed from the weeks above. You can change it.';
             document.getElementById('topic-field-notes').value = '';
+            document.getElementById('topic-field-key-points').value = '';
+            document.getElementById('topic-field-module').value = '';
+            setKeyPointsStatus('', '');
+            keyPointsRequest++; keyPointsBusy = false; document.getElementById('topic-field-key-points').readOnly = false;
             document.getElementById('topic-current-module').style.display = 'none';
+        }
+
+        // When a module is picked, the AI reads it and fills in the key points.
+        // The instructor can edit them before saving.
+        var keyPointsRequest = 0, keyPointsBusy = false;
+        function setKeyPointsStatus(text, tone) {
+            var el = document.getElementById('topic-key-points-status');
+            el.textContent = text;
+            el.style.color = tone === 'error' ? '#c62828' : (tone === 'ok' ? '#16a34a' : '#666');
+            el.style.display = text ? 'block' : 'none';
+        }
+        function suggestKeyPoints() {
+            var input = document.getElementById('topic-field-module');
+            var file = input.files && input.files[0];
+            if (!file) return;
+            var request = ++keyPointsRequest;
+            var box = document.getElementById('topic-field-key-points');
+            var data = new FormData();
+            data.append('module', file);
+            data.append('topic', document.getElementById('topic-field-topic').value);
+            box.readOnly = true;
+            keyPointsBusy = true;
+            setKeyPointsStatus('AI is reading the module and picking out its key points…', '');
+            fetch('{{ url("/faculty/course-coordination/module-key-points") }}', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                body: data
+            }).then(function (r) {
+                return r.json().catch(function () { return {}; }).then(function (body) { return { ok: r.ok, body: body }; });
+            }).then(function (res) {
+                if (request !== keyPointsRequest) return;
+                var points = res.body.points || [];
+                if (res.ok && points.length) {
+                    box.value = points.join('\n');
+                    setKeyPointsStatus('AI suggested ' + points.length + ' key points from the module. Check them and edit if needed before saving.', 'ok');
+                } else {
+                    var message = res.body.message || (res.body.errors && Object.values(res.body.errors)[0][0]) || 'No key points could be suggested. You can type them yourself.';
+                    setKeyPointsStatus(message, 'error');
+                }
+            }).catch(function () {
+                if (request === keyPointsRequest) setKeyPointsStatus('Could not reach the AI. Check your connection and pick the file again, or type the key points yourself.', 'error');
+            }).finally(function () {
+                if (request !== keyPointsRequest) return;
+                box.readOnly = false;
+                keyPointsBusy = false;
+            });
         }
 
         function openTopicModal(period) {
@@ -811,6 +881,7 @@
                 weekCount && topic.hours % weekCount === 0 ? topic.hours / weekCount : 3;
             document.getElementById('topic-field-hours').value = topic.hours || '';
             document.getElementById('topic-field-notes').value = topic.notes || '';
+            document.getElementById('topic-field-key-points').value = topic.key_points || '';
             document.getElementById('topic-field-module').required = false;
             document.getElementById('topic-field-module-hint').textContent = '(optional — PDF or Word; upload a new file only if you want to replace the current one)';
             var currentModule = document.getElementById('topic-current-module');
@@ -821,6 +892,10 @@
             document.getElementById('topic-form-submit').textContent = 'Save Changes';
             document.getElementById('topic-overlay').classList.add('open');
         }
+
+        document.getElementById('topic-form').addEventListener('submit', function (e) {
+            if (keyPointsBusy) { e.preventDefault(); setKeyPointsStatus('Please wait — the AI is still reading the module.', 'error'); }
+        });
 
         function closeTopicModal() { document.getElementById('topic-overlay').classList.remove('open'); }
         document.getElementById('topic-overlay').addEventListener('click', function(e) { if (e.target === this) closeTopicModal(); });
