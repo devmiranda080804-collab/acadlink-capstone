@@ -529,7 +529,11 @@
             toggleProgramField(role);
             var codes = program ? program.split(',') : [];
             if (role === 'faculty' || role === 'program_head') setProgramChecks(codes);
-            document.getElementById('f-year').value = year;
+            var yearSelect = document.getElementById('f-year');
+            if (year && ![...yearSelect.options].some(function (o) { return o.value === year; })) {
+                yearSelect.add(new Option(year + ' (hidden)', year));
+            }
+            yearSelect.value = year;
             document.getElementById('f-google-email').value = googleEmail || '';
             toggleProgramField(role);
 

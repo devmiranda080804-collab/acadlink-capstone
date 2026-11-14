@@ -184,7 +184,7 @@ class ExamGeneratorController extends Controller
             foreach ($tos->parts ?? [] as $i => $part) {
                 $exam->sections()->create([
                     'title'        => TestParts::sectionTitle($part),
-                    'instructions' => TestParts::INSTRUCTIONS[$part['type'] ?? ''] ?? null,
+                    'instructions' => \App\Support\DocumentLayouts::directions($part['type'] ?? null),
                     'order'        => $i,
                 ]);
             }

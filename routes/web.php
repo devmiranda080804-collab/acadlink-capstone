@@ -216,6 +216,11 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
     Route::put('/settings', [AdminSettingsController::class, 'update']);
     Route::get('/system-cms', [SystemCmsController::class, 'index']);
     Route::put('/system-cms/site', [SystemCmsController::class, 'updateSite']);
+    Route::post('/system-cms/lists', [\App\Http\Controllers\Admin\CmsListController::class, 'store']);
+    Route::put('/system-cms/lists/{option}', [\App\Http\Controllers\Admin\CmsListController::class, 'update']);
+    Route::put('/system-cms/layouts/{document}', [\App\Http\Controllers\Admin\DocumentLayoutController::class, 'update']);
+    Route::get('/system-cms/layouts/image/{document}/{side}', [\App\Http\Controllers\Admin\DocumentLayoutController::class, 'image']);
+    Route::get('/system-cms/layouts/{document}/template', [\App\Http\Controllers\Admin\DocumentLayoutController::class, 'template']);
     Route::post('/template-types', [AdminTemplateTypeController::class, 'store']);
     Route::put('/template-types/{templateType}', [AdminTemplateTypeController::class, 'update']);
     Route::post('/template-types/{templateType}/toggle', [AdminTemplateTypeController::class, 'toggle']);

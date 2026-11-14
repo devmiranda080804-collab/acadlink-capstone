@@ -454,7 +454,11 @@
             document.getElementById('modal-title').innerText = 'Edit Account';
             document.getElementById('modal-error').style.display = 'none';
 
-            document.getElementById('f-year').value = year;
+            var yearSelect = document.getElementById('f-year');
+            if (year && ![...yearSelect.options].some(function (o) { return o.value === year; })) {
+                yearSelect.add(new Option(year + ' (hidden)', year));
+            }
+            yearSelect.value = year;
             document.getElementById('f-google-email').value = googleEmail || '';
 
             document.getElementById('f-firstname').value = firstName;

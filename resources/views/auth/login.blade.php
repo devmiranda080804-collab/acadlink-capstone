@@ -13,18 +13,6 @@
         font-family: Arial, sans-serif;
     }
 
-    .bg-blur {
-        position: fixed;
-        inset: 0;
-        background-color: #4a6b4a;
-        background-image: url('{{ \App\Support\SiteContent::imageUrl('login_background') }}');
-        background-size: cover;
-        background-position: center;
-        filter: blur(6px);
-        transform: scale(1.08);
-        z-index: 0;
-    }
-
     .page-bg {
         position: relative;
         z-index: 1;
@@ -33,13 +21,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-
-    .page-bg::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: rgba(0,0,0,0.28);
     }
 
     .card-wrap {
@@ -181,7 +162,7 @@
 </style>
 </head>
 <body>
-    <div class="bg-blur"></div>
+    @include('partials.auth-background')
 
     <div class="page-bg">
         <div class="card-wrap">

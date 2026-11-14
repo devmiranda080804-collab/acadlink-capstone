@@ -242,7 +242,7 @@
                         @endforeach
                     </select>
                     <select name="semester" class="filter-select" onchange="this.form.submit()" aria-label="Semester">
-                        @foreach(['First Semester', 'Second Semester', 'Summer'] as $sem)
+                        @foreach(\App\Support\AcademicTerm::semesters() as $sem)
                             <option value="{{ $sem }}" @selected($sem === $semester)>{{ $sem }}</option>
                         @endforeach
                     </select>

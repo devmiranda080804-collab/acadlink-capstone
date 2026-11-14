@@ -36,7 +36,30 @@ class ExamPrintOptions
             'size'  => $exam->print_font_size,
             'paper' => $exam->print_paper,
             'layout' => $exam->print_layout,
+        ], self::defaults());
+    }
+
+    // The defaults the Admin set in System CMS → Document Layouts → Exam (Print defaults).
+    public static function defaults(): array
+    {
+        return self::clean([
+            'font'   => DocumentLayouts::text('exam', 'print.font'),
+            'size'   => DocumentLayouts::text('exam', 'print.size'),
+            'paper'  => DocumentLayouts::text('exam', 'print.paper'),
+            'layout' => DocumentLayouts::text('exam', 'print.layout'),
         ], self::DEFAULTS);
+    }
+
+    // The choices of a Print defaults dropdown in Document Layouts.
+    public static function choices(string $list): array
+    {
+        return match ($list) {
+            'fonts'   => array_combine(self::FONTS, self::FONTS),
+            'sizes'   => array_combine(array_map('strval', self::SIZES), array_map(fn ($s) => $s . ' pt', self::SIZES)),
+            'papers'  => array_map(fn ($p) => $p['label'], self::PAPERS),
+            'layouts' => array_map(fn ($l) => $l['label'], self::LAYOUTS),
+            default   => [],
+        };
     }
 
     // Validation rules for the fields under the given names.

@@ -59,7 +59,7 @@ class AccountManagementController extends Controller
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|email|unique:users,email',
-            'academic_year' => 'required',
+            'academic_year' => ['required', \Illuminate\Validation\Rule::in(AcademicTerm::allSchoolYears())],
             'google_email'  => 'nullable|email|max:255',
         ]);
 
@@ -92,7 +92,7 @@ class AccountManagementController extends Controller
         $request->validate([
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
-            'academic_year' => 'required',
+            'academic_year' => ['required', \Illuminate\Validation\Rule::in(AcademicTerm::allSchoolYears())],
             'google_email'  => 'nullable|email|max:255',
         ]);
 

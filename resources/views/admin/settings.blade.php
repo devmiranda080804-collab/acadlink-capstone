@@ -175,7 +175,7 @@
                         <div class="settings-field">
                             <label for="term_semester">Semester</label>
                             <select id="term_semester" name="term_semester">
-                                @foreach(\App\Support\AcademicTerm::SEMESTERS as $semester)
+                                @foreach(\App\Support\AcademicTerm::semesters() as $semester)
                                     <option value="{{ $semester }}" @selected(old('term_semester', $term['semester']) === $semester)>{{ $semester }}</option>
                                 @endforeach
                             </select>

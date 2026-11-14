@@ -1284,7 +1284,7 @@
     <script>
         const CSRF = document.querySelector('meta[name="csrf-token"]').content;
         const QUESTION_TYPES = @json(\App\Support\BloomLevels::TYPES);
-        const EXAM_PRINT_DEFAULTS = @json(\App\Support\ExamPrintOptions::DEFAULTS);
+        const EXAM_PRINT_DEFAULTS = @json(\App\Support\ExamPrintOptions::defaults());
         const TOPICS_BY_ASSIGNMENT = @json($topicsByAssignment);
         const TOS_BY_ASSIGNMENT = @json($tosByAssignment);
         const ASSIGNMENTS = @json($assignments->map(fn($a) => ['id' => $a->id, 'label' => $a->course->code . ' — ' . $a->course->title]));

@@ -71,7 +71,7 @@ class AccountManagementController extends Controller
             'role'          => 'required|in:program_head,secretary,faculty',
             'programs'      => 'required_if:role,faculty,program_head|nullable|array',
             'programs.*'    => 'in:' . implode(',', Programs::codes()),
-            'academic_year' => 'required',
+            'academic_year' => ['required', \Illuminate\Validation\Rule::in(AcademicTerm::allSchoolYears())],
             'google_email'  => 'nullable|email|max:255',
         ], [], ['programs' => 'program']);
 
@@ -109,7 +109,7 @@ class AccountManagementController extends Controller
             'role'          => 'required|in:program_head,secretary,faculty',
             'programs'      => 'required_if:role,faculty,program_head|nullable|array',
             'programs.*'    => 'in:' . implode(',', Programs::codes()),
-            'academic_year' => 'required',
+            'academic_year' => ['required', \Illuminate\Validation\Rule::in(AcademicTerm::allSchoolYears())],
             'google_email'  => 'nullable|email|max:255',
         ], [], ['programs' => 'program']);
 
@@ -123,7 +123,7 @@ class AccountManagementController extends Controller
             'role'          => $request->role,
             'academic_year' => $request->academic_year,
         ]);
-        $programChange = $user->syncPrograms($this->programsFor($request));
+        $programChange = $user->syncPrograms(Programs::keepHidden($this->programsFor($request), $user->programCodes()));
 
         AccountNotifier::sendDetailChanges($user, $programChange);
 

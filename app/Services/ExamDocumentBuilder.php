@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Exam;
 use App\Support\AcademicTerm;
 use App\Support\ExamPrintOptions;
+use App\Support\DocumentLayouts;
 use App\Support\SiteContent;
 use PhpOffice\PhpWord\Element\Section;
 use PhpOffice\PhpWord\PhpWord;
@@ -32,12 +33,15 @@ class ExamDocumentBuilder
 
     protected array $options;
 
+    // Which Document Layouts column the file follows: "exam" or "answer_key".
+    protected string $document = 'exam';
+
     // Applies to the student copy only; the answer key always has one column.
     protected string $layout = 'standard';
 
     public function __construct(?array $options = null)
     {
-        $this->options = ($options ?? []) + ExamPrintOptions::DEFAULTS;
+        $this->options = ($options ?? []) + ExamPrintOptions::defaults();
     }
 
     protected function isAnswerSheet(): bool
@@ -52,6 +56,7 @@ class ExamDocumentBuilder
 
     public function build(Exam $exam): PhpWord
     {
+        $this->document = 'exam';
         $this->layout = $this->options['layout'];
         [$phpWord, $section] = $this->newDocument();
         $size = $this->options['size'];
@@ -64,7 +69,7 @@ class ExamDocumentBuilder
             . '      Total Points: ' . $totalPoints;
         $section->addText($meta, ['size' => $size - 1]);
         if ($this->isAnswerSheet()) {
-            $section->addText('Write all your answers on the separate answer sheet.', ['italic' => true, 'bold' => true, 'size' => $size - 1]);
+            $section->addText(DocumentLayouts::text('exam', 'contents.answer_sheet_note'), ['italic' => true, 'bold' => true, 'size' => $size - 1]);
         } else {
             $this->addStudentLines($section);
         }
@@ -108,8 +113,9 @@ class ExamDocumentBuilder
     {
         $size = $this->options['size'];
 
-        $section->addText('Name: ____________________________________________     Date: ________________', ['size' => $size - 1], ['spaceAfter' => 60]);
-        $section->addText('Course & Section: _________________________________     Score: _______________', ['size' => $size - 1]);
+        $label = fn ($field) => DocumentLayouts::text('exam', 'contents.' . $field);
+        $section->addText($label('name_label') . ': ____________________________________________     ' . $label('date_label') . ': ________________', ['size' => $size - 1], ['spaceAfter' => 60]);
+        $section->addText($label('section_label') . ': _________________________________     ' . $label('score_label') . ': _______________', ['size' => $size - 1]);
     }
 
     // The last page(s) of the "With Answer Sheet" layout, numbered like the questions.
@@ -255,12 +261,16 @@ class ExamDocumentBuilder
     // for students never includes it.
     public function buildAnswerKey(Exam $exam): PhpWord
     {
+        $this->document = 'answer_key';
         $this->layout = 'standard';
         [$phpWord, $section] = $this->newDocument();
         $size = $this->options['size'];
 
-        $this->addTitleBlock($section, $exam, strtoupper($exam->title) . ' — ANSWER KEY');
-        $section->addText('For faculty reference only — do not distribute to students.', ['italic' => true, 'size' => $size - 1], ['alignment' => Jc::CENTER]);
+        $this->addTitleBlock($section, $exam, trim(strtoupper($exam->title) . ' ' . DocumentLayouts::text('answer_key', 'contents.title_suffix')));
+        $note = DocumentLayouts::text('answer_key', 'contents.note');
+        if ($note !== '') {
+            $section->addText($note, ['italic' => true, 'size' => $size - 1], ['alignment' => Jc::CENTER]);
+        }
         $section->addTextBreak(1, ['size' => $size - 2]);
 
         $questionNumber = 0;
@@ -305,17 +315,17 @@ class ExamDocumentBuilder
         $left = $table->addCell((int) ($width * 0.62), ['valign' => 'bottom']);
         $brand = $left->addTable(['cellMargin' => 0]);
         $brand->addRow();
-        $brand->addCell(760, ['valign' => 'center'])->addImage(SiteContent::imagePath('letterhead_logo'), ['height' => 42]);
+        $brand->addCell(760, ['valign' => 'center'])->addImage(DocumentLayouts::imagePath($this->document, 'header.logo_left'), ['height' => 42]);
         $words = $brand->addCell(4600, ['valign' => 'center']);
-        foreach (SiteContent::wrapped('university_name', 14) as $line) {
+        foreach (DocumentLayouts::wrapped($this->document, 'header.university_name', 14) as $line) {
             $words->addText($line, ['name' => 'Calibri', 'bold' => true, 'size' => 17, 'color' => self::RED], ['spaceAfter' => 0, 'spacing' => 0, 'lineHeight' => 0.9]);
         }
-        $words->addText(SiteContent::text('university_note'), ['name' => 'Calibri', 'size' => 6.5, 'color' => self::RED], ['spaceAfter' => 0]);
+        $words->addText(DocumentLayouts::text($this->document, 'header.university_note'), ['name' => 'Calibri', 'size' => 6.5, 'color' => self::RED], ['spaceAfter' => 0]);
 
         // CBMA seal + college name on the right.
         $right = $table->addCell((int) ($width * 0.38), ['valign' => 'bottom']);
-        $right->addImage(SiteContent::imagePath('letterhead_seal'), ['height' => 30, 'alignment' => Jc::RIGHT]);
-        foreach (SiteContent::wrapped('college_name', 26) as $line) {
+        $right->addImage(DocumentLayouts::imagePath($this->document, 'header.logo_right'), ['height' => 30, 'alignment' => Jc::RIGHT]);
+        foreach (DocumentLayouts::wrapped($this->document, 'header.college_name', 26) as $line) {
             $right->addText($line, ['name' => 'Tahoma', 'size' => 8], ['alignment' => Jc::RIGHT, 'spaceAfter' => 0]);
         }
 
@@ -331,14 +341,19 @@ class ExamDocumentBuilder
 
         $left = $table->addCell((int) ($width * 0.34), ['valign' => 'bottom']);
         $tagline = $left->addTextRun(['spaceAfter' => 0]);
-        $tagline->addText('Bright', ['name' => 'Calibri', 'bold' => true, 'size' => 8, 'color' => self::BLUE]);
-        $tagline->addText(' future starts here', ['name' => 'Calibri', 'bold' => true, 'size' => 8, 'color' => self::RED]);
+        [$first, $rest] = array_pad(explode(' ', DocumentLayouts::text($this->document, 'footer.tagline'), 2), 2, '');
+        $tagline->addText($first, ['name' => 'Calibri', 'bold' => true, 'size' => 8, 'color' => self::BLUE]);
+        if ($rest !== '') {
+            $tagline->addText(' ' . $rest, ['name' => 'Calibri', 'bold' => true, 'size' => 8, 'color' => self::RED]);
+        }
 
         $middle = $table->addCell((int) ($width * 0.26), ['valign' => 'bottom']);
-        $middle->addPreserveText('Page {PAGE} of {NUMPAGES}', ['name' => 'Calibri', 'size' => 8, 'color' => '555555'], ['alignment' => Jc::CENTER, 'spaceAfter' => 0]);
+        if (DocumentLayouts::enabled($this->document, 'footer.page_numbers')) {
+            $middle->addPreserveText('Page {PAGE} of {NUMPAGES}', ['name' => 'Calibri', 'size' => 8, 'color' => '555555'], ['alignment' => Jc::CENTER, 'spaceAfter' => 0]);
+        }
 
         $right = $table->addCell((int) ($width * 0.40), ['valign' => 'bottom']);
-        foreach (SiteContent::lines('contact_details') as $line) {
+        foreach (DocumentLayouts::lines($this->document, 'footer.contact') as $line) {
             $right->addText($line, ['name' => 'Calibri', 'size' => 8, 'color' => self::RED], ['alignment' => Jc::RIGHT, 'spaceAfter' => 0]);
         }
     }
@@ -350,10 +365,13 @@ class ExamDocumentBuilder
         $center = ['alignment' => Jc::CENTER, 'spaceAfter' => 0];
         $course = $exam->programAssignment->course;
 
-        $section->addText(mb_strtoupper(SiteContent::text('university_name')), ['bold' => true, 'size' => $size], $center);
-        $section->addText(mb_strtoupper(SiteContent::text('college_name')), ['bold' => true, 'size' => $size], $center);
-        $section->addText(mb_strtoupper(AcademicTerm::currentSemester()) . ', A.Y. ' . AcademicTerm::currentSchoolYear(), ['bold' => true, 'size' => $size], $center);
-        $section->addTextBreak(1, ['size' => $size - 4]);
+        // The Exam column can leave these lines out; the answer key always has them.
+        if ($this->document !== 'exam' || DocumentLayouts::enabled('exam', 'contents.title_lines')) {
+            $section->addText(mb_strtoupper(DocumentLayouts::text($this->document, 'header.university_name')), ['bold' => true, 'size' => $size], $center);
+            $section->addText(mb_strtoupper(DocumentLayouts::text($this->document, 'header.college_name')), ['bold' => true, 'size' => $size], $center);
+            $section->addText(mb_strtoupper(AcademicTerm::currentSemester()) . ', A.Y. ' . AcademicTerm::currentSchoolYear(), ['bold' => true, 'size' => $size], $center);
+            $section->addTextBreak(1, ['size' => $size - 4]);
+        }
         $section->addText($title, ['bold' => true, 'size' => $size + 2], $center);
         $section->addText($course->code . ' — ' . $course->title, ['size' => $size], ['alignment' => Jc::CENTER, 'spaceAfter' => 160]);
     }

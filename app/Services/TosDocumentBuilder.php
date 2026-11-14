@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\User;
 use App\Support\AcademicTerm;
 use App\Support\BloomLevels;
+use App\Support\DocumentLayouts;
 use App\Support\Signatories;
 use App\Support\SiteContent;
 use PhpOffice\PhpWord\TemplateProcessor;
@@ -62,32 +63,46 @@ class TosDocumentBuilder
         return $path;
     }
 
-    // Puts the letterhead and footer from the System CMS into the finished file. The template
-    // holds the college's original wording, so nothing changes until the Admin changes it.
+    // Puts the header, labels and footer from System CMS → Document Layouts → TOS into the
+    // finished file. The template holds the college's original wording, so nothing changes
+    // until the Admin changes it (there or in Site Content).
     protected function applySiteContent(string $path): void
     {
-        $university = SiteContent::wrapped('university_name', 14);
-        $contact = SiteContent::lines('contact_details');
+        $layout = fn (string $field) => DocumentLayouts::text('tos', $field);
+        $university = DocumentLayouts::wrapped('tos', 'header.university_name', 14);
+        $contact = DocumentLayouts::lines('tos', 'footer.contact');
 
         $replacements = [
-            'URDANETA CITY UNIVERSITY' => mb_strtoupper(SiteContent::text('university_name')),
-            'COLLEGE OF BUSINESS MANAGEMENT AND ACCOUNTANCY' => mb_strtoupper(SiteContent::text('college_name')),
+            'URDANETA CITY UNIVERSITY' => mb_strtoupper($layout('header.university_name')),
+            'COLLEGE OF BUSINESS MANAGEMENT AND ACCOUNTANCY' => mb_strtoupper($layout('header.college_name')),
             'URDANETA CITY' => $university[0],
             'UNIVERSITY' => implode(' ', array_slice($university, 1)),
-            'Owned and operated by the City Government of Urdaneta' => SiteContent::text('university_note'),
+            'Owned and operated by the City Government of Urdaneta' => $layout('header.university_note'),
             '(075) 600 - 1507' => $contact[0] ?? '',
             'San Vicente West, Urdaneta City, Pangasinan' => $contact[1] ?? '',
             'ucu.edu.ph  |' => implode('  |  ', array_slice($contact, 2)),
             '  univpresidentofficial@gmail.com' => '',
+            // Labels of the signature block (the template has them XML-escaped).
+            'Printed Name &amp; Signature of Instructor' => $layout('contents.instructor_label'),
+            'Checked &amp; Reviewed:' => $layout('contents.checked_label'),
+            'Approved:  ' => $layout('contents.approved_label') . '  ',
         ];
         // The template's contact line already reads like this, split over two pieces of text.
         if (($contact[2] ?? null) === 'ucu.edu.ph  |  univpresidentofficial@gmail.com' && count($contact) === 3) {
             unset($replacements['ucu.edu.ph  |'], $replacements['  univpresidentofficial@gmail.com']);
         }
 
+        // The footer tagline is split in the template as "B" + "right" + " " + "future starts here".
+        [$first, $rest] = array_pad(explode(' ', $layout('footer.tagline'), 2), 2, '');
+        $footerOnly = [
+            'B' => mb_substr($first, 0, 1),
+            'right' => mb_substr($first, 1),
+            'future starts here' => $rest,
+        ];
+
         $images = array_filter([
-            'word/media/image1.png' => SiteContent::uploadedImage('letterhead_seal') ? SiteContent::imagePath('letterhead_seal') : null,
-            'word/media/image2.png' => SiteContent::uploadedImage('letterhead_logo') ? SiteContent::imagePath('letterhead_logo') : null,
+            'word/media/image1.png' => DocumentLayouts::replacedImagePath('tos', 'header.logo_right'),
+            'word/media/image2.png' => DocumentLayouts::replacedImagePath('tos', 'header.logo_left'),
         ]);
 
         $zip = new ZipArchive();
@@ -102,7 +117,7 @@ class TosDocumentBuilder
             }
 
             $updated = $xml;
-            foreach ($replacements as $old => $new) {
+            foreach ($replacements + ($part === 'word/footer1.xml' ? $footerOnly : []) as $old => $new) {
                 $updated = str_replace('>' . $old . '</w:t>', '>' . htmlspecialchars($new, ENT_XML1) . '</w:t>', $updated);
             }
             if ($updated !== $xml) {

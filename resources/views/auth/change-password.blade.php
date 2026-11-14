@@ -7,8 +7,6 @@
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
         body { font-family: Arial, sans-serif; height:100vh; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-        .bg-blur { position: fixed; inset: 0; background-color: #4a6b4a; background-image: url('{{ \App\Support\SiteContent::imageUrl('login_background') }}'); background-size: cover; background-position: center; filter: blur(6px); transform: scale(1.08); z-index: 0; }
-        body::before { content:''; position:absolute; inset:0; background:rgba(0,0,0,0.28); z-index: 1; }
         .card { position:relative; z-index: 2; background:#fff; width:420px; padding:32px 28px; border-radius:10px; box-shadow:0 6px 24px rgba(0,0,0,0.4); }
         .logo { text-align:center; margin-bottom:20px; }
         .logo img { width:64px; height:64px; border-radius:50%; }
@@ -26,7 +24,7 @@
 </head>
 <body>
 
-    <div class="bg-blur"></div>
+    @include('partials.auth-background')
 
     <div class="card">
         <div class="logo">

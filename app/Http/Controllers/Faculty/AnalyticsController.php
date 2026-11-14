@@ -20,7 +20,7 @@ class AnalyticsController extends Controller
             'schoolYear'  => $schoolYear,
             'semester'    => $semester,
             'schoolYears' => AcademicTerm::selectableSchoolYears(),
-            'semesters'   => AcademicTerm::SEMESTERS,
+            'semesters'   => AcademicTerm::semesters(),
             'compliance'   => $analytics->complianceReport($program, $facultyId),
             'coverage'     => $analytics->assessmentCoverageReport($program, $facultyId),
             'activity'     => $analytics->facultyActivitySummary($program, $facultyId, $schoolYear, $semester),

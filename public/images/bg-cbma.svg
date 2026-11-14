@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <!-- Preview of the CBMA login design (navy, pattern, CBMA stripe) for System CMS → Site Content. -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1d47"/>
+      <stop offset="0.55" stop-color="#1b3d7a"/>
+      <stop offset="1" stop-color="#0b1d47"/>
+    </linearGradient>
+    <pattern id="p" width="34" height="34" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="3" height="34" fill="#ffffff" fill-opacity="0.04"/>
+    </pattern>
+  </defs>
+  <rect width="1600" height="900" fill="url(#g)"/>
+  <rect width="1600" height="900" fill="url(#p)"/>
+  <circle cx="1400" cy="760" r="420" fill="none" stroke="#ffffff" stroke-opacity="0.07" stroke-width="40"/>
+  <circle cx="1400" cy="760" r="300" fill="none" stroke="#f2c94c" stroke-opacity="0.08" stroke-width="10"/>
+  <rect x="80" y="700" width="90" height="5" fill="#f2c94c"/>
+  <text x="80" y="760" fill="#ffffff" font-family="Arial, sans-serif" font-size="40" font-weight="700">COLLEGE OF BUSINESS MANAGEMENT</text>
+  <text x="80" y="808" fill="#ffffff" font-family="Arial, sans-serif" font-size="40" font-weight="700">AND ACCOUNTANCY</text>
+  <rect x="0" y="890" width="533" height="10" fill="#C12035"/>
+  <rect x="533" y="890" width="534" height="10" fill="#f2c94c"/>
+  <rect x="1067" y="890" width="533" height="10" fill="#273F89"/>
+</svg>

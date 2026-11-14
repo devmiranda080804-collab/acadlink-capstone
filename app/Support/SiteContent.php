@@ -22,7 +22,7 @@ class SiteContent
 
     // source: where the original image lives ("public" folder or the document branding folder).
     const IMAGES = [
-        'login_background' => ['label' => 'Login background', 'source' => 'public', 'file' => 'images/bg-campus.jpg', 'hint' => 'Behind the login and password pages.'],
+        'login_background' => ['label' => 'Login background', 'source' => 'public', 'file' => 'images/bg-cbma.svg', 'hint' => 'Behind the login and password pages. Without a photo it shows the CBMA design (navy, the CBMA seal and the college name). Upload a CBMA photo or design to show it behind, with the CBMA colors over it.'],
         'login_logo' => ['label' => 'System logo', 'source' => 'public', 'file' => 'images/cbma-logo.png', 'hint' => 'On the login and password pages, and in the sidebar of every page.'],
         'letterhead_logo' => ['label' => 'Letterhead logo', 'source' => 'resource', 'file' => 'templates/branding/ucu-logo.png', 'hint' => 'Left side of the letterhead on downloaded exams and the TOS. PNG only.', 'png_only' => true],
         'letterhead_seal' => ['label' => 'Letterhead seal', 'source' => 'resource', 'file' => 'templates/branding/cbma-seal.png', 'hint' => 'Right side of the letterhead on downloaded exams and the TOS. PNG only.', 'png_only' => true],

@@ -183,9 +183,9 @@
                         @endforeach
                     </select>
                     <select name="semester" class="filter-select" onchange="this.form.submit()">
-                        <option value="First Semester" {{ $semester == 'First Semester' ? 'selected' : '' }}>First Semester</option>
-                        <option value="Second Semester" {{ $semester == 'Second Semester' ? 'selected' : '' }}>Second Semester</option>
-                        <option value="Summer" {{ $semester == 'Summer' ? 'selected' : '' }}>Summer</option>
+                        @foreach(array_unique(array_merge(\App\Support\AcademicTerm::semesters(), [$semester])) as $sem)
+                            <option value="{{ $sem }}" {{ $semester == $sem ? 'selected' : '' }}>{{ $sem }}</option>
+                        @endforeach
                     </select>
                 </form>
             </div>

@@ -120,13 +120,15 @@
             <div class="page-header">
                 <div>
                     <div class="page-title">System CMS</div>
-                    <div class="page-sub">Template elements and site content of the whole system.</div>
+                    <div class="page-sub">Template elements, document layouts, dropdown lists and site content of the whole system.</div>
                 </div>
             </div>
 
             @if($isAdmin)
                 <div class="cms-tabs">
                     <button type="button" class="cms-tab active" data-panel="panel-elements" onclick="showPanel(this)">Template Elements</button>
+                    <button type="button" class="cms-tab" data-panel="panel-layouts" onclick="showPanel(this)">Document Layouts</button>
+                    <button type="button" class="cms-tab" data-panel="panel-lists" onclick="showPanel(this)">Dropdown Lists</button>
                     <button type="button" class="cms-tab" data-panel="panel-site" onclick="showPanel(this)">Site Content</button>
                 </div>
             @endif
@@ -136,6 +138,14 @@
             </div>
 
             @if($isAdmin)
+                <div class="cms-panel" id="panel-layouts">
+                    @include('system-cms.partials.document-layouts')
+                </div>
+
+                <div class="cms-panel" id="panel-lists">
+                    @include('system-cms.partials.dropdown-lists')
+                </div>
+
                 <div class="cms-panel" id="panel-site">
                     <form method="POST" action="{{ url('/admin/system-cms/site') }}" enctype="multipart/form-data">
                         @csrf
@@ -194,6 +204,12 @@
 
         @if($isAdmin && session('site_saved'))
             showPanel(document.querySelector('.cms-tab[data-panel="panel-site"]'));
+        @endif
+        @if($isAdmin && (session('cms_panel') === 'panel-layouts' || collect($errors->keys())->contains(fn ($k) => str_contains($k, '__'))))
+            showPanel(document.querySelector('.cms-tab[data-panel="panel-layouts"]'));
+        @endif
+        @if($isAdmin && (session('cms_panel') === 'panel-lists' || $errors->hasAny(['list', 'key', 'label', 'is_active', 'cms_list'])))
+            showPanel(document.querySelector('.cms-tab[data-panel="panel-lists"]'));
         @endif
     </script>
 

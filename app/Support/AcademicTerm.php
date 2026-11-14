@@ -59,25 +59,46 @@ class AcademicTerm
         return [self::currentSchoolYear()];
     }
 
-    // Dropdown options for school-year pickers: the current school year and the
-    // next one, ascending. Follows the current term, so it moves forward each
-    // school year on its own.
-    public static function schoolYearOptions(): array
+    // Semesters shown in dropdowns, as set in System CMS → Dropdown Lists.
+    public static function semesters(): array
     {
-        $startYear = (int) explode('-', self::currentSchoolYear())[0];
-
-        return [
-            $startYear . '-' . ($startYear + 1),
-            ($startYear + 1) . '-' . ($startYear + 2),
-        ];
+        return CmsLists::keys(CmsLists::SEMESTERS, self::SEMESTERS) ?: self::SEMESTERS;
     }
 
-    // School years the Admin can choose from: the calendar's one year back to two ahead.
+    // Academic years shown in dropdowns, as set in System CMS → Dropdown Lists. The current
+    // one is always included, so the present term can always be picked.
+    public static function schoolYearOptions(): array
+    {
+        $years = CmsLists::keys(CmsLists::SCHOOL_YEARS, self::defaultSchoolYears());
+        if (!in_array(self::currentSchoolYear(), $years, true)) {
+            $years[] = self::currentSchoolYear();
+        }
+        sort($years);
+
+        return array_values($years);
+    }
+
+    // The years the Admin can set the term to in Settings: the same list.
     public static function settingsSchoolYearOptions(): array
     {
-        $start = (int) explode('-', self::calendarSchoolYear())[0];
+        return self::schoolYearOptions();
+    }
 
-        return array_map(fn($y) => $y . '-' . ($y + 1), range($start - 1, $start + 2));
+    // Every academic year on the list, hidden ones too — for validating records that use one.
+    public static function allSchoolYears(): array
+    {
+        return array_values(array_unique(array_merge(
+            CmsLists::keys(CmsLists::SCHOOL_YEARS, self::defaultSchoolYears(), true),
+            [self::currentSchoolYear()]
+        )));
+    }
+
+    // What the dropdowns offered before the list was managed: this year and the next.
+    protected static function defaultSchoolYears(): array
+    {
+        $startYear = (int) explode('-', self::calendarSchoolYear())[0];
+
+        return [$startYear . '-' . ($startYear + 1), ($startYear + 1) . '-' . ($startYear + 2)];
     }
 
     public static function isValidSchoolYear(?string $value): bool
