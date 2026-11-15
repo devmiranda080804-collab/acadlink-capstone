@@ -3,56 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Change Password – CBMA System</title>
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family: Arial, sans-serif; height:100vh; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-        .card { position:relative; z-index: 2; background:#fff; width:420px; padding:32px 28px; border-radius:10px; box-shadow:0 6px 24px rgba(0,0,0,0.4); }
-        .logo { text-align:center; margin-bottom:20px; }
-        .logo img { width:64px; height:64px; border-radius:50%; }
-        h1 { font-size:17px; color:#111; margin-bottom:6px; text-align:center; }
-        p.sub { font-size:12px; color:#666; margin-bottom:22px; line-height:1.5; text-align:center; }
-        .field { margin-bottom:14px; }
-        .field label { display:block; font-size:11.5px; font-weight:700; color:#222; margin-bottom:4px; }
-        .field input { width:100%; height:36px; padding:0 10px; border:1px solid #ccc; border-radius:5px; font-size:12.5px; outline:none; transition:border-color .15s; }
-        .field input:focus { border-color:#1d4ed8; }
-        .error-msg { background:#fee2e2; border:1px solid #fca5a5; color:#b91c1c; font-size:11px; padding:8px 10px; border-radius:4px; margin-bottom:14px; }
-        .hint { font-size:11px; color:#999; margin-top:4px; }
-        .btn { width:100%; height:38px; background:#0f2557; color:#fff; border:none; border-radius:5px; font-size:13px; font-weight:600; cursor:pointer; margin-top:6px; transition:background .15s; }
-        .btn:hover { background:#1b3d7a; }
-    </style>
+    <title>Change Password – {{ \App\Support\SiteContent::text('system_name') }}</title>
+    @include('partials.auth-styles')
 </head>
 <body>
-
     @include('partials.auth-background')
 
-    <div class="card">
-        <div class="logo">
-            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
+    <div class="page-bg">
+        <div class="card-wrap">
+
+            @include('partials.auth-brand')
+
+            <div class="form-panel">
+                <form method="POST" action="{{ url('/change-password') }}">
+                    @csrf
+
+                    <div class="eyebrow">Account security</div>
+                    <h1>Change your password</h1>
+                    <p class="sub">For your security, please change your temporary password before continuing to the system.</p>
+
+                    @include('partials.auth-alerts')
+
+                    <div class="field">
+                        <label for="password">New Password</label>
+                        @include('partials.auth-password', ['id' => 'password', 'name' => 'password', 'placeholder' => 'Minimum 8 characters'])
+                        <span class="hint">At least 8 characters</span>
+                    </div>
+
+                    <div class="field">
+                        <label for="password_confirmation">Confirm New Password</label>
+                        @include('partials.auth-password', ['id' => 'password_confirmation', 'name' => 'password_confirmation', 'placeholder' => 'Re-type new password'])
+                    </div>
+
+                    <button type="submit" class="btn-sign-in">
+                        Update Password
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </button>
+
+                    <p class="copyright">© {{ date('Y') }} {{ \App\Support\SiteContent::text('system_name') }}. All rights reserved.</p>
+                </form>
+            </div>
+
         </div>
-        <h1>Change Your Password</h1>
-        <p class="sub">For your security, please change your temporary password before continuing to the system.</p>
-
-        @if($errors->any())
-            <div class="error-msg">{{ $errors->first() }}</div>
-        @endif
-
-        <form method="POST" action="{{ url('/change-password') }}">
-            @csrf
-            <div class="field">
-                <label for="password">New Password</label>
-                <input type="password" id="password" name="password"
-                    placeholder="Minimum 8 characters" required>
-                <span class="hint">At least 8 characters</span>
-            </div>
-            <div class="field">
-                <label for="password_confirmation">Confirm New Password</label>
-                <input type="password" id="password_confirmation" name="password_confirmation"
-                    placeholder="Re-type new password" required>
-            </div>
-            <button type="submit" class="btn">Update Password</button>
-        </form>
     </div>
+
+    @include('partials.auth-scripts')
     @include('partials.system-feedback')
 </body>
 </html>

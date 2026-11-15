@@ -3,78 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Password – CBMA System</title>
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family: Arial, sans-serif; height:100vh; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-        .card-wrap { position:relative; z-index: 2; display:flex; align-items:stretch; border-radius:8px; overflow:hidden; box-shadow:0 6px 28px rgba(0,0,0,0.5); width:520px; }
-        .logo-panel { width:185px; flex-shrink:0; background-color:#1b3d7a; display:flex; align-items:center; justify-content:center; padding:28px 18px; }
-        .logo-panel img { width:148px; height:148px; object-fit:contain; border-radius:50%; }
-        .form-panel { flex:1; background-color:#fff; padding:26px 26px 22px; display:flex; flex-direction:column; }
-        .form-panel h1 { font-size:17px; font-weight:700; color:#111; text-align:center; margin-bottom:2px; }
-        .form-panel .sub { font-size:10.5px; color:#555; text-align:center; margin-bottom:18px; line-height:1.4; }
-        .field { margin-bottom:13px; }
-        .field label { display:block; font-size:11.5px; font-weight:700; color:#222; margin-bottom:3px; }
-        .field input { width:100%; height:34px; padding:0 10px; border:1px solid #c8c8c8; border-radius:4px; font-size:12px; color:#333; outline:none; transition:border-color .15s; }
-        .field input:focus { border-color:#2563eb; }
-        .field input::placeholder { color:#b0b0b0; font-size:11.5px; }
-        .hint { font-size:10.5px; color:#999; margin-top:3px; }
-        .error-msg { background:#fee2e2; border:1px solid #fca5a5; color:#b91c1c; font-size:11px; padding:6px 10px; border-radius:4px; margin-bottom:10px; }
-        .btn-submit { width:100%; height:34px; margin-top:2px; background-color:#0f2557; color:#fff; font-size:13.5px; font-weight:600; border:none; border-radius:4px; cursor:pointer; transition:background-color .15s; }
-        .btn-submit:hover { background-color:#1b3d7a; }
-        .back-link { text-align:center; margin-top:10px; }
-        .back-link a { font-size:11px; color:#2563eb; text-decoration:none; }
-        .back-link a:hover { text-decoration:underline; }
-        .copyright { text-align:center; font-size:9.5px; color:#999; margin-top:14px; }
-    </style>
+    <title>Reset Password – {{ \App\Support\SiteContent::text('system_name') }}</title>
+    @include('partials.auth-styles')
 </head>
 <body>
-
     @include('partials.auth-background')
 
-    <div class="card-wrap">
-        <div class="logo-panel">
-            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
-        </div>
+    <div class="page-bg">
+        <div class="card-wrap">
 
-        <div class="form-panel">
-            <h1>CBMA System</h1>
-            <p class="sub">Reset your password</p>
+            @include('partials.auth-brand')
 
-            @if($errors->any())
-                <div class="error-msg">{{ $errors->first() }}</div>
-            @endif
+            <div class="form-panel">
+                <form method="POST" action="{{ route('password.update') }}">
+                    @csrf
+                    <input type="hidden" name="token" value="{{ $token }}">
+                    <input type="hidden" name="email" value="{{ $email }}">
 
-            <form method="POST" action="{{ route('password.update') }}">
-                @csrf
-                <input type="hidden" name="token" value="{{ $token }}">
-                <input type="hidden" name="email" value="{{ $email }}">
+                    <div class="eyebrow">Account recovery</div>
+                    <h1>Reset your password</h1>
+                    <p class="sub">Choose a new password for your account.</p>
 
-                <div class="field">
-                    <label for="password">New Password</label>
-                    <input type="password" id="password" name="password"
-                        placeholder="Minimum 8 characters"
-                        required>
-                    <span class="hint">At least 8 characters</span>
-                </div>
+                    @include('partials.auth-alerts')
 
-                <div class="field">
-                    <label for="password_confirmation">Confirm New Password</label>
-                    <input type="password" id="password_confirmation" name="password_confirmation"
-                        placeholder="Re-type new password"
-                        required>
-                </div>
+                    <div class="field">
+                        <label for="password">New Password</label>
+                        @include('partials.auth-password', ['id' => 'password', 'name' => 'password', 'placeholder' => 'Minimum 8 characters'])
+                        <span class="hint">At least 8 characters</span>
+                    </div>
 
-                <button type="submit" class="btn-submit">Reset Password</button>
-            </form>
+                    <div class="field">
+                        <label for="password_confirmation">Confirm New Password</label>
+                        @include('partials.auth-password', ['id' => 'password_confirmation', 'name' => 'password_confirmation', 'placeholder' => 'Re-type new password'])
+                    </div>
 
-            <div class="back-link">
-                <a href="{{ url('/login') }}">← Back to Login</a>
+                    <button type="submit" class="btn-sign-in">
+                        Reset Password
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </button>
+
+                    <div class="back-link">
+                        <a href="{{ url('/login') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back to Login</a>
+                    </div>
+
+                    <p class="copyright">© {{ date('Y') }} {{ \App\Support\SiteContent::text('system_name') }}. All rights reserved.</p>
+                </form>
             </div>
 
-            <p class="copyright">© 2026 CBMA System. All rights reserved.</p>
         </div>
     </div>
+
+    @include('partials.auth-scripts')
     @include('partials.system-feedback')
 </body>
 </html>
