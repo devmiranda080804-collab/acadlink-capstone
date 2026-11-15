@@ -48,44 +48,62 @@ class AppServiceProvider extends ServiceProvider
         Validator::replacer('mimes', $types);
         Validator::replacer('mimetypes', $types);
 
-        // Share permissions with all views
+        // Share the sidebar's permissions and badge counts with all views. The composer runs
+        // for every view and partial (each card, the bell, ...), so the data is worked out
+        // once per request and reused, instead of re-querying for every partial.
         View::composer('*', function ($view) {
             // Error pages must render even when the database is the problem.
-            if (str_starts_with($view->getName(), 'errors')) {
+            if (str_starts_with($view->getName(), 'errors') || !Auth::check()) {
                 return;
             }
 
-            if (Auth::check()) {
-                $role = Auth::user()->role;
-
-                $permissions = DB::table('role_permissions')
-                    ->where('role', $role)
-                    ->pluck('is_enabled', 'module')
-                    ->toArray();
-
-                // Faculty work on their template copies in the editor for now, with no CMS page.
-                if ($role === 'faculty') {
-                    $permissions['cms'] = false;
-                }
-                // The System CMS (template elements and site content) belongs to the Admin/Dean.
-                if ($role === 'secretary') {
-                    $permissions['system-cms'] = false;
-                }
-                if ($role === 'program_head') {
-                    $permissions['official-documents'] = false;
-                }
-
-                $view->with('navPermissions', $permissions);
-                $view->with('unreadAnnouncementsCount', Announcement::unreadCountFor(Auth::user()));
-
-                // Only faculty submit against requirements and receive the
-                // templates the Dean sends, so these counts only apply to them.
-                if ($role === 'faculty') {
-                    $view->with('urgentSubmissionsCount', SubmissionRequirement::urgentCountFor(Auth::user()));
-                    \App\Support\SystemNotifications::remindDeadlines(Auth::user());
-                    $view->with('newTemplatesCount', TemplateDocument::newCountFor(Auth::user()));
-                }
-            }
+            $view->with(self::navData());
         });
+    }
+
+    // Worked out on the first view of a request and kept on that request.
+    protected static function navData(): array
+    {
+        $request = request();
+        if ($request->attributes->has('nav_data')) {
+            return $request->attributes->get('nav_data');
+        }
+
+        $user = Auth::user();
+        $role = $user->role;
+
+        $permissions = DB::table('role_permissions')
+            ->where('role', $role)
+            ->pluck('is_enabled', 'module')
+            ->toArray();
+
+        // Faculty work on their template copies in the editor for now, with no CMS page.
+        if ($role === 'faculty') {
+            $permissions['cms'] = false;
+        }
+        // The System CMS (template elements and site content) belongs to the Admin/Dean.
+        if ($role === 'secretary') {
+            $permissions['system-cms'] = false;
+        }
+        if ($role === 'program_head') {
+            $permissions['official-documents'] = false;
+        }
+
+        $data = [
+            'navPermissions'           => $permissions,
+            'unreadAnnouncementsCount' => Announcement::unreadCountFor($user),
+        ];
+
+        // Only faculty submit against requirements and receive the
+        // templates the Dean sends, so these counts only apply to them.
+        if ($role === 'faculty') {
+            $data['urgentSubmissionsCount'] = SubmissionRequirement::urgentCountFor($user);
+            \App\Support\SystemNotifications::remindDeadlines($user);
+            $data['newTemplatesCount'] = TemplateDocument::newCountFor($user);
+        }
+
+        $request->attributes->set('nav_data', $data);
+
+        return $data;
     }
 }

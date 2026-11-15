@@ -2,6 +2,8 @@
      Included once, just before </body>. Pages call window.showToast(), window.showLoading()
      and window.hideLoading() directly; forms get a loading state automatically, and a form
      with data-confirm="Message" asks for confirmation before submitting. --}}
+@include('partials.ui-polish')
+@include('partials.theme')
 <style>
     :root {
         --sf-navy: #0f2557;

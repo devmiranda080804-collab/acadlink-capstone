@@ -13,12 +13,14 @@ class TemplateReviewController extends Controller
     {
         $myProgram = auth()->user()->program;
 
+        $term = \App\Support\AcademicTerm::requested(request());
         $templates = TemplateDocument::submitted()->with(['creator', 'reviewer', 'programs'])
+            ->inTerm(...$term)
             ->whereNull('superseded_at')
             ->whereHas('programs', fn($p) => $p->where('program', $myProgram)->whereNotNull('distributed_at'))
             ->latest()
             ->get();
 
-        return view('program-head.template-review', compact('templates', 'myProgram'));
+        return view('program-head.template-review', compact('templates', 'myProgram', 'term'));
     }
 }

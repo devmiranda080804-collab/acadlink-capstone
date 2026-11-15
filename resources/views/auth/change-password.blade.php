@@ -18,8 +18,8 @@
         .field input:focus { border-color:#1d4ed8; }
         .error-msg { background:#fee2e2; border:1px solid #fca5a5; color:#b91c1c; font-size:11px; padding:8px 10px; border-radius:4px; margin-bottom:14px; }
         .hint { font-size:11px; color:#999; margin-top:4px; }
-        .btn { width:100%; height:38px; background:#1d4ed8; color:#fff; border:none; border-radius:5px; font-size:13px; font-weight:600; cursor:pointer; margin-top:6px; transition:background .15s; }
-        .btn:hover { background:#1e40af; }
+        .btn { width:100%; height:38px; background:#0f2557; color:#fff; border:none; border-radius:5px; font-size:13px; font-weight:600; cursor:pointer; margin-top:6px; transition:background .15s; }
+        .btn:hover { background:#1b3d7a; }
     </style>
 </head>
 <body>

@@ -22,7 +22,7 @@
         {{ \App\Models\TemplateDocument::typeLabel($template->type) }}
         @if($template->version > 1) <span class="version-tag">v{{ $template->version }}</span> @endif
     </div>
-    <div class="tmpl-card-meta">Uploaded by {{ $template->creator->name ?? 'Unknown' }}<br>{{ \App\Support\DisplayTime::format($template->created_at) }}</div>
+    <div class="tmpl-card-meta">Uploaded by {{ $template->creator->name ?? 'Unknown' }}<br>{{ \App\Support\DisplayTime::format($template->created_at) }} <span class="term-tag">{{ $template->term_label }}</span></div>
 
     @if($template->isReturned() && $template->return_reason)
         <div class="return-reason"><strong>Returned:</strong> {{ $template->return_reason }}</div>

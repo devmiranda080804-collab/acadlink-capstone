@@ -629,134 +629,50 @@
         .btn-qtype-cancel:hover { background: #f5f5f5; }
 
         svg { display: inline-block; vertical-align: middle; }
+        .eg-eyebrow { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #1b3d7a; text-transform: uppercase; }
+        .eg-title { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -.4px; margin: 4px 0 6px; color: #14213d; }
+        .eg-sub { font-size: 14px; color: #475467; }
+        .eg-layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; }
+        .eg-ic { width: 19px; height: 19px; flex-shrink: 0; }
+        .eg-nav.tabs { display: flex; flex-direction: column; gap: 4px; border: 0 !important; margin: 0 !important; padding: 0 !important; position: sticky; top: 0; background: none !important; }
+        .eg-nav .tab-item { display: flex !important; align-items: center; gap: 12px; padding: 12px 14px !important; border: 1px solid transparent !important; border-radius: 12px !important;
+            background: none !important; color: #344054 !important; cursor: pointer; margin: 0 !important; transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease; }
+        .eg-nav .tab-item:hover { background: #fff !important; border-color: #e7eaf1 !important; }
+        .eg-nav .tab-item.active { background: #fff !important; border-color: #e7eaf1 !important; color: #0f2557 !important; box-shadow: 0 4px 14px rgba(15, 37, 87, .07); }
+        .eg-nav .tab-item > span { flex: 1; min-width: 0; }
+        .eg-nav .tab-item strong { display: block; font-size: 14.5px; font-weight: 700; }
+        .eg-nav .tab-item small { display: block; font-size: 12px; color: #667085; font-weight: 500; margin-top: 2px; }
+        .eg-nav .tab-item em { font-style: normal; min-width: 24px; height: 22px; padding: 0 7px; border-radius: 11px; background: #eef2fa; color: #0f2557; font-size: 11.5px; font-weight: 800;
+            display: inline-flex; align-items: center; justify-content: center; }
+        .eg-nav .tab-item:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+        .eg-main .tab-content.active { animation: eg-in .25s ease-out; }
+        @keyframes eg-in { from { opacity: 0; } to { opacity: 1; } }
+        .eg-status { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: #fff; border: 1px solid #e7eaf1; border-radius: 16px; padding: 18px 22px; margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05); }
+        .eg-status-icon { width: 46px; height: 46px; border-radius: 12px; background: #eef2fa; color: #0f2557; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .eg-status-icon .eg-ic { width: 23px; height: 23px; }
+        .eg-status-title { font-size: 17px; font-weight: 800; color: #14213d; }
+        .eg-status-sub { font-size: 13px; color: #667085; margin-top: 2px; }
+        .eg-facts { display: flex; flex-wrap: wrap; gap: 6px 22px; width: 100%; padding-top: 12px; border-top: 1px dashed #e7eaf1; font-size: 12.5px; color: #667085; }
+        .eg-facts strong { color: #14213d; }
+        /* The TOS gets the room it needs beside the menu: the settings stay narrow, the table takes the rest. */
+        .eg-main .two-col { grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); }
+        #tos-result-panel { overflow-x: auto; }
+        @media (max-width: 1280px) { .eg-main .two-col { grid-template-columns: 1fr; } }
+        @media (max-width: 900px) { .eg-layout { grid-template-columns: 1fr; } .eg-nav.tabs { position: static; flex-direction: row; flex-wrap: wrap; } }
     </style>
 </head>
 <body>
 
     {{-- ════════════ SIDEBAR ════════════ --}}
-    <aside class="sidebar">
-    <div class="sidebar-logo">
-        <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
-        <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
-        <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
-    </div>
-
-    <ul class="nav-list">
-        @if($navPermissions['dashboard'] ?? true)
-        <li class="{{ request()->is('faculty/dashboard') ? 'active' : '' }}">
-            <a href="{{ url('/faculty/dashboard') }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                Dashboard
-            </a>
-        </li>
-        @endif
-        @if($navPermissions['my-template'] ?? true)
-        <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}">
-            <a href="{{ url('/faculty/my-template') }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                Templates
-                @if(($newTemplatesCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $newTemplatesCount }}</span>
-                @endif
-            </a>
-        </li>
-        @endif
-        @if($navPermissions['exam-generator'] ?? true)
-        <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}">
-            <a href="{{ url('/faculty/exam-generator') }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                Assessment Generator
-            </a>
-        </li>
-        @endif
-        @if($navPermissions['shared-library'] ?? true)
-        <li class="{{ request()->is('faculty/shared-library*') ? 'active' : '' }}">
-            <a href="{{ url('/faculty/shared-library') }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-                Shared Library
-            </a>
-        </li>
-        @endif
-        @if($navPermissions['course-coordination'] ?? true)
-        <li class="{{ request()->is('faculty/course-coordination*') ? 'active' : '' }}">
-            <a href="{{ url('/faculty/course-coordination') }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
-                Course Coordination
-            </a>
-        </li>
-        @endif
-        @if($navPermissions['analytics'] ?? true)
-        <li class="{{ request()->is('faculty/analytics*') ? 'active' : '' }}">
-            <a href="{{ url('/faculty/analytics') }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-                Analytics
-            </a>
-        </li>
-        @endif
-        @if($navPermissions['calendar'] ?? true)
-        <li class="{{ request()->is('faculty/calendar*') ? 'active' : '' }}">
-            <a href="{{ url('/faculty/calendar') }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                Calendar of Activities
-            </a>
-        </li>
-        @endif
-        @if($navPermissions['announcements'] ?? true)
-        <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}">
-            <a href="{{ url('/faculty/announcements') }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                Announcements
-                @if(($unreadAnnouncementsCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
-                @endif
-            </a>
-        </li>
-        @endif
-        @if($navPermissions['submissions'] ?? true)
-        <li class="{{ request()->is('faculty/submissions*') ? 'active' : '' }}">
-            <a href="{{ url('/faculty/submissions') }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-                Submissions and Deadline
-                @if(($urgentSubmissionsCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $urgentSubmissionsCount }}</span>
-                @endif
-            </a>
-        </li>
-        @endif
-        @if($navPermissions['cms'] ?? true)
-        <li class="{{ request()->is('faculty/cms*') ? 'active' : '' }}">
-            <a href="{{ url('/faculty/cms') }}">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-                CMS
-            </a>
-        </li>
-        @endif
-    </ul>
-
-    <div class="sidebar-logout">
-        <a href="#" onclick="openLogoutModal()">
-            <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            Log out
-        </a>
-        <form id="logout-form" method="POST" action="{{ url('/logout') }}" style="display:none;">@csrf</form>
-    </div>
-</aside>
+    @include('partials.sidebar')
 
     {{-- ════════════ MAIN ════════════ --}}
     <div class="main">
 
         <div class="topnav">
-            <span class="label">Current role</span>
-            <div class="topnav-right">
-                <span class="role-badge">Faculty</span>
-                @include('partials.notification-bell')
-                <div class="user-info">
-                    <div class="user-text">
-                        <div class="user-name">{{ auth()->user()->name }}</div>
-                        <div class="user-email">{{ auth()->user()->email }}</div>
-                    </div>
-                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
-                </div>
+            <div class="topnav-right" style="margin-left:auto;">
+                @include('partials.topnav-user')
             </div>
         </div>
 
@@ -764,8 +680,9 @@
 
             <div class="page-header">
                 <div>
-                    <div class="page-title">Assessment Generator</div>
-                    <div class="page-sub">TOS builder, exam generator, and item bank</div>
+                    <div class="eg-eyebrow">Teaching</div>
+                    <div class="eg-title">Assessment Generator</div>
+                    <div class="eg-sub">Build the Table of Specifications, write the exam and reuse questions from your item bank.</div>
                 </div>
                 <div class="page-header-right">
                     <button class="btn-item-bank" type="button" onclick="switchTab('item-bank')">Item Bank</button>
@@ -773,12 +690,31 @@
                 </div>
             </div>
 
+            @php
+                $egFinal = $exams->where('status', 'finalized')->count();
+            @endphp
+            <div class="eg-layout">
             {{-- Tabs --}}
-            <div class="tabs">
-                <div class="tab-item active" data-tab="tos" onclick="switchTab('tos')">TOS Generator</div>
-                <div class="tab-item" data-tab="exam-builder" onclick="switchTab('exam-builder')">Exam Builder</div>
-                <div class="tab-item" data-tab="item-bank" onclick="switchTab('item-bank')">Item Bank</div>
-            </div>
+            <nav class="eg-nav tabs" aria-label="Assessment tools">
+                <div class="tab-item active" data-tab="tos" role="button" tabindex="0" onclick="switchTab('tos')">{!! \App\Support\SidebarMenu::icon('layout', 'eg-ic') !!}<span><strong>TOS Generator</strong><small>Table of Specifications</small></span></div>
+                <div class="tab-item" data-tab="exam-builder" role="button" tabindex="0" onclick="switchTab('exam-builder')">{!! \App\Support\SidebarMenu::icon('pen', 'eg-ic') !!}<span><strong>Exam Builder</strong><small>Sections and questions</small></span><em>{{ $exams->count() }}</em></div>
+                <div class="tab-item" data-tab="item-bank" role="button" tabindex="0" onclick="switchTab('item-bank')">{!! \App\Support\SidebarMenu::icon('archive', 'eg-ic') !!}<span><strong>Item Bank</strong><small>Reusable questions</small></span></div>
+            </nav>
+
+            <div class="eg-main">
+                <div class="eg-status">
+                    <span class="eg-status-icon">{!! \App\Support\SidebarMenu::icon('clipboard', 'eg-ic') !!}</span>
+                    <div>
+                        <div class="eg-status-title">{{ $exams->count() }} {{ \Illuminate\Support\Str::plural('exam', $exams->count()) }} in your list</div>
+                        <div class="eg-status-sub">Generate a TOS first, then build the exam from it. Finalized exams can be downloaded with their answer key.</div>
+                    </div>
+                    <div class="eg-facts">
+                        <span>Subjects this term: <strong>{{ $assignments->unique('course_id')->count() }}</strong></span>
+                        <span>Exams: <strong>{{ $exams->count() }}</strong></span>
+                        <span>Finalized: <strong>{{ $egFinal }}</strong></span>
+                        <span>Drafts: <strong>{{ $exams->count() - $egFinal }}</strong></span>
+                    </div>
+                </div>
 
             {{-- TOS Generator Tab --}}
             <div class="tab-content active" id="tab-tos">
@@ -962,6 +898,8 @@
                     </div>
                 </div>
             </div>
+            </div>{{-- .eg-main --}}
+            </div>{{-- .eg-layout --}}
 
         </div>
     </div>
@@ -1086,7 +1024,7 @@
             </div>
             <div id="ai-gen-remaining" style="display:none;font-size:11.5px;padding:8px 10px;border-radius:6px;margin-bottom:12px;"></div>
             <div id="ai-gen-no-content-warning" style="display:none;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;font-size:11.5px;padding:8px 10px;border-radius:6px;margin-bottom:12px;">
-                ⚠️ This topic has no Teaching Notes or uploaded Module yet — the AI has nothing to base questions on. Add one first under Course Coordination → Topics & Hours.
+                ⚠️ This topic has no uploaded module yet — the AI has nothing to base questions on. Upload one first under Course Coordination → Topics & Hours.
             </div>
             <div class="modal-row">
                 <div class="modal-field">
@@ -1323,6 +1261,9 @@
         function escapeAttr(s) { return escapeHtml(s).replace(/"/g, '&quot;'); }
 
         // ── Tab switching ──
+        document.querySelectorAll('.eg-nav .tab-item').forEach(function (tab) {
+            tab.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tab.click(); } });
+        });
         function switchTab(tabName) {
             document.querySelectorAll('.tab-item').forEach(function(t) {
                 t.classList.toggle('active', t.dataset.tab === tabName);

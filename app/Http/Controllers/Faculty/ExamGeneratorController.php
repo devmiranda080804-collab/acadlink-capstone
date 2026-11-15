@@ -680,7 +680,7 @@ class ExamGeneratorController extends Controller
 
         if (! $topic->notes && ! $topic->module_path) {
             return response()->json([
-                'message' => 'Add teaching notes or upload a module for this topic first — Course Coordination → Topics & Hours.',
+                'message' => 'Upload a module for this topic first — Course Coordination → Topics & Hours.',
             ], 422);
         }
 
@@ -759,13 +759,13 @@ class ExamGeneratorController extends Controller
 
         if (empty($drafts) && $skipped > 0) {
             return response()->json([
-                'message' => 'Every generated question repeated one already in the exam, so none were added. Try again, or add more teaching notes for this topic.',
+                'message' => 'Every generated question repeated one already in the exam, so none were added. Try again, or add more key points for this topic.',
             ], 422);
         }
 
         if (empty($drafts)) {
             return response()->json([
-                'message' => 'The AI could not write questions for this topic this time. Try again, or add more teaching notes for this topic.',
+                'message' => 'The AI could not write questions for this topic this time. Try again, or add more key points for this topic.',
             ], 422);
         }
 

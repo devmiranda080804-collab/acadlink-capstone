@@ -156,84 +156,46 @@
         svg { display: inline-block; vertical-align: middle; }
         .topic-key-points { margin-top:4px; font-size:11.5px; color:#555; }
         .topic-key-points summary { cursor:pointer; color:#1d4ed8; }
-        .topic-key-points ul { margin:4px 0 0 18px; padding:0; }
+        .topic-key-points ul { margin:4px 0 0 14px; padding:0; list-style: "- "; }
         .topic-key-points li { margin:2px 0; }
+        .cc-eyebrow { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #1b3d7a; text-transform: uppercase; }
+        .cc-title { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -.4px; margin: 4px 0 6px; color: #14213d; }
+        .cc-sub { font-size: 14px; color: #475467; margin-bottom: 18px; }
+        .course-select-box { border-radius: 16px !important; border: 1px solid #e7eaf1 !important; box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05) !important; }
+        .cc-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 18px; }
+        .cc-ic { width: 19px; height: 19px; flex-shrink: 0; }
+        .cc-nav.sub-tabs { display: flex; flex-direction: column; gap: 4px; border: 0 !important; margin: 0 !important; padding: 0 !important; position: sticky; top: 0; background: none !important; }
+        .cc-nav .sub-tab { display: flex !important; align-items: center; gap: 12px; padding: 12px 14px !important; border: 1px solid transparent !important; border-radius: 12px !important;
+            background: none !important; color: #344054 !important; cursor: pointer; margin: 0 !important; transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease; }
+        .cc-nav .sub-tab:hover { background: #fff !important; border-color: #e7eaf1 !important; }
+        .cc-nav .sub-tab.active { background: #fff !important; border-color: #e7eaf1 !important; color: #0f2557 !important; box-shadow: 0 4px 14px rgba(15, 37, 87, .07); }
+        .cc-nav .sub-tab > span { flex: 1; min-width: 0; }
+        .cc-nav .sub-tab strong { display: block; font-size: 14.5px; font-weight: 700; }
+        .cc-nav .sub-tab small { display: block; font-size: 12px; color: #667085; font-weight: 500; margin-top: 2px; }
+        .cc-nav .sub-tab em { font-style: normal; min-width: 24px; height: 22px; padding: 0 7px; border-radius: 11px; background: #eef2fa; color: #0f2557; font-size: 11.5px; font-weight: 800;
+            display: inline-flex; align-items: center; justify-content: center; }
+        .cc-nav .sub-tab:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+        .cc-main .tab-content.active { animation: cc-in .25s ease-out; }
+        @keyframes cc-in { from { opacity: 0; } to { opacity: 1; } }
+        .cc-status { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: #fff; border: 1px solid #e7eaf1; border-radius: 16px; padding: 18px 22px; margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05); }
+        .cc-status-icon { width: 46px; height: 46px; border-radius: 12px; background: #eef2fa; color: #0f2557; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .cc-status-icon .cc-ic { width: 23px; height: 23px; }
+        .cc-status-title { font-size: 17px; font-weight: 800; color: #14213d; }
+        .cc-status-sub { font-size: 13px; color: #667085; margin-top: 2px; }
+        .cc-facts { display: flex; flex-wrap: wrap; gap: 6px 22px; width: 100%; padding-top: 12px; border-top: 1px dashed #e7eaf1; font-size: 12.5px; color: #667085; }
+        .cc-facts strong { color: #14213d; }
+        @media (max-width: 900px) { .cc-layout { grid-template-columns: 1fr; } .cc-nav.sub-tabs { position: static; flex-direction: row; flex-wrap: wrap; } }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
-            <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
-            <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
-        </div>
-        <ul class="nav-list">
-            @if($navPermissions['dashboard'] ?? true)
-            <li class="{{ request()->is('faculty/dashboard') ? 'active' : '' }}"><a href="{{ url('/faculty/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
-            @endif
-            @if($navPermissions['my-template'] ?? true)
-            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates
-                @if(($newTemplatesCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $newTemplatesCount }}</span>
-                @endif
-            </a></li>
-            @endif
-            @if($navPermissions['exam-generator'] ?? true)
-            <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}"><a href="{{ url('/faculty/exam-generator') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Assessment Generator</a></li>
-            @endif
-            @if($navPermissions['shared-library'] ?? true)
-            <li class="{{ request()->is('faculty/shared-library*') ? 'active' : '' }}"><a href="{{ url('/faculty/shared-library') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Shared Library</a></li>
-            @endif
-            @if($navPermissions['course-coordination'] ?? true)
-            <li class="{{ request()->is('faculty/course-coordination*') ? 'active' : '' }}"><a href="{{ url('/faculty/course-coordination') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Coordination</a></li>
-            @endif
-            @if($navPermissions['analytics'] ?? true)
-            <li class="{{ request()->is('faculty/analytics*') ? 'active' : '' }}"><a href="{{ url('/faculty/analytics') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></li>
-            @endif
-            @if($navPermissions['calendar'] ?? true)
-            <li class="{{ request()->is('faculty/calendar*') ? 'active' : '' }}"><a href="{{ url('/faculty/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
-            @endif
-            @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}"><a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
-                @if(($unreadAnnouncementsCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
-                @endif
-            </a></li>
-            @endif
-            @if($navPermissions['submissions'] ?? true)
-            <li class="{{ request()->is('faculty/submissions*') ? 'active' : '' }}"><a href="{{ url('/faculty/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline
-                @if(($urgentSubmissionsCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $urgentSubmissionsCount }}</span>
-                @endif
-            </a></li>
-            @endif
-            @if($navPermissions['cms'] ?? true)
-            <li class="{{ request()->is('faculty/cms*') ? 'active' : '' }}"><a href="{{ url('/faculty/cms') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>CMS</a></li>
-            @endif
-        </ul>
-        <div class="sidebar-logout">
-            <a href="#" onclick="openLogoutModal()">
-                <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Log out
-            </a>
-            <form id="logout-form" method="POST" action="{{ url('/logout') }}" style="display:none;">@csrf</form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     <div class="main">
         <div class="topnav">
-            <span class="label">Current role</span>
-            <div class="topnav-right">
-                <span class="role-badge">Faculty</span>
-                @include('partials.notification-bell')
-                <div class="user-info">
-                    <div class="user-text">
-                        <div class="user-name">{{ auth()->user()->name }}</div>
-                        <div class="user-email">{{ auth()->user()->email }}</div>
-                    </div>
-                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
-                </div>
+            <div class="topnav-right" style="margin-left:auto;">
+                @include('partials.topnav-user')
             </div>
         </div>
 
@@ -245,8 +207,13 @@
                 <div class="alert-error">{{ $errors->first() }}</div>
             @endif
 
-            <div class="page-title">Course Coordination</div>
-            <div class="page-sub">Access master course folder and instructor collaboration</div>
+            @php
+                $ccMaterials = $selectedCourse ? $materials->flatten(1)->count() : 0;
+                $ccTopics = $selectedCourse ? $courseTopics->flatten(1) : collect();
+            @endphp
+            <div class="cc-eyebrow">Teaching</div>
+            <div class="cc-title">Course Coordination</div>
+            <div class="cc-sub">Access the master course folder, outcomes, topics and shared documents of the courses you teach.</div>
 
             <div class="course-select-box">
                 <label>Select Course</label>
@@ -264,12 +231,35 @@
                 </div>
             </div>
 
-            <div class="sub-tabs">
-                <span class="sub-tab active" onclick="switchSubTab('master-folder', this)">Master Folder</span>
-                <span class="sub-tab" onclick="switchSubTab('outcomes', this)">Outcomes (OBE)</span>
-                <span class="sub-tab" onclick="switchSubTab('topics', this)">Topics & Hours (OBTL)</span>
-                <span class="sub-tab" onclick="switchSubTab('collaboration', this)">Collaboration</span>
-            </div>
+            <div class="cc-layout">
+            <nav class="cc-nav sub-tabs" aria-label="Course sections">
+                <span class="sub-tab active" role="button" tabindex="0" onclick="switchSubTab('master-folder', this)">{!! \App\Support\SidebarMenu::icon('folderCheck', 'cc-ic') !!}<span><strong>Master Folder</strong><small>Official course files</small></span>@if($selectedCourse)<em>{{ $ccMaterials }}</em>@endif</span>
+                <span class="sub-tab" role="button" tabindex="0" onclick="switchSubTab('outcomes', this)">{!! \App\Support\SidebarMenu::icon('checkCircle', 'cc-ic') !!}<span><strong>Outcomes (OBE)</strong><small>Course and program outcomes</small></span>@if($selectedCourse)<em>{{ $courseOutcomes->count() }}</em>@endif</span>
+                <span class="sub-tab" role="button" tabindex="0" onclick="switchSubTab('topics', this)">{!! \App\Support\SidebarMenu::icon('clock', 'cc-ic') !!}<span><strong>Topics &amp; Hours (OBTL)</strong><small>Topics, key points and modules</small></span>@if($selectedCourse)<em>{{ $ccTopics->count() }}</em>@endif</span>
+                <span class="sub-tab" role="button" tabindex="0" onclick="switchSubTab('collaboration', this)">{!! \App\Support\SidebarMenu::icon('users', 'cc-ic') !!}<span><strong>Collaboration</strong><small>Shared documents</small></span></span>
+            </nav>
+
+            <div class="cc-main">
+                <div class="cc-status">
+                    <span class="cc-status-icon">{!! \App\Support\SidebarMenu::icon('cap', 'cc-ic') !!}</span>
+                    <div>
+                        @if($selectedCourse)
+                            <div class="cc-status-title">{{ $selectedCourse->code }} — {{ $selectedCourse->title }}</div>
+                            <div class="cc-status-sub">Shared with every instructor of this course.</div>
+                        @else
+                            <div class="cc-status-title">No course selected</div>
+                            <div class="cc-status-sub">Pick a course above to see its folder, outcomes, topics and shared documents.</div>
+                        @endif
+                    </div>
+                    @if($selectedCourse)
+                        <div class="cc-facts">
+                            <span>Materials: <strong>{{ $ccMaterials }}</strong></span>
+                            <span>Course outcomes: <strong>{{ $courseOutcomes->count() }}</strong></span>
+                            <span>Topics: <strong>{{ $ccTopics->count() }}</strong></span>
+                            <span>Hours: <strong>{{ $ccTopics->sum('hours') }}</strong></span>
+                        </div>
+                    @endif
+                </div>
 
             {{-- ═══ MASTER FOLDER ═══ --}}
             <div class="tab-content active" id="tab-master-folder">
@@ -420,7 +410,7 @@
                                             <div class="file-meta">
                                                 {{ $topic->hours }} hrs
                                                 @if($topic->module_path) · <span style="color:#16a34a;">✓ module uploaded (AI-ready)</span>
-                                                @elseif($topic->notes) · <span style="color:#16a34a;">✓ notes added (AI-ready)</span>
+                                                @elseif($topic->notes) · <span style="color:#16a34a;">✓ AI-ready</span>
                                                 @else · <span style="color:#bbb;">no notes/module yet</span>
                                                 @endif
                                             </div>
@@ -479,6 +469,8 @@
                     </div>
                 @endif
             </div>
+            </div>{{-- .cc-main --}}
+            </div>{{-- .cc-layout --}}
 
         </div>
     </div>
@@ -526,17 +518,13 @@
                     <div class="field-note" id="topic-hours-note">Computed from the weeks above. You can change it.</div>
                 </div>
                 <div class="modal-field">
-                    <label>Teaching Notes <span style="font-size:10px;color:#999;">(optional — short summary; used by AI if no module is uploaded)</span></label>
-                    <textarea name="notes" id="topic-field-notes" rows="3" style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
-                </div>
-                <div class="modal-field">
-                    <label>Module <span id="topic-field-module-hint" style="font-size:10px;color:#999;">(PDF or Word — PDF is read directly by AI; Word content is auto-extracted into Teaching Notes above)</span></label>
+                    <label>Module <span id="topic-field-module-hint" style="font-size:10px;color:#999;">(PDF or Word — the AI reads it to suggest key points and to write exam questions)</span></label>
                     <div id="topic-current-module" style="font-size:11.5px;color:#666;margin-bottom:4px;display:none;"></div>
                     <input type="file" name="module" id="topic-field-module" accept=".pdf,.docx" onchange="suggestKeyPoints()">
                 </div>
                 <div class="modal-field">
-                    <label>Key Points <span style="font-size:10px;color:#999;">(AI suggests these from the module you pick — one per line, edit as needed)</span></label>
-                    <textarea name="key_points" id="topic-field-key-points" rows="5" placeholder="Pick a module above and the AI will list its key points here." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
+                    <label>Key Points <span style="font-size:10px;color:#999;">(AI suggests these from the module you pick — one point per line, each starting with "-")</span></label>
+                    <textarea name="key_points" id="topic-field-key-points" rows="5" placeholder="- Pick a module above and the AI will list its key points here." style="width:100%;padding:8px 10px;border:1px solid #ccc;border-radius:5px;font-size:12.5px;font-family:Arial, sans-serif;resize:vertical;"></textarea>
                     <div class="field-note" id="topic-key-points-status" style="display:none;"></div>
                 </div>
                 <div class="modal-actions">
@@ -622,6 +610,9 @@
         const BASE = '{{ url('/faculty') }}';
         const MY_ID = {{ auth()->id() }};
 
+        document.querySelectorAll('.cc-nav .sub-tab').forEach(function (tab) {
+            tab.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tab.click(); } });
+        });
         function switchSubTab(tabName, el) {
             document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
             el.classList.add('active');
@@ -797,7 +788,6 @@
             document.getElementById('topic-field-hours-per-week').value = 3;
             document.getElementById('topic-field-hours').value = '';
             document.getElementById('topic-hours-note').textContent = 'Computed from the weeks above. You can change it.';
-            document.getElementById('topic-field-notes').value = '';
             document.getElementById('topic-field-key-points').value = '';
             document.getElementById('topic-field-module').value = '';
             setKeyPointsStatus('', '');
@@ -808,6 +798,42 @@
         // When a module is picked, the AI reads it and fills in the key points.
         // The instructor can edit them before saving.
         var keyPointsRequest = 0, keyPointsBusy = false;
+
+        // Each key point shows on its own line starting with "- ". The dash is only for
+        // reading; it is taken off when the topic is saved.
+        function dashedPoints(text) {
+            return (text || '').split(/\r?\n/).map(function (line) { return line.replace(/^\s*(?:[-*•·]+|\d+[.)])\s*/, '').trim(); })
+                .filter(function (line) { return line !== ''; })
+                .map(function (line) { return '- ' + line; }).join('\n');
+        }
+        (function () {
+            var box = document.getElementById('topic-field-key-points');
+            // Enter starts the next point with "- "; Enter on an empty "- " line ends the list.
+            box.addEventListener('keydown', function (e) {
+                if (e.key !== 'Enter' || e.shiftKey || box.readOnly) return;
+                var start = box.selectionStart, value = box.value;
+                var lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                var line = value.slice(lineStart, start);
+                if (/^-\s*$/.test(line)) {
+                    e.preventDefault();
+                    box.value = value.slice(0, lineStart) + value.slice(start);
+                    box.selectionStart = box.selectionEnd = lineStart;
+                    return;
+                }
+                if (/^-\s/.test(line)) {
+                    e.preventDefault();
+                    box.value = value.slice(0, start) + '\n- ' + value.slice(box.selectionEnd);
+                    box.selectionStart = box.selectionEnd = start + 3;
+                }
+            });
+            // Typing into an empty box starts the first point with "- ".
+            box.addEventListener('focus', function () {
+                if (box.value.trim() === '' && !box.readOnly) { box.value = '- '; box.selectionStart = box.selectionEnd = 2; }
+            });
+            box.addEventListener('blur', function () {
+                if (/^-\s*$/.test(box.value)) box.value = '';
+            });
+        })();
         function setKeyPointsStatus(text, tone) {
             var el = document.getElementById('topic-key-points-status');
             el.textContent = text;
@@ -836,7 +862,7 @@
                 if (request !== keyPointsRequest) return;
                 var points = res.body.points || [];
                 if (res.ok && points.length) {
-                    box.value = points.join('\n');
+                    box.value = dashedPoints(points.join('\n'));
                     setKeyPointsStatus('AI suggested ' + points.length + ' key points from the module. Check them and edit if needed before saving.', 'ok');
                 } else {
                     var message = res.body.message || (res.body.errors && Object.values(res.body.errors)[0][0]) || 'No key points could be suggested. You can type them yourself.';
@@ -859,7 +885,7 @@
             document.getElementById('topic-modal-sub').textContent = 'Grading period: ' + period;
             document.getElementById('topic-form-submit').textContent = 'Add';
             document.getElementById('topic-field-module').required = true;
-            document.getElementById('topic-field-module-hint').textContent = '(required — PDF or Word; PDF is read directly by AI, Word content is auto-extracted into Teaching Notes above)';
+            document.getElementById('topic-field-module-hint').textContent = '(required — PDF or Word; the AI reads it to suggest key points and to write exam questions)';
             document.getElementById('topic-overlay').classList.add('open');
         }
 
@@ -880,8 +906,7 @@
             document.getElementById('topic-field-hours-per-week').value =
                 weekCount && topic.hours % weekCount === 0 ? topic.hours / weekCount : 3;
             document.getElementById('topic-field-hours').value = topic.hours || '';
-            document.getElementById('topic-field-notes').value = topic.notes || '';
-            document.getElementById('topic-field-key-points').value = topic.key_points || '';
+            document.getElementById('topic-field-key-points').value = dashedPoints(topic.key_points);
             document.getElementById('topic-field-module').required = false;
             document.getElementById('topic-field-module-hint').textContent = '(optional — PDF or Word; upload a new file only if you want to replace the current one)';
             var currentModule = document.getElementById('topic-current-module');

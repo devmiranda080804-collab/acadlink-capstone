@@ -69,162 +69,231 @@
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
-            <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
-            <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
-        </div>
-        <ul class="nav-list">
-            @if($navPermissions['dashboard'] ?? true)
-            <li class="{{ request()->is('admin/dashboard') ? 'active' : '' }}"><a href="{{ url('/admin/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
-            @endif
-            @if($navPermissions['account-management'] ?? true)
-            <li class="{{ request()->is('admin/account-management*') ? 'active' : '' }}"><a href="{{ url('/admin/account-management') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Account Management</a></li>
-            @endif
-            @if($navPermissions['roles-permissions'] ?? true)
-            <li class="{{ request()->is('admin/roles-permissions*') ? 'active' : '' }}"><a href="{{ url('/admin/roles-permissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Roles & Permissions</a></li>
-            @endif
-            @if($navPermissions['template-approvals'] ?? true)
-            <li class="{{ request()->is('admin/template-approvals*') ? 'active' : '' }}"><a href="{{ url('/admin/template-approvals') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Templates</a></li>
-            @endif
-            @if($navPermissions['program-assignment'] ?? true)
-            <li class="{{ request()->is('admin/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/admin/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
-            @endif
-            @if($navPermissions['audit-logs'] ?? true)
-            <li class="{{ request()->is('admin/audit-logs*') ? 'active' : '' }}"><a href="{{ url('/admin/audit-logs') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Audit Logs</a></li>
-            @endif
-            @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('admin/announcements*') ? 'active' : '' }}"><a href="{{ url('/admin/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
-                @if(($unreadAnnouncementsCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
-                @endif
-            </a></li>
-            @endif
-            @if($navPermissions['calendar'] ?? true)
-            <li class="{{ request()->is('admin/calendar*') ? 'active' : '' }}"><a href="{{ url('/admin/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
-            @endif
-            @if($navPermissions['analytics'] ?? true)
-            <li class="{{ request()->is('admin/analytics*') ? 'active' : '' }}"><a href="{{ url('/admin/analytics') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></li>
-            @endif
-            <li class="{{ request()->is('admin/settings*') ? 'active' : '' }}"><a href="{{ url('/admin/settings') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</a></li>
-            @if($navPermissions['system-cms'] ?? true)
-            <li class="{{ request()->is('admin/system-cms*') ? 'active' : '' }}"><a href="{{ url('/admin/system-cms') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>System CMS</a></li>
-            @endif
-        </ul>
-        <div class="sidebar-logout">
-            <a href="#" onclick="openLogoutModal()">
-                <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Log out
-            </a>
-            <form id="logout-form" method="POST" action="{{ url('/logout') }}" style="display:none;">@csrf</form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     <div class="main">
         <div class="topnav">
-            <span class="label">Current role</span>
-            <div class="topnav-right">
-                <span class="role-badge">Admin/Dean</span>
-                @include('partials.notification-bell')
-                <div class="user-info">
-                    <div class="user-text">
-                        <div class="user-name">{{ auth()->user()->name }}</div>
-                        <div class="user-email">{{ auth()->user()->email }}</div>
-                    </div>
-                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
-                </div>
+            <div class="topnav-right" style="margin-left:auto;">
+                @include('partials.topnav-user')
             </div>
         </div>
 
         <div class="content">
-            @if($errors->any())
-                <div class="alert-error">{{ $errors->first() }}</div>
-            @endif
+            @php
+                $deanSet = filled($deanName);
+                $termErrors = $errors->hasAny(['term_mode', 'term_school_year', 'term_semester']);
+                $deanErrors = $errors->hasAny(['dean_name', 'dean_title']);
+            @endphp
+            <style>
+                .st { font-family: 'Plus Jakarta Sans', Arial, sans-serif; color: #14213d; }
+                .st .st-icon { width: 18px; height: 18px; flex-shrink: 0; }
+                .st-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #1b3d7a; text-transform: uppercase; }
+                .st-title { font-size: 28px; font-weight: 800; letter-spacing: -.4px; margin: 4px 0 6px; }
+                .st-sub { font-size: 14px; color: #475467; max-width: 860px; }
+                .st-layout { display: grid; grid-template-columns: 240px 1fr; gap: 24px; margin-top: 24px; align-items: start; }
+                .st-nav { display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; }
+                .st-tab { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 1px solid transparent; border-radius: 12px; background: none;
+                    font: 700 14.5px 'Plus Jakarta Sans', Arial, sans-serif; color: #344054; cursor: pointer; text-align: left; transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease; }
+                .st-tab:hover { background: #fff; border-color: #e7eaf1; }
+                .st-tab.is-active { background: #fff; border-color: #e7eaf1; color: #0f2557; box-shadow: 0 4px 14px rgba(15, 37, 87, .07); }
+                .st-tab .st-dot { margin-left: auto; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+                .st-dot.ok { background: #ecfdf3; color: #15803d; }
+                .st-dot.warn { background: #fff7e6; color: #b45309; }
+                .st-panel { display: none; flex-direction: column; gap: 16px; animation: st-in .25s ease-out; }
+                .st-panel.is-active { display: flex; }
+                @keyframes st-in { from { opacity: 0; } to { opacity: 1; } }
+                .st-card { background: #fff; border: 1px solid #e7eaf1; border-radius: 16px; padding: 20px 22px; box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05); }
+                .st-status { display: flex; align-items: center; gap: 16px; }
+                .st-status-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .st-status-icon .st-icon { width: 24px; height: 24px; }
+                .st-status-icon.ok { background: #ecfdf3; color: #16a34a; }
+                .st-status-icon.warn { background: #fff7e6; color: #d97706; }
+                .st-status-title { font-size: 17px; font-weight: 800; }
+                .st-status-sub { font-size: 13px; color: #667085; margin-top: 2px; }
+                .st-facts { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 14px; padding-top: 14px; border-top: 1px dashed #e7eaf1; font-size: 12.5px; color: #667085; }
+                .st-facts strong { color: #14213d; }
+                .st-card-title { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 800; }
+                .st-card-title .st-icon { color: #0f2557; }
+                .st-card-sub { font-size: 13px; color: #667085; margin: 4px 0 18px; line-height: 1.55; }
+                .st-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 18px; }
+                .st-mode { position: relative; display: flex; gap: 12px; padding: 14px 16px; border: 1.5px solid #e7eaf1; border-radius: 14px; cursor: pointer; transition: border-color .18s ease, background-color .18s ease, box-shadow .18s ease; }
+                .st-mode:hover { border-color: #c9d2e4; }
+                .st-mode input { margin-top: 3px; accent-color: #0f2557; width: 16px; height: 16px; flex-shrink: 0; }
+                .st-mode:has(input:checked) { border-color: #0f2557; background: #f6f8fd; box-shadow: 0 0 0 3px rgba(15, 37, 87, .08); }
+                .st-mode strong { display: block; font-size: 14px; }
+                .st-mode span span { display: block; font-size: 12.5px; color: #667085; margin-top: 3px; }
+                .st-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; transition: opacity .2s ease; }
+                .st-fields.is-disabled { opacity: .45; }
+                .st-field { margin-bottom: 14px; }
+                .st-field label { display: block; font-size: 13px; font-weight: 700; color: #344054; margin-bottom: 6px; }
+                .st-field input, .st-field select { width: 100%; padding: 10px 12px; border: 1px solid #d5dbe8; border-radius: 10px; font: 500 14px 'Plus Jakarta Sans', Arial, sans-serif; background: #fff; color: #14213d; outline: none; }
+                .st-field input:focus, .st-field select:focus { border-color: #1b3d7a; box-shadow: 0 0 0 3px rgba(37, 99, 235, .14); }
+                .st-hint { font-size: 12px; color: #667085; margin-top: 6px; }
+                .st-note { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #f6f8fd; color: #344054; font-size: 12.5px; margin: 4px 0 18px; }
+                .st-note .st-icon { color: #1b3d7a; margin-top: 1px; }
+                .st-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 16px; border-top: 1px solid #f1f3f8; }
+                .st-actions .btn-save { padding: 10px 22px; font-size: 14px; }
+                .st-preview { border: 1px dashed #d5dbe8; border-radius: 14px; padding: 18px 20px; background: #fbfcfe; margin-bottom: 18px; }
+                .st-preview-label { font-size: 11px; font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase; color: #98a2b3; margin-bottom: 12px; }
+                .st-preview-sheet { font-family: 'Times New Roman', serif; color: #111; font-size: 14px; }
+                .st-preview-sheet .preview-name { display: inline-block; margin-top: 26px; font-weight: 700; text-decoration: none; border-top: 1px solid #111; padding-top: 3px; min-width: 260px; }
+                .st-preview-sheet .preview-title { font-style: italic; font-size: 13px; color: #333; }
+                @media (max-width: 900px) { .st-layout { grid-template-columns: 1fr; } .st-nav { position: static; flex-direction: row; flex-wrap: wrap; } .st-tab { width: auto; } }
+            </style>
 
-            <div class="page-header">
-                <div>
-                    <div class="page-title">Settings</div>
-                    <div class="page-sub">System-wide details used across the CBMA System.</div>
+            <div class="st">
+                @if($errors->any())
+                    <div class="alert-error">{{ $errors->first() }}</div>
+                @endif
+
+                <div class="st-eyebrow">Configuration</div>
+                <div class="st-title">System Settings</div>
+                <div class="st-sub">How the CBMA System works for everyone: the academic term it runs in and who signs the documents it produces.</div>
+
+                <div class="st-layout">
+                    <nav class="st-nav" role="tablist" aria-label="Settings sections">
+                        <button type="button" class="st-tab" role="tab" data-panel="term" id="tab-term">
+                            {!! \App\Support\SidebarMenu::icon('calendar', 'st-icon') !!} Academic Term
+                            <span class="st-dot ok" title="{{ $term['manual'] ? 'Set manually' : 'Automatic' }}">{{ $term['manual'] ? 'Manual' : 'Auto' }}</span>
+                        </button>
+                        <button type="button" class="st-tab" role="tab" data-panel="signatories" id="tab-signatories">
+                            {!! \App\Support\SidebarMenu::icon('fileCheck', 'st-icon') !!} Document Signatories
+                            @unless($deanSet)<span class="st-dot warn" title="The Dean's name is not set yet">1</span>@endunless
+                        </button>
+                    </nav>
+
+                    <div>
+                        {{-- Academic Term --}}
+                        <section class="st-panel" id="panel-term" role="tabpanel" aria-labelledby="tab-term">
+                            <div class="st-card">
+                                <div class="st-status">
+                                    <span class="st-status-icon ok">{!! \App\Support\SidebarMenu::icon('checkCircle', 'st-icon') !!}</span>
+                                    <div>
+                                        <div class="st-status-title">Now in use: {{ $term['current'] }}</div>
+                                        <div class="st-status-sub">{{ $term['manual'] ? 'Set manually by the Admin.' : 'Following the calendar automatically.' }}</div>
+                                    </div>
+                                </div>
+                                <div class="st-facts">
+                                    <span>Mode: <strong>{{ $term['manual'] ? 'Manual' : 'Automatic' }}</strong></span>
+                                    <span>Calendar says: <strong>{{ $term['calendar'] }}</strong></span>
+                                    <span>Affects: <strong>subjects, submissions, exams, the TOS and documents</strong></span>
+                                </div>
+                            </div>
+
+                            <div class="st-card">
+                                <div class="st-card-title">{!! \App\Support\SidebarMenu::icon('calendar', 'st-icon') !!} Academic Term</div>
+                                <div class="st-card-sub">The semester and academic year the whole system works in: the subjects faculty see, submissions, exams, the TOS and downloaded documents.</div>
+
+                                <form method="POST" action="{{ url('/admin/settings') }}" id="term-form">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="hidden" name="section" value="term">
+                                    <div class="st-modes">
+                                        <label class="st-mode">
+                                            <input type="radio" name="term_mode" value="auto" @checked(old('term_mode', $term['manual'] ? 'manual' : 'auto') === 'auto') onchange="updateTermForm()">
+                                            <span><strong>Automatic</strong><span>Follows the calendar ({{ $term['calendar'] }})</span></span>
+                                        </label>
+                                        <label class="st-mode">
+                                            <input type="radio" name="term_mode" value="manual" @checked(old('term_mode', $term['manual'] ? 'manual' : 'auto') === 'manual') onchange="updateTermForm()">
+                                            <span><strong>Set manually</strong><span>Use when a semester starts early or runs late</span></span>
+                                        </label>
+                                    </div>
+
+                                    <div class="st-fields term-fields" id="term-fields">
+                                        <div class="st-field">
+                                            <label for="term_semester">Semester</label>
+                                            <select id="term_semester" name="term_semester">
+                                                @foreach(\App\Support\AcademicTerm::semesters() as $semester)
+                                                    <option value="{{ $semester }}" @selected(old('term_semester', $term['semester']) === $semester)>{{ $semester }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="st-field">
+                                            <label for="term_school_year">Academic year</label>
+                                            <select id="term_school_year" name="term_school_year">
+                                                @foreach(\App\Support\AcademicTerm::settingsSchoolYearOptions() as $year)
+                                                    <option value="{{ $year }}" @selected(old('term_school_year', $term['school_year']) === $year)>A.Y. {{ $year }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="st-note">{!! \App\Support\SidebarMenu::icon('clock', 'st-icon') !!}<span>Changing the term changes what everyone sees right away. Records from other terms are kept and come back when that term is set again.</span></div>
+
+                                    <div class="st-actions"><button type="submit" class="btn-save">Save term</button></div>
+                                </form>
+                            </div>
+                        </section>
+
+                        {{-- Document Signatories --}}
+                        <section class="st-panel" id="panel-signatories" role="tabpanel" aria-labelledby="tab-signatories">
+                            <div class="st-card">
+                                <div class="st-status">
+                                    <span class="st-status-icon {{ $deanSet ? 'ok' : 'warn' }}">{!! \App\Support\SidebarMenu::icon($deanSet ? 'checkCircle' : 'fileCheck', 'st-icon') !!}</span>
+                                    <div>
+                                        <div class="st-status-title">{{ $deanSet ? 'Ready — documents are signed by the Dean.' : 'The Dean\'s name is not set yet.' }}</div>
+                                        <div class="st-status-sub">{{ $deanSet ? 'The TOS and other documents print this name in the "Approved" signature.' : 'Documents print a blank line for signing until it is set.' }}</div>
+                                    </div>
+                                </div>
+                                <div class="st-facts">
+                                    <span>Dean: <strong>{{ $deanSet ? mb_strtoupper($deanName) : 'Not set' }}</strong></span>
+                                    <span>Title: <strong>{{ $deanTitle ?: \App\Support\Signatories::DEFAULT_DEAN_TITLE }}</strong></span>
+                                    <span>Program Heads: <strong>taken from their accounts</strong></span>
+                                </div>
+                            </div>
+
+                            <div class="st-card">
+                                <div class="st-card-title">{!! \App\Support\SidebarMenu::icon('fileCheck', 'st-icon') !!} Document Signatories</div>
+                                <div class="st-card-sub">The Dean's name and title printed in the "Approved" signature of downloaded documents such as the Table of Specification. The Program Head's name is taken automatically from their account for each program.</div>
+
+                                <form method="POST" action="{{ url('/admin/settings') }}">
+                                    @csrf
+                                    @method('PUT')
+                                    <div class="st-field">
+                                        <label for="dean_name">Dean's full name</label>
+                                        <input type="text" id="dean_name" name="dean_name" maxlength="150" value="{{ old('dean_name', $deanName) }}" placeholder="e.g. Pelilia C. Veloso, CPA, DBA, LLB" oninput="updateDeanPreview()">
+                                        <div class="st-hint">Include credentials as they should appear. Leave blank to print a blank line for signing.</div>
+                                    </div>
+                                    <div class="st-field">
+                                        <label for="dean_title">Title</label>
+                                        <input type="text" id="dean_title" name="dean_title" maxlength="150" value="{{ old('dean_title', $deanTitle) }}" placeholder="{{ \App\Support\Signatories::DEFAULT_DEAN_TITLE }}" oninput="updateDeanPreview()">
+                                    </div>
+
+                                    <div class="st-preview">
+                                        <div class="st-preview-label">Preview</div>
+                                        <div class="st-preview-sheet">
+                                            <div>Approved:</div>
+                                            <div class="preview-name" id="preview-dean-name"></div>
+                                            <div class="preview-title" id="preview-dean-title"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="st-actions"><button type="submit" class="btn-save">Save signatories</button></div>
+                                </form>
+                            </div>
+                        </section>
+                    </div>
                 </div>
             </div>
 
-            <div class="settings-card">
-                <div class="settings-card-title">Academic Term</div>
-                <div class="settings-card-sub">
-                    The semester and academic year the whole system works in: the subjects faculty see, submissions, exams, the TOS and downloaded documents.
-                    Now in use: <strong>{{ $term['current'] }}</strong>.
-                </div>
-
-                <form method="POST" action="{{ url('/admin/settings') }}" id="term-form">
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="section" value="term">
-                    <div class="term-modes">
-                        <label class="term-mode">
-                            <input type="radio" name="term_mode" value="auto" @checked(old('term_mode', $term['manual'] ? 'manual' : 'auto') === 'auto') onchange="updateTermForm()">
-                            <span><strong>Automatic</strong> — follows the calendar ({{ $term['calendar'] }})</span>
-                        </label>
-                        <label class="term-mode">
-                            <input type="radio" name="term_mode" value="manual" @checked(old('term_mode', $term['manual'] ? 'manual' : 'auto') === 'manual') onchange="updateTermForm()">
-                            <span><strong>Set manually</strong> — use when a semester starts early or runs late</span>
-                        </label>
-                    </div>
-
-                    <div class="settings-row term-fields" id="term-fields">
-                        <div class="settings-field">
-                            <label for="term_semester">Semester</label>
-                            <select id="term_semester" name="term_semester">
-                                @foreach(\App\Support\AcademicTerm::semesters() as $semester)
-                                    <option value="{{ $semester }}" @selected(old('term_semester', $term['semester']) === $semester)>{{ $semester }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="settings-field">
-                            <label for="term_school_year">Academic year</label>
-                            <select id="term_school_year" name="term_school_year">
-                                @foreach(\App\Support\AcademicTerm::settingsSchoolYearOptions() as $year)
-                                    <option value="{{ $year }}" @selected(old('term_school_year', $term['school_year']) === $year)>A.Y. {{ $year }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                    <div class="settings-hint" style="margin:-4px 0 14px;">Changing the term changes what everyone sees right away. Records from other terms are kept and come back when that term is set again.</div>
-
-                    <button type="submit" class="btn-save">Save</button>
-                </form>
-            </div>
-
-            <div class="settings-card">
-                <div class="settings-card-title">Document Signatories</div>
-                <div class="settings-card-sub">
-                    The Dean's name and title printed in the "Approved" signature of downloaded documents such as the Table of Specification.
-                    The Program Head's name is taken automatically from their account for each program.
-                </div>
-
-                <form method="POST" action="{{ url('/admin/settings') }}">
-                    @csrf
-                    @method('PUT')
-                    <div class="settings-field">
-                        <label for="dean_name">Dean's full name</label>
-                        <input type="text" id="dean_name" name="dean_name" maxlength="150" value="{{ old('dean_name', $deanName) }}" placeholder="e.g. Pelilia C. Veloso, CPA, DBA, LLB" oninput="updateDeanPreview()">
-                        <div class="settings-hint">Include credentials as they should appear. Leave blank to print a blank line for signing.</div>
-                    </div>
-                    <div class="settings-field">
-                        <label for="dean_title">Title</label>
-                        <input type="text" id="dean_title" name="dean_title" maxlength="150" value="{{ old('dean_title', $deanTitle) }}" placeholder="{{ \App\Support\Signatories::DEFAULT_DEAN_TITLE }}" oninput="updateDeanPreview()">
-                    </div>
-
-                    <div class="preview">
-                        <div class="preview-label">Preview</div>
-                        <div>Approved:</div>
-                        <div class="preview-name" id="preview-dean-name"></div>
-                        <div class="preview-title" id="preview-dean-title"></div>
-                    </div>
-
-                    <button type="submit" class="btn-save">Save</button>
-                </form>
-            </div>
+            <script>
+                // Shows one section at a time; remembers the last one, and opens the one with an error.
+                (function () {
+                    var tabs = document.querySelectorAll('.st-tab');
+                    function show(name) {
+                        tabs.forEach(function (t) {
+                            var on = t.dataset.panel === name;
+                            t.classList.toggle('is-active', on);
+                            t.setAttribute('aria-selected', on ? 'true' : 'false');
+                        });
+                        document.querySelectorAll('.st-panel').forEach(function (p) { p.classList.toggle('is-active', p.id === 'panel-' + name); });
+                        try { localStorage.setItem('settings-tab', name); } catch (e) {}
+                    }
+                    tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.dataset.panel); }); });
+                    var start = @json($deanErrors ? 'signatories' : ($termErrors ? 'term' : null));
+                    if (!start) { try { start = localStorage.getItem('settings-tab'); } catch (e) {} }
+                    show(start === 'signatories' ? 'signatories' : 'term');
+                })();
+            </script>
         </div>
     </div>
 

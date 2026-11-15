@@ -98,168 +98,219 @@
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
-            <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
-            <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
-        </div>
-        <ul class="nav-list">
-            @if($navPermissions['dashboard'] ?? true)
-            <li class="{{ request()->is('admin/dashboard') ? 'active' : '' }}"><a href="{{ url('/admin/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
-            @endif
-            @if($navPermissions['account-management'] ?? true)
-            <li class="{{ request()->is('admin/account-management*') ? 'active' : '' }}"><a href="{{ url('/admin/account-management') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Account Management</a></li>
-            @endif
-            @if($navPermissions['roles-permissions'] ?? true)
-            <li class="{{ request()->is('admin/roles-permissions*') ? 'active' : '' }}"><a href="{{ url('/admin/roles-permissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Roles & Permissions</a></li>
-            @endif
-            @if($navPermissions['template-approvals'] ?? true)
-            <li class="{{ request()->is('admin/template-approvals*') ? 'active' : '' }}"><a href="{{ url('/admin/template-approvals') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Templates</a></li>
-            @endif
-            @if($navPermissions['program-assignment'] ?? true)
-            <li class="{{ request()->is('admin/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/admin/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
-            @endif
-            @if($navPermissions['audit-logs'] ?? true)
-            <li class="{{ request()->is('admin/audit-logs*') ? 'active' : '' }}"><a href="{{ url('/admin/audit-logs') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Audit Logs</a></li>
-            @endif
-            @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('admin/announcements*') ? 'active' : '' }}"><a href="{{ url('/admin/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
-                @if(($unreadAnnouncementsCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
-                @endif
-            </a></li>
-            @endif
-            @if($navPermissions['calendar'] ?? true)
-            <li class="{{ request()->is('admin/calendar*') ? 'active' : '' }}"><a href="{{ url('/admin/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
-            @endif
-            @if($navPermissions['analytics'] ?? true)
-            <li class="{{ request()->is('admin/analytics*') ? 'active' : '' }}"><a href="{{ url('/admin/analytics') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></li>
-            @endif
-            <li class="{{ request()->is('admin/settings*') ? 'active' : '' }}"><a href="{{ url('/admin/settings') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</a></li>
-            @if($navPermissions['system-cms'] ?? true)
-            <li class="{{ request()->is('admin/system-cms*') ? 'active' : '' }}"><a href="{{ url('/admin/system-cms') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>System CMS</a></li>
-            @endif
-        </ul>
-        <div class="sidebar-logout">
-            <a href="#" onclick="openLogoutModal()">
-                <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Log out
-            </a>
-            <form id="logout-form" method="POST" action="{{ url('/logout') }}" style="display:none;">@csrf</form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     <div class="main">
         <div class="topnav">
-            <span class="label">Current role</span>
-            <div class="topnav-right">
-                <span class="role-badge">Admin/Dean</span>
-                @include('partials.notification-bell')
-                <div class="user-info">
-                    <div class="user-text">
-                        <div class="user-name">{{ auth()->user()->name }}</div>
-                        <div class="user-email">{{ auth()->user()->email }}</div>
-                    </div>
-                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
-                </div>
+            <div class="topnav-right" style="margin-left:auto;">
+                @include('partials.topnav-user')
             </div>
         </div>
 
         <div class="content">
-            <div class="page-title">Audit Logs</div>
-            <div class="page-sub">A record of important actions in the system</div>
+            <style>
+                .al { font-family: 'Plus Jakarta Sans', Arial, sans-serif; color: #14213d; }
+                .al .al-ic { width: 18px; height: 18px; flex-shrink: 0; }
+                .al-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #1b3d7a; text-transform: uppercase; }
+                .al-title { font-size: 28px; font-weight: 800; letter-spacing: -.4px; margin: 4px 0 6px; }
+                .al-sub { font-size: 14px; color: #475467; }
+                .al-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 22px 0 16px; }
+                .al-stat { display: flex; align-items: center; gap: 14px; background: #fff; border: 1px solid #e7eaf1; border-radius: 16px; padding: 16px 18px;
+                    box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05); }
+                .al-stat-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .al-stat-icon .al-ic { width: 21px; height: 21px; }
+                .al-stat-value { font-size: 24px; font-weight: 800; line-height: 1.1; }
+                .al-stat-label { font-size: 12.5px; font-weight: 600; color: #667085; margin-top: 2px; }
+                .t-navy { background: #eef2fa; color: #0f2557; } .t-green { background: #ecfdf3; color: #16a34a; } .t-amber { background: #fff7e6; color: #d97706; } .t-violet { background: #f4f0ff; color: #7c3aed; }
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-                    <div class="stat-info"><div class="stat-value">{{ $totalCount }}</div><div class="stat-label">Total Actions Logged</div></div>
+                .al-card { background: #fff; border: 1px solid #e7eaf1; border-radius: 16px; box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05); }
+                .al-filters { display: grid; grid-template-columns: minmax(220px, 2.2fr) repeat(2, minmax(150px, 1fr)) repeat(2, minmax(140px, .9fr)) auto; gap: 12px; align-items: end; padding: 16px 18px; }
+                .al-field label { display: block; font-size: 12.5px; font-weight: 700; color: #344054; margin-bottom: 6px; }
+                .al-field input, .al-field select { width: 100%; height: 40px; padding: 0 12px; border: 1px solid #d5dbe8; border-radius: 10px; background: #fff;
+                    font: 500 13.5px 'Plus Jakarta Sans', Arial, sans-serif; color: #14213d; outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
+                .al-field input::placeholder { color: #98a2b3; }
+                .al-field input:focus, .al-field select:focus { border-color: #1b3d7a; box-shadow: 0 0 0 3px rgba(37, 99, 235, .14); }
+                .al-search { position: relative; }
+                .al-search .al-ic { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #98a2b3; width: 16px; height: 16px; }
+                .al-search input { padding-left: 36px; }
+                .al-buttons { display: flex; gap: 8px; }
+                .al-buttons .btn-save { height: 40px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; }
+                .al-reset { height: 40px; padding: 0 14px; display: inline-flex; align-items: center; border: 1px solid #d5dbe8; border-radius: 10px; color: #344054; text-decoration: none; font-size: 13.5px; font-weight: 700; background: #fff; }
+                .al-reset:hover { background: #f8f9fc; }
+                .al-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 18px 14px; margin-top: -4px; }
+                .al-chip { padding: 4px 10px; border-radius: 999px; background: #eef2fa; color: #0f2557; font-size: 12px; font-weight: 700; }
+
+                .al-table-wrap { overflow-x: auto; border-top: 1px solid #eef0f5; }
+                .al-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+                .al-table th { text-align: left; padding: 12px 18px; background: #f8f9fc; color: #475467; font-size: 11.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
+                .al-table td { padding: 13px 18px; border-top: 1px solid #f1f3f8; vertical-align: top; }
+                .al-table tbody tr { transition: background-color .15s ease; }
+                .al-table tbody tr:hover { background: #fafbfd; }
+                .al-when strong { display: block; font-weight: 700; white-space: nowrap; }
+                .al-when span { font-size: 12px; color: #667085; white-space: nowrap; }
+                .al-user { display: flex; align-items: center; gap: 10px; min-width: 170px; }
+                .al-avatar { width: 32px; height: 32px; border-radius: 50%; background: #0f2557; color: #fff; font-size: 11.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .al-avatar.system { background: #eef2fa; color: #0f2557; }
+                .al-user strong { display: block; font-weight: 700; }
+                .al-user span { font-size: 12px; color: #667085; }
+                .al-desc { color: #344054; line-height: 1.5; min-width: 260px; }
+                .action-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 800; white-space: nowrap; }
+                .action-created { background: #ecfdf3; color: #15803d; } .action-approved { background: #ecfdf3; color: #15803d; } .action-restored { background: #eff4ff; color: #1d4ed8; }
+                .action-archived { background: #f2f4f7; color: #475467; } .action-rejected { background: #fef2f2; color: #b91c1c; } .action-revision { background: #fff7e6; color: #b45309; }
+                .action-distributed { background: #f4f0ff; color: #6d28d9; } .action-permissions { background: #eef2fa; color: #0f2557; } .action-default { background: #f2f4f7; color: #344054; }
+                .al-empty { padding: 44px 18px; text-align: center; color: #667085; }
+                .al-empty .al-ic { width: 26px; height: 26px; color: #98a2b3; display: block; margin: 0 auto 8px; }
+
+                .al-pages { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 18px; border-top: 1px solid #f1f3f8; font-size: 13px; color: #667085; }
+                .al-pager { display: flex; gap: 6px; flex-wrap: wrap; }
+                .al-pager a, .al-pager span { min-width: 34px; height: 34px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #e7eaf1;
+                    border-radius: 8px; color: #344054; text-decoration: none; font-weight: 700; background: #fff; }
+                .al-pager a:hover { background: #f8f9fc; }
+                .al-pager .is-current { background: #0f2557; border-color: #0f2557; color: #fff; }
+                .al-pager .is-disabled { color: #c0c6d4; }
+                @media (max-width: 1100px) { .al-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); } .al-filters .al-field.wide { grid-column: 1 / -1; } }
+            </style>
+
+            <div class="al">
+                <div class="al-eyebrow">System activity</div>
+                <div class="al-title">Audit Logs</div>
+                <div class="al-sub">A record of important actions in the system — who did what, and when (Philippine time).</div>
+
+                <div class="al-stats">
+                    <div class="al-stat"><span class="al-stat-icon t-navy">{!! \App\Support\SidebarMenu::icon('scroll', 'al-ic') !!}</span><div><div class="al-stat-value">{{ number_format($totalCount) }}</div><div class="al-stat-label">Total actions logged</div></div></div>
+                    <div class="al-stat"><span class="al-stat-icon t-green">{!! \App\Support\SidebarMenu::icon('clock', 'al-ic') !!}</span><div><div class="al-stat-value">{{ number_format($todayCount) }}</div><div class="al-stat-label">Logged today</div></div></div>
+                    <div class="al-stat"><span class="al-stat-icon t-amber">{!! \App\Support\SidebarMenu::icon('calendar', 'al-ic') !!}</span><div><div class="al-stat-value">{{ number_format($weekCount) }}</div><div class="al-stat-label">This week</div></div></div>
+                    <div class="al-stat"><span class="al-stat-icon t-violet">{!! \App\Support\SidebarMenu::icon('layers', 'al-ic') !!}</span><div><div class="al-stat-value">{{ number_format($logs->total()) }}</div><div class="al-stat-label">{{ $filtered ? 'Matching your filters' : 'Showing' }}</div></div></div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                    <div class="stat-info"><div class="stat-value">{{ $todayCount }}</div><div class="stat-label">Logged Today</div></div>
-                </div>
-            </div>
 
-            <div class="filters-row">
-                <form method="GET">
-                    <select name="action" class="filter-select" onchange="this.form.submit()">
-                        <option value="">All Actions</option>
-                        @foreach($actionTypes as $type)
-                            <option value="{{ $type }}" {{ $action == $type ? 'selected' : '' }}>{{ $type }}</option>
-                        @endforeach
-                    </select>
-                    <div class="search-box">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        <input type="text" name="search" placeholder="Search by user or description..." value="{{ $search }}">
-                    </div>
-                    <button type="submit" class="btn-filter">Search</button>
-                    @if($action || $search)
-                        <a href="{{ url('/admin/audit-logs') }}" class="btn-clear-filter">Clear</a>
-                    @endif
-                </form>
-            </div>
-
-            <div class="log-panel">
-                <table class="log-table">
-                    <thead>
-                        <tr>
-                            <th>Date & Time</th>
-                            <th>User</th>
-                            <th>Action</th>
-                            <th>Details</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($logs as $log)
-                            @php
-                                $badgeClass = match(true) {
-                                    str_contains($log->action, 'Created') => 'action-created',
-                                    str_contains($log->action, 'Archived') => 'action-archived',
-                                    str_contains($log->action, 'Restored') => 'action-restored',
-                                    str_contains($log->action, 'Approved') => 'action-approved',
-                                    str_contains($log->action, 'Rejected') => 'action-rejected',
-                                    str_contains($log->action, 'Revision') => 'action-revision',
-                                    str_contains($log->action, 'Distributed'), str_contains($log->action, 'Sent') => 'action-distributed',
-                                    str_contains($log->action, 'Returned'), str_contains($log->action, 'Removed'), str_contains($log->action, 'Withdrawn') => 'action-rejected',
-                                    str_contains($log->action, 'Submitted') => 'action-revision',
-                                    str_contains($log->action, 'Permissions') => 'action-permissions',
-                                    default => 'action-default',
-                                };
-                            @endphp
-                            <tr>
-                                <td class="log-date">{{ $log->created_at->format('M d, Y h:i A') }}</td>
-                                <td class="log-user">{{ $log->user->name ?? 'System' }}</td>
-                                <td><span class="action-badge {{ $badgeClass }}">{{ $log->action }}</span></td>
-                                <td class="log-desc">{{ $log->description }}</td>
-                            </tr>
-                        @empty
-                            <tr><td colspan="4" class="empty-row">No actions have been logged yet.</td></tr>
-                        @endforelse
-                    </tbody>
-                </table>
-                @if($logs->hasPages())
-                    <div class="pagination-row">
-                        <div class="pagination-info">Showing {{ $logs->firstItem() }}–{{ $logs->lastItem() }} of {{ $logs->total() }} results</div>
-                        <div class="pagination-controls">
-                            @if($logs->onFirstPage())
-                                <span class="page-btn disabled">‹ Previous</span>
-                            @else
-                                <a href="{{ $logs->previousPageUrl() }}" class="page-btn">‹ Previous</a>
-                            @endif
-
-                            @foreach($logs->getUrlRange(max(1, $logs->currentPage() - 2), min($logs->lastPage(), $logs->currentPage() + 2)) as $page => $url)
-                                <a href="{{ $url }}" class="page-num {{ $page == $logs->currentPage() ? 'active' : '' }}">{{ $page }}</a>
-                            @endforeach
-
-                            @if($logs->hasMorePages())
-                                <a href="{{ $logs->nextPageUrl() }}" class="page-btn">Next ›</a>
-                            @else
-                                <span class="page-btn disabled">Next ›</span>
+                <div class="al-card">
+                    <form method="GET" class="al-filters" id="audit-filters">
+                        <div class="al-field wide">
+                            <label for="al-search">Search</label>
+                            <div class="al-search">
+                                <svg class="al-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                <input type="text" id="al-search" name="search" placeholder="Description, action or user" value="{{ $search }}">
+                            </div>
+                        </div>
+                        <div class="al-field">
+                            <label for="al-action">Action</label>
+                            <select id="al-action" name="action" onchange="this.form.submit()">
+                                <option value="">All actions</option>
+                                @foreach($actionTypes as $type)
+                                    <option value="{{ $type }}" @selected($action == $type)>{{ $type }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="al-field">
+                            <label for="al-user-type">User type</label>
+                            <select id="al-user-type" name="user_type" onchange="this.form.submit()">
+                                <option value="">All users</option>
+                                @foreach($userTypes as $key => $label)
+                                    <option value="{{ $key }}" @selected($userType === $key)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="al-field">
+                            <label for="al-from">From</label>
+                            <input type="date" id="al-from" name="from" value="{{ $from }}" max="{{ now('Asia/Manila')->toDateString() }}" onchange="this.form.submit()">
+                        </div>
+                        <div class="al-field">
+                            <label for="al-to">To</label>
+                            <input type="date" id="al-to" name="to" value="{{ $to }}" max="{{ now('Asia/Manila')->toDateString() }}" onchange="this.form.submit()">
+                        </div>
+                        <div class="al-buttons">
+                            <button type="submit" class="btn-save">{!! \App\Support\SidebarMenu::icon('arrow', 'al-ic') !!} Apply</button>
+                            @if($filtered)
+                                <a href="{{ url('/admin/audit-logs') }}" class="al-reset">Reset</a>
                             @endif
                         </div>
+                    </form>
+
+                    @if($filtered)
+                        <div class="al-chips">
+                            @if($search !== '')<span class="al-chip">“{{ $search }}”</span>@endif
+                            @if($action)<span class="al-chip">{{ $action }}</span>@endif
+                            @if($userType)<span class="al-chip">{{ $userTypes[$userType] }}</span>@endif
+                            @if($from || $to)<span class="al-chip">{{ $from ? \Illuminate\Support\Carbon::parse($from)->format('M d, Y') : 'Start' }} – {{ $to ? \Illuminate\Support\Carbon::parse($to)->format('M d, Y') : 'Today' }}</span>@endif
+                        </div>
+                    @endif
+
+                    <div class="al-table-wrap">
+                        <table class="al-table">
+                            <thead>
+                                <tr>
+                                    <th>Date &amp; Time</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($logs as $log)
+                                    @php
+                                        $badgeClass = match(true) {
+                                            str_contains($log->action, 'Created') => 'action-created',
+                                            str_contains($log->action, 'Archived') => 'action-archived',
+                                            str_contains($log->action, 'Restored') => 'action-restored',
+                                            str_contains($log->action, 'Approved') => 'action-approved',
+                                            str_contains($log->action, 'Rejected') => 'action-rejected',
+                                            str_contains($log->action, 'Revision') => 'action-revision',
+                                            str_contains($log->action, 'Distributed'), str_contains($log->action, 'Sent') => 'action-distributed',
+                                            str_contains($log->action, 'Returned'), str_contains($log->action, 'Removed'), str_contains($log->action, 'Withdrawn') => 'action-rejected',
+                                            str_contains($log->action, 'Submitted') => 'action-revision',
+                                            str_contains($log->action, 'Permissions') => 'action-permissions',
+                                            default => 'action-default',
+                                        };
+                                        $when = $log->created_at->copy()->timezone('Asia/Manila');
+                                    @endphp
+                                    <tr>
+                                        <td class="al-when"><strong>{{ $when->format('M d, Y') }}</strong><span>{{ $when->format('h:i A') }}</span></td>
+                                        <td>
+                                            <div class="al-user">
+                                                @if($log->user)
+                                                    <span class="al-avatar">{{ $log->user->initials }}</span>
+                                                    <div><strong>{{ $log->user->name }}</strong><span>{{ $userTypes[$log->user->role] ?? ucfirst($log->user->role) }}</span></div>
+                                                @else
+                                                    <span class="al-avatar system">{!! \App\Support\SidebarMenu::icon('settings', 'al-ic') !!}</span>
+                                                    <div><strong>System</strong><span>Automatic</span></div>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td><span class="action-badge {{ $badgeClass }}">{{ $log->action }}</span></td>
+                                        <td class="al-desc">{{ $log->description }}</td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="4" class="al-empty">{!! \App\Support\SidebarMenu::icon('scroll', 'al-ic') !!}{{ $filtered ? 'No actions match these filters.' : 'No actions have been logged yet.' }}</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
-                @endif
+
+                    @if($logs->hasPages())
+                        <div class="al-pages">
+                            <div>Showing {{ $logs->firstItem() }}–{{ $logs->lastItem() }} of {{ $logs->total() }} results</div>
+                            <div class="al-pager">
+                                @if($logs->onFirstPage())
+                                    <span class="is-disabled">‹ Previous</span>
+                                @else
+                                    <a href="{{ $logs->previousPageUrl() }}">‹ Previous</a>
+                                @endif
+                                @foreach($logs->getUrlRange(max(1, $logs->currentPage() - 2), min($logs->lastPage(), $logs->currentPage() + 2)) as $page => $url)
+                                    @if($page == $logs->currentPage())
+                                        <span class="is-current">{{ $page }}</span>
+                                    @else
+                                        <a href="{{ $url }}">{{ $page }}</a>
+                                    @endif
+                                @endforeach
+                                @if($logs->hasMorePages())
+                                    <a href="{{ $logs->nextPageUrl() }}">Next ›</a>
+                                @else
+                                    <span class="is-disabled">Next ›</span>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>

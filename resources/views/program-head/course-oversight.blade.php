@@ -124,87 +124,44 @@
         .delete-target strong { color: #1a1a2e; }
 
         svg { display: inline-block; vertical-align: middle; }
+        .co-eyebrow { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #1b3d7a; text-transform: uppercase; }
+        .co-title { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -.4px; margin: 4px 0 6px; color: #14213d; }
+        .co-sub { font-size: 14px; color: #475467; margin-bottom: 18px; }
+        .course-select-box { border-radius: 16px !important; border: 1px solid #e7eaf1 !important; box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05) !important; }
+        .co-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 18px; }
+        .co-ic { width: 19px; height: 19px; flex-shrink: 0; }
+        .co-nav.sub-tabs { display: flex; flex-direction: column; gap: 4px; border: 0 !important; margin: 0 !important; padding: 0 !important; position: sticky; top: 0; background: none !important; }
+        .co-nav .sub-tab { display: flex !important; align-items: center; gap: 12px; padding: 12px 14px !important; border: 1px solid transparent !important; border-radius: 12px !important;
+            background: none !important; color: #344054 !important; cursor: pointer; margin: 0 !important; transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease; }
+        .co-nav .sub-tab:hover { background: #fff !important; border-color: #e7eaf1 !important; }
+        .co-nav .sub-tab.active { background: #fff !important; border-color: #e7eaf1 !important; color: #0f2557 !important; box-shadow: 0 4px 14px rgba(15, 37, 87, .07); }
+        .co-nav .sub-tab > span { flex: 1; min-width: 0; }
+        .co-nav .sub-tab strong { display: block; font-size: 14.5px; font-weight: 700; }
+        .co-nav .sub-tab small { display: block; font-size: 12px; color: #667085; font-weight: 500; margin-top: 2px; }
+        .co-nav .sub-tab em { font-style: normal; min-width: 24px; height: 22px; padding: 0 7px; border-radius: 11px; background: #eef2fa; color: #0f2557; font-size: 11.5px; font-weight: 800;
+            display: inline-flex; align-items: center; justify-content: center; }
+        .co-nav .sub-tab:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+        .co-main .tab-content.active { animation: co-in .25s ease-out; }
+        @keyframes co-in { from { opacity: 0; } to { opacity: 1; } }
+        .co-status { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: #fff; border: 1px solid #e7eaf1; border-radius: 16px; padding: 18px 22px; margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05); }
+        .co-status-icon { width: 46px; height: 46px; border-radius: 12px; background: #eef2fa; color: #0f2557; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .co-status-icon .co-ic { width: 23px; height: 23px; }
+        .co-status-title { font-size: 17px; font-weight: 800; color: #14213d; }
+        .co-status-sub { font-size: 13px; color: #667085; margin-top: 2px; }
+        .co-facts { display: flex; flex-wrap: wrap; gap: 6px 22px; width: 100%; padding-top: 12px; border-top: 1px dashed #e7eaf1; font-size: 12.5px; color: #667085; }
+        .co-facts strong { color: #14213d; }
+        @media (max-width: 900px) { .co-layout { grid-template-columns: 1fr; } .co-nav.sub-tabs { position: static; flex-direction: row; flex-wrap: wrap; } }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
-            <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
-            <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
-        </div>
-        <ul class="nav-list">
-            @if($navPermissions['dashboard'] ?? true)
-            <li class="{{ request()->is('program-head/dashboard') ? 'active' : '' }}">
-                <a href="{{ url('/program-head/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a>
-            </li>
-            @endif
-            @if($navPermissions['template-review'] ?? true)
-            <li class="{{ request()->is('program-head/template-review*') ? 'active' : '' }}">
-                <a href="{{ url('/program-head/template-review') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates</a>
-            </li>
-            @endif
-            @if($navPermissions['course-oversight'] ?? true)
-            <li class="{{ request()->is('program-head/course-oversight*') ? 'active' : '' }}">
-                <a href="{{ url('/program-head/course-oversight') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Oversight</a>
-            </li>
-            @endif
-            @if($navPermissions['program-assignment'] ?? true)
-            <li class="{{ request()->is('program-head/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/program-head/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
-            @endif
-            @if($navPermissions['submissions'] ?? true)
-            <li class="{{ request()->is('program-head/submissions*') ? 'active' : '' }}"><a href="{{ url('/program-head/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline</a></li>
-            @endif
-            @if($navPermissions['account-management'] ?? true)
-            <li class="{{ request()->is('program-head/account-management*') ? 'active' : '' }}">
-                <a href="{{ url('/program-head/account-management') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Account Management</a>
-            </li>
-            @endif
-            @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('program-head/announcements*') ? 'active' : '' }}">
-                <a href="{{ url('/program-head/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
-                @if(($unreadAnnouncementsCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
-                @endif
-            </a>
-            </li>
-            @endif
-            @if($navPermissions['calendar'] ?? true)
-            <li class="{{ request()->is('program-head/calendar*') ? 'active' : '' }}">
-                <a href="{{ url('/program-head/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a>
-            </li>
-            @endif
-            @if($navPermissions['analytics'] ?? true)
-            <li class="{{ request()->is('program-head/analytics*') ? 'active' : '' }}"><a href="{{ url('/program-head/analytics') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></li>
-            @endif
-            @if($navPermissions['official-documents'] ?? true)
-            <li class="{{ request()->is('program-head/official-documents*') ? 'active' : '' }}"><a href="{{ url('/program-head/official-documents') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Official Documents</a></li>
-            @endif
-        </ul>
-        <div class="sidebar-logout">
-            <a href="#" onclick="openLogoutModal()">
-                <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Log out
-            </a>
-            <form id="logout-form" method="POST" action="{{ url('/logout') }}" style="display:none;">@csrf</form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     <div class="main">
         <div class="topnav">
-            <span class="label">Current role</span>
-            <div class="topnav-right">
-                <span class="role-badge">Program Head</span>
-                @include('partials.program-switcher')
-                @include('partials.notification-bell')
-                <div class="user-info">
-                    <div class="user-text">
-                        <div class="user-name">{{ auth()->user()->name }}</div>
-                        <div class="user-email">{{ auth()->user()->email }}</div>
-                    </div>
-                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
-                </div>
+            <div class="topnav-right" style="margin-left:auto;">
+                @include('partials.topnav-user', ['switcher' => true])
             </div>
         </div>
 
@@ -217,8 +174,13 @@
                 <div class="alert-error">{{ $errors->first() }}</div>
             @endif
 
-            <div class="page-title">Course Oversight</div>
-            <div class="page-sub">Manage master course materials for the program: <strong>{{ $myProgram }}</strong></div>
+            @php
+                $coMaterials = $selectedCourse ? $materials->flatten(1)->count() : 0;
+                $coTopics = $selectedCourse ? $courseTopics->flatten(1) : collect();
+            @endphp
+            <div class="co-eyebrow">Program oversight</div>
+            <div class="co-title">Course Oversight</div>
+            <div class="co-sub">Manage master course materials, outcomes and topics for the program: <strong>{{ $myProgram }}</strong></div>
 
             {{-- Course selector + Upload --}}
             <div class="course-select-box">
@@ -244,12 +206,35 @@
                 </button>
             </div>
 
-            {{-- Sub tabs --}}
-            <div class="sub-tabs">
-                <span class="sub-tab active" onclick="switchSubTab('materials', this)">Materials</span>
-                <span class="sub-tab" onclick="switchSubTab('outcomes', this)">Outcomes (OBE)</span>
-                <span class="sub-tab" onclick="switchSubTab('topics', this)">Topics & Hours (OBTL)</span>
-            </div>
+            <div class="co-layout">
+            <nav class="co-nav sub-tabs" aria-label="Course sections">
+                <span class="sub-tab active" role="button" tabindex="0" onclick="switchSubTab('materials', this)">{!! \App\Support\SidebarMenu::icon('folderCheck', 'co-ic') !!}<span><strong>Materials</strong><small>Master course files</small></span>@if($selectedCourse)<em>{{ $coMaterials }}</em>@endif</span>
+                <span class="sub-tab" role="button" tabindex="0" onclick="switchSubTab('outcomes', this)">{!! \App\Support\SidebarMenu::icon('checkCircle', 'co-ic') !!}<span><strong>Outcomes (OBE)</strong><small>Program and course outcomes</small></span><em>{{ $programOutcomes->count() + ($selectedCourse ? $courseOutcomes->count() : 0) }}</em></span>
+                <span class="sub-tab" role="button" tabindex="0" onclick="switchSubTab('topics', this)">{!! \App\Support\SidebarMenu::icon('clock', 'co-ic') !!}<span><strong>Topics &amp; Hours (OBTL)</strong><small>Topics per grading period</small></span>@if($selectedCourse)<em>{{ $coTopics->count() }}</em>@endif</span>
+            </nav>
+
+            <div class="co-main">
+                <div class="co-status">
+                    <span class="co-status-icon">{!! \App\Support\SidebarMenu::icon('cap', 'co-ic') !!}</span>
+                    <div>
+                        @if($selectedCourse)
+                            <div class="co-status-title">{{ $selectedCourse->code }} — {{ $selectedCourse->title }}</div>
+                            <div class="co-status-sub">Shared with every faculty member handling this course in {{ $myProgram }}.</div>
+                        @else
+                            <div class="co-status-title">No course selected</div>
+                            <div class="co-status-sub">Pick a course above to see its materials, outcomes and topics.</div>
+                        @endif
+                    </div>
+                    @if($selectedCourse)
+                        <div class="co-facts">
+                            <span>Materials: <strong>{{ $coMaterials }}</strong></span>
+                            <span>Program outcomes: <strong>{{ $programOutcomes->count() }}</strong></span>
+                            <span>Course outcomes: <strong>{{ $courseOutcomes->count() }}</strong></span>
+                            <span>Topics: <strong>{{ $coTopics->count() }}</strong></span>
+                            <span>Hours: <strong>{{ $coTopics->sum('hours') }}</strong></span>
+                        </div>
+                    @endif
+                </div>
 
             {{-- ═══ MATERIALS ═══ --}}
             <div class="tab-content active" id="tab-materials">
@@ -435,6 +420,8 @@
                     @endforeach
                 @endif
             </div>
+            </div>{{-- .co-main --}}
+            </div>{{-- .co-layout --}}
 
         </div>
     </div>
@@ -609,6 +596,9 @@
             if (e.target === this) closeUploadModal();
         });
 
+        document.querySelectorAll('.co-nav .sub-tab').forEach(function (tab) {
+            tab.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tab.click(); } });
+        });
         function switchSubTab(tabName, el) {
             document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
             el.classList.add('active');

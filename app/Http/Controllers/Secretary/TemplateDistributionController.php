@@ -18,12 +18,14 @@ class TemplateDistributionController extends Controller
 {
     public function index()
     {
+        $term = \App\Support\AcademicTerm::requested(request());
         $templates = TemplateDocument::with(['creator', 'reviewer', 'programs'])
+            ->inTerm(...$term)
             ->whereNull('superseded_at')
             ->latest()
             ->get();
 
-        return view('secretary.template-distribution', compact('templates'));
+        return view('secretary.template-distribution', compact('templates', 'term'));
     }
 
     public function store(Request $request)

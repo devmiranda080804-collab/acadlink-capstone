@@ -21,6 +21,7 @@ class SharedLibraryController extends Controller
     {
         $myPrograms = auth()->user()->programCodes();
         $myProgram = implode(', ', $myPrograms);
+        $term = \App\Support\AcademicTerm::requested(request());
 
         $items = collect();
 
@@ -31,6 +32,7 @@ class SharedLibraryController extends Controller
 
         // Course materials (own program) — one folder per actual course
         CourseMaterial::with(['course', 'uploader'])
+            ->inTerm(...$term)
             ->whereHas('course', fn($c) => $c->whereIn('program', $myPrograms))
             ->get()
             ->each(function ($m) use (&$items) {
@@ -46,6 +48,7 @@ class SharedLibraryController extends Controller
                     'view_url'     => FileLinks::view('material', $m->id),
                     'download_url' => FileLinks::download('material', $m->id),
                     'date'         => $m->created_at,
+                    'term'         => $m->term_label,
                     'can_delete'   => false,
                     'folder_group' => 'courses',
                     'folder_key'   => 'course-' . $m->course_id,
@@ -60,6 +63,7 @@ class SharedLibraryController extends Controller
         $editorReady = OnlyOffice::isConfigured();
 
         SharedResource::with(['sharer', 'course', 'lastEditor'])
+            ->inTerm(...$term)
             ->whereIn('program', $myPrograms)
             ->get()
             ->each(function ($r) use (&$items, $myCourses, $editorReady) {
@@ -80,6 +84,7 @@ class SharedLibraryController extends Controller
                     'view_url'     => FileLinks::view('shared', $r->id),
                     'download_url' => FileLinks::download('shared', $r->id),
                     'date'         => $r->created_at,
+                    'term'         => $r->term_label,
                     'can_delete'   => $r->shared_by === auth()->id(), // own upload only
                     // Edited together in the editor by whoever shared it and the course's faculty.
                     'can_edit'     => $canEdit && $editorReady,
@@ -117,7 +122,7 @@ class SharedLibraryController extends Controller
         $sections = collect($myPrograms)->mapWithKeys(fn ($code) => ['program-' . $code => 'Program — ' . $code])->all()
             + ['courses' => 'Courses'];
 
-        return view('faculty.shared-library', compact('items', 'folders', 'myProgram', 'myPrograms', 'sections', 'recentItems', 'recentDays', 'courses'));
+        return view('faculty.shared-library', compact('items', 'folders', 'myProgram', 'myPrograms', 'sections', 'recentItems', 'recentDays', 'courses', 'term'));
     }
 
     // Opens the shared file in the editor: to edit together, or to view.

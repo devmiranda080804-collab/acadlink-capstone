@@ -17,8 +17,10 @@ class TemplateController extends Controller
     public function index()
     {
         $myPrograms = auth()->user()->programCodes();
+        $term = \App\Support\AcademicTerm::requested(request());
 
         $templates = TemplateDocument::with(['creator', 'programs'])
+            ->inTerm(...$term)
             ->whereNull('superseded_at')
             ->whereHas('programs', fn($p) => $p->whereIn('program', $myPrograms)->whereNotNull('distributed_at'))
             ->latest()
@@ -47,7 +49,7 @@ class TemplateController extends Controller
 
         $libraryCourses = Course::whereIn('program', $myPrograms)->orderBy('program')->orderBy('code')->get();
 
-        return view('faculty.my-template', compact('templates', 'copies', 'libraryCourses', 'myPrograms'));
+        return view('faculty.my-template', compact('templates', 'copies', 'libraryCourses', 'myPrograms', 'term'));
     }
 
     // Makes a new personal copy each time and opens it in the editor. The official template

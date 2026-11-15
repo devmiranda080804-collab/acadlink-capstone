@@ -48,7 +48,31 @@
         .cms-tab { background: none; border: none; border-bottom: 3px solid transparent; padding: 10px 16px; font-size: 13px; font-weight: 600; color: #777; cursor: pointer; font-family: Arial, sans-serif; }
         .cms-tab.active { color: #0f2557; border-bottom-color: #0f2557; }
         .cms-panel { display: none; }
-        .cms-panel.active { display: block; }
+        .cms-panel.active { display: block; animation: cms-in .25s ease-out; }
+        @keyframes cms-in { from { opacity: 0; } to { opacity: 1; } }
+        .cms-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #1b3d7a; text-transform: uppercase; }
+        .cms-title { font-size: 28px; font-weight: 800; letter-spacing: -.4px; margin: 4px 0 6px; color: #14213d; }
+        .cms-sub { font-size: 14px; color: #475467; margin-bottom: 22px; }
+        .cms-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; align-items: start; }
+        .cms-layout.single { grid-template-columns: minmax(0, 1fr); }
+        .cms-tabs { display: flex; flex-direction: column; gap: 4px; border: 0 !important; margin: 0 !important; position: sticky; top: 0; }
+        .cms-tabs .cms-tab { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border: 1px solid transparent; border-radius: 12px; background: none;
+            color: #344054; cursor: pointer; text-align: left; margin: 0; transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease; }
+        .cms-tabs .cms-tab:hover { background: #fff; border-color: #e7eaf1; }
+        .cms-tabs .cms-tab.active { background: #fff; border-color: #e7eaf1; border-bottom-color: #e7eaf1 !important; color: #0f2557; box-shadow: 0 4px 14px rgba(15, 37, 87, .07); }
+        .cms-tabs .cms-tab strong { display: block; font-size: 14.5px; font-weight: 700; }
+        .cms-tabs .cms-tab small { display: block; font-size: 12px; color: #667085; font-weight: 500; margin-top: 2px; }
+        .cms-ic { width: 19px; height: 19px; flex-shrink: 0; }
+        .cms-status { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; background: #fff; border: 1px solid #e7eaf1; border-radius: 16px; padding: 18px 22px; margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05); }
+        .cms-status-icon { width: 46px; height: 46px; border-radius: 12px; background: #eef2fa; color: #0f2557; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .cms-status-icon .cms-ic { width: 23px; height: 23px; }
+        .cms-status-title { font-size: 17px; font-weight: 800; color: #14213d; }
+        .cms-status-sub { font-size: 13px; color: #667085; margin-top: 2px; }
+        .cms-facts { display: flex; flex-wrap: wrap; gap: 6px 22px; width: 100%; padding-top: 12px; border-top: 1px dashed #e7eaf1; font-size: 12.5px; color: #667085; }
+        .cms-facts strong { color: #14213d; }
+        .cms-main .site-card { max-width: none; }
+        @media (max-width: 900px) { .cms-layout { grid-template-columns: 1fr; } .cms-tabs { position: static; flex-direction: row; flex-wrap: wrap; } .cms-tabs .cms-tab { width: auto; } }
         .btn-create { background: #0f2557; color: #fff; border: none; border-radius: 6px; font-size: 12.5px; font-weight: 600; padding: 9px 18px; cursor: pointer; }
         .btn-create:hover { background: #1a3a7a; }
         .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
@@ -98,17 +122,8 @@
 
     <div class="main">
         <div class="topnav">
-            <span class="label">Current role</span>
-            <div class="topnav-right">
-                <span class="role-badge">{{ $isAdmin ? 'Admin/Dean' : 'Secretary' }}</span>
-                @include('partials.notification-bell')
-                <div class="user-info">
-                    <div class="user-text">
-                        <div class="user-name">{{ auth()->user()->name }}</div>
-                        <div class="user-email">{{ auth()->user()->email }}</div>
-                    </div>
-                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
-                </div>
+            <div class="topnav-right" style="margin-left:auto;">
+                @include('partials.topnav-user')
             </div>
         </div>
 
@@ -117,36 +132,41 @@
                 <div class="alert-error">{{ $errors->first() }}</div>
             @endif
 
-            <div class="page-header">
-                <div>
-                    <div class="page-title">System CMS</div>
-                    <div class="page-sub">Template elements, document layouts, dropdown lists and site content of the whole system.</div>
-                </div>
-            </div>
+            <div class="cms-eyebrow">Content management</div>
+            <div class="cms-title">System CMS</div>
+            <div class="cms-sub">Template elements, document layouts, dropdown lists and site content of the whole system.</div>
+
+            <div class="cms-layout {{ $isAdmin ? '' : 'single' }}">
 
             @if($isAdmin)
-                <div class="cms-tabs">
-                    <button type="button" class="cms-tab active" data-panel="panel-elements" onclick="showPanel(this)">Template Elements</button>
-                    <button type="button" class="cms-tab" data-panel="panel-layouts" onclick="showPanel(this)">Document Layouts</button>
-                    <button type="button" class="cms-tab" data-panel="panel-lists" onclick="showPanel(this)">Dropdown Lists</button>
-                    <button type="button" class="cms-tab" data-panel="panel-site" onclick="showPanel(this)">Site Content</button>
-                </div>
+                <nav class="cms-tabs" aria-label="System CMS sections">
+                    <button type="button" class="cms-tab active" data-panel="panel-elements" onclick="showPanel(this)">{!! \App\Support\SidebarMenu::icon('files', 'cms-ic') !!}<span><strong>Template Elements</strong><small>Kinds of template</small></span></button>
+                    <button type="button" class="cms-tab" data-panel="panel-layouts" onclick="showPanel(this)">{!! \App\Support\SidebarMenu::icon('layout', 'cms-ic') !!}<span><strong>Document Layouts</strong><small>TOS, exam, letters, slips</small></span></button>
+                    <button type="button" class="cms-tab" data-panel="panel-lists" onclick="showPanel(this)">{!! \App\Support\SidebarMenu::icon('clipboard', 'cms-ic') !!}<span><strong>Dropdown Lists</strong><small>Programs, years, semesters</small></span></button>
+                    <button type="button" class="cms-tab" data-panel="panel-site" onclick="showPanel(this)">{!! \App\Support\SidebarMenu::icon('pen', 'cms-ic') !!}<span><strong>Site Content</strong><small>Wording and images</small></span></button>
+                </nav>
             @endif
 
+            <div class="cms-main">
+
             <div class="cms-panel active" id="panel-elements">
+                @include('system-cms.partials.status', ['panel' => 'elements'])
                 @include('system-cms.partials.template-elements')
             </div>
 
             @if($isAdmin)
                 <div class="cms-panel" id="panel-layouts">
+                    @include('system-cms.partials.status', ['panel' => 'layouts'])
                     @include('system-cms.partials.document-layouts')
                 </div>
 
                 <div class="cms-panel" id="panel-lists">
+                    @include('system-cms.partials.status', ['panel' => 'lists'])
                     @include('system-cms.partials.dropdown-lists')
                 </div>
 
                 <div class="cms-panel" id="panel-site">
+                    @include('system-cms.partials.status', ['panel' => 'site'])
                     <form method="POST" action="{{ url('/admin/system-cms/site') }}" enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
@@ -187,6 +207,8 @@
                     </form>
                 </div>
             @endif
+            </div>{{-- .cms-main --}}
+            </div>{{-- .cms-layout --}}
         </div>
     </div>
 
@@ -200,7 +222,14 @@
         function showPanel(tab) {
             document.querySelectorAll('.cms-tab').forEach(function (t) { t.classList.toggle('active', t === tab); });
             document.querySelectorAll('.cms-panel').forEach(function (p) { p.classList.toggle('active', p.id === tab.dataset.panel); });
+            try { localStorage.setItem('cms-panel', tab.dataset.panel); } catch (e) {}
         }
+        (function () {
+            var last = null;
+            try { last = localStorage.getItem('cms-panel'); } catch (e) {}
+            var tab = last && document.querySelector('.cms-tab[data-panel="' + last + '"]');
+            if (tab) showPanel(tab);
+        })();
 
         @if($isAdmin && session('site_saved'))
             showPanel(document.querySelector('.cms-tab[data-panel="panel-site"]'));

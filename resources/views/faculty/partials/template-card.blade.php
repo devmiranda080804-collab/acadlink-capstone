@@ -15,7 +15,7 @@
     <div class="card-meta">
         {{ strtoupper($template->file_type) }} • {{ $template->readable_size }}<br>
         Uploaded by {{ $template->creator->name ?? 'Unknown' }}<br>
-        {{ \App\Support\DisplayTime::format($template->created_at) }}
+        {{ \App\Support\DisplayTime::format($template->created_at) }} <span class="term-tag">{{ $template->term_label }}</span>
     </div>
 
     <div class="card-actions">

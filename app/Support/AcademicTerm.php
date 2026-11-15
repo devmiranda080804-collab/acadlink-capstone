@@ -59,6 +59,49 @@ class AcademicTerm
         return [self::currentSchoolYear()];
     }
 
+    // "1st Sem, A.Y. 2026-2027" — the short term shown on document cards.
+    public static function shortLabel(?string $semester, ?string $schoolYear): string
+    {
+        if (!$semester && !$schoolYear) {
+            return '';
+        }
+        $short = ['First Semester' => '1st Sem', 'Second Semester' => '2nd Sem', 'Summer' => 'Summer'][$semester] ?? $semester;
+
+        return trim(($short ?: '') . ($schoolYear ? ', A.Y. ' . $schoolYear : ''), ', ');
+    }
+
+    // The A.Y. and semester picked in a document page's term filter. Both default to all
+    // terms, so templates still in use from an earlier term never drop out of sight.
+    // Returns [schoolYear|null, semester|null]; null means any.
+    public static function requested(\Illuminate\Http\Request $request): array
+    {
+        $year = $request->query('school_year');
+        $semester = $request->query('semester');
+
+        return [
+            self::isValidSchoolYear($year) ? $year : null,
+            in_array($semester, self::SEMESTERS, true) ? $semester : null,
+        ];
+    }
+
+    // Years offered in a document page's term filter, newest first: the list from System CMS
+    // plus every year a document was uploaded in, so older documents can still be found.
+    public static function documentYears(): array
+    {
+        $years = self::schoolYearOptions();
+        foreach (['template_documents', 'shared_resources', 'course_materials'] as $table) {
+            try {
+                $years = array_merge($years, \Illuminate\Support\Facades\DB::table($table)->whereNotNull('school_year')->distinct()->pluck('school_year')->all());
+            } catch (\Throwable) {
+                // Not migrated yet.
+            }
+        }
+        $years = array_values(array_unique(array_filter($years, [self::class, 'isValidSchoolYear'])));
+        rsort($years);
+
+        return $years;
+    }
+
     // Semesters shown in dropdowns, as set in System CMS → Dropdown Lists.
     public static function semesters(): array
     {

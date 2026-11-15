@@ -130,7 +130,7 @@
         width: 100%;
         height: 34px;
         margin-top: 2px;
-        background-color: #1d4ed8;
+        background-color: #0f2557;
         color: #fff;
         font-size: 13.5px;
         font-weight: 600;
@@ -141,7 +141,7 @@
         transition: background-color .15s;
     }
 
-    .btn-sign-in:hover { background-color: #1e40af; }
+    .btn-sign-in:hover { background-color: #1b3d7a; }
 
     .forgot { text-align: center; margin-top: 9px; }
 
@@ -159,6 +159,21 @@
         color: #999;
         margin-top: 13px;
     }
+
+    /* Show/hide password: an eye button inside the password box. */
+    .pw-wrap { position: relative; }
+    .field .pw-wrap input { padding-right: 36px; }
+    .pw-toggle {
+        position: absolute; top: 0; right: 0; height: 32px; width: 34px;
+        display: flex; align-items: center; justify-content: center;
+        background: none; border: none; color: #888; cursor: pointer; border-radius: 0 4px 4px 0;
+    }
+    .pw-toggle:hover { color: #1d4ed8; }
+    .pw-toggle:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
+    .pw-toggle svg { width: 16px; height: 16px; }
+    .pw-toggle .pw-eye-off { display: none; }
+    .pw-toggle[aria-pressed="true"] .pw-eye { display: none; }
+    .pw-toggle[aria-pressed="true"] .pw-eye-off { display: block; }
 </style>
 </head>
 <body>
@@ -199,12 +214,19 @@
 
                 <div class="field">
                     <label for="password">Password</label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="Enter your password"
-                        required>
+                    <div class="pw-wrap">
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required>
+                        <button type="button" class="pw-toggle" id="pw-toggle" aria-label="Show password" aria-pressed="false" aria-controls="password" title="Show password">
+                            <svg class="pw-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg class="pw-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><path d="M14.12 14.12a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn-sign-in">
@@ -221,6 +243,24 @@
 
         </div>
     </div>
+
+    <script>
+        // The eye shows the typed password; pressing it again hides it.
+        (function () {
+            var toggle = document.getElementById('pw-toggle');
+            var input = document.getElementById('password');
+            toggle.addEventListener('click', function () {
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                toggle.setAttribute('aria-pressed', show ? 'true' : 'false');
+                toggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+                toggle.title = show ? 'Hide password' : 'Show password';
+                input.focus();
+            });
+            // Never send the form with the password showing as text.
+            input.form.addEventListener('submit', function () { input.type = 'password'; });
+        })();
+    </script>
 
     @include('partials.system-feedback')
 </body>

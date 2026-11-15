@@ -19,13 +19,15 @@ class TemplateApprovalController extends Controller
     public function index()
     {
         // Only the current version of each template; older versions are in versions().
+        $term = \App\Support\AcademicTerm::requested(request());
         $templates = TemplateDocument::with(['creator', 'reviewer', 'programs'])
             ->submitted()
+            ->inTerm(...$term)
             ->whereNull('superseded_at')
             ->latest()
             ->get();
 
-        return view('admin.system-approvals', compact('templates'));
+        return view('admin.system-approvals', compact('templates', 'term'));
     }
 
     // The file on the left (with comments for a pending Word, Excel or PowerPoint file), and

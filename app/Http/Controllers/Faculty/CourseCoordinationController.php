@@ -84,7 +84,6 @@ class CourseCoordinationController extends Controller
             'week_from'      => 'required|integer|min:1|max:' . CourseTopic::MAX_WEEK,
             'week_to'        => 'nullable|integer|gte:week_from|max:' . CourseTopic::MAX_WEEK,
             'hours'          => 'required|integer|min:1',
-            'notes'          => 'nullable|string|max:5000',
             'key_points'     => 'nullable|string|max:5000',
             // Required when first adding a topic — Teaching Notes alone is not
             // enough grounding for the Assessment Generator's AI question
@@ -117,7 +116,8 @@ class CourseCoordinationController extends Controller
             'topic'            => $request->topic,
             'weeks'            => CourseTopic::weeksValue((int) $request->week_from, $request->filled('week_to') ? (int) $request->week_to : null),
             'hours'            => $request->hours,
-            'notes'            => $moduleData['extracted_notes'] ?? $request->notes,
+            // A Word module's text, kept for the AI (it can't read Word files directly).
+            'notes'            => $moduleData['extracted_notes'],
             'key_points'       => self::keyPointsValue($request->key_points),
             'module_path'      => $moduleData['module_path'],
             'module_file_name' => $moduleData['module_file_name'],
@@ -137,7 +137,6 @@ class CourseCoordinationController extends Controller
             'week_from' => 'required|integer|min:1|max:' . CourseTopic::MAX_WEEK,
             'week_to'   => 'nullable|integer|gte:week_from|max:' . CourseTopic::MAX_WEEK,
             'hours'  => 'required|integer|min:1',
-            'notes'  => 'nullable|string|max:5000',
             'key_points' => 'nullable|string|max:5000',
             'module' => 'nullable|file|mimes:pdf,docx|max:20480',
         ], self::TOPIC_MESSAGES, self::TOPIC_FIELD_NAMES);
@@ -150,7 +149,6 @@ class CourseCoordinationController extends Controller
             'topic' => $request->topic,
             'weeks' => CourseTopic::weeksValue((int) $request->week_from, $request->filled('week_to') ? (int) $request->week_to : null),
             'hours' => $request->hours,
-            'notes' => $request->notes,
             'key_points' => self::keyPointsValue($request->key_points),
         ];
 
@@ -165,9 +163,8 @@ class CourseCoordinationController extends Controller
             }
             $data['module_path'] = $moduleData['module_path'];
             $data['module_file_name'] = $moduleData['module_file_name'];
-            if ($moduleData['extracted_notes']) {
-                $data['notes'] = $moduleData['extracted_notes'];
-            }
+            // A new module replaces the text kept from the old one (none for a PDF).
+            $data['notes'] = $moduleData['extracted_notes'];
         }
 
         $courseTopic->update($data);

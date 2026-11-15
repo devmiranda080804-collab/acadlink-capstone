@@ -77,159 +77,59 @@
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
-            <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
-            <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
-        </div>
-        <ul class="nav-list">
-            @if($navPermissions['dashboard'] ?? true)
-            <li class="{{ request()->is('secretary/dashboard') ? 'active' : '' }}"><a href="{{ url('/secretary/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
-            @endif
-            @if($navPermissions['document-repository'] ?? true)
-            <li class="{{ request()->is('secretary/document-repository*') ? 'active' : '' }}"><a href="{{ url('/secretary/document-repository') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Document Repository</a></li>
-            @endif
-            @if($navPermissions['template-distribution'] ?? true)
-            <li class="{{ request()->is('secretary/template-distribution*') ? 'active' : '' }}"><a href="{{ url('/secretary/template-distribution') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>Template Distribution</a></li>
-            @endif
-            @if($navPermissions['course-filing'] ?? true)
-            <li class="{{ request()->is('secretary/course-filing*') ? 'active' : '' }}"><a href="{{ url('/secretary/course-filing') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Filing</a></li>
-            @endif
-            @if($navPermissions['account-management'] ?? true)
-            <li class="{{ request()->is('secretary/account-management*') ? 'active' : '' }}"><a href="{{ url('/secretary/account-management') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Account Management</a></li>
-            @endif
-            @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('secretary/announcements*') ? 'active' : '' }}"><a href="{{ url('/secretary/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
-                @if(($unreadAnnouncementsCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
-                @endif
-            </a></li>
-            @endif
-            @if($navPermissions['calendar'] ?? true)
-            <li class="{{ request()->is('secretary/calendar*') ? 'active' : '' }}"><a href="{{ url('/secretary/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
-            @endif
-            @if($navPermissions['system-cms'] ?? true)
-            <li class="{{ request()->is('secretary/system-cms*') ? 'active' : '' }}"><a href="{{ url('/secretary/system-cms') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>System CMS</a></li>
-            @endif
-        </ul>
-        <div class="sidebar-logout">
-            <a href="#" onclick="openLogoutModal()">
-                <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Log out
-            </a>
-            <form id="logout-form" method="POST" action="{{ url('/logout') }}" style="display:none;">@csrf</form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     <div class="main">
         <div class="topnav">
-            <span class="label">Current role</span>
-            <div class="topnav-right">
-                <span class="role-badge">Secretary</span>
-                @include('partials.notification-bell')
-                <div class="user-info">
-                    <div class="user-text">
-                        <div class="user-name">{{ auth()->user()->name }}</div>
-                        <div class="user-email">{{ auth()->user()->email }}</div>
-                    </div>
-                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
-                </div>
+            <div class="topnav-right" style="margin-left:auto;">
+                @include('partials.topnav-user')
             </div>
         </div>
 
         <div class="content">
-            <div class="page-title">Welcome back, {{ auth()->user()->name }}!</div>
-            <div class="page-sub">Summary of template submissions and accounts.</div>
+            @include('partials.dashboard.styles')
+            <div class="db">
+                @include('partials.dashboard.hero', [
+                    'subtitle' => 'Template submissions, the Dean’s decisions and faculty accounts at a glance.',
+                    'actions' => [
+                        ['New template', '/secretary/template-distribution', 'plus', 'template-distribution', true],
+                        ['Course Filing', '/secretary/course-filing', 'folderCheck', 'course-filing'],
+                        ['Document Repository', '/secretary/document-repository', 'archive', 'document-repository'],
+                    ],
+                ])
+                @include('partials.dashboard.kpis', ['kpis' => [
+                    ['Waiting for Dean Approval', $awaitingApproval, 'clock', 'amber', '/secretary/template-distribution', 'template-distribution', 'Submitted templates'],
+                    ['Approved by the Dean', $approvedCount, 'checkCircle', 'green', '/secretary/template-distribution', 'template-distribution', 'Ready for faculty'],
+                    ['Faculty Members', $facultyCount, 'users', 'blue', '/secretary/account-management', 'account-management', 'All programs'],
+                    ['Returned to You', $returnedCount, 'undo', 'red', '/secretary/template-distribution', 'template-distribution', 'Needs your fix'],
+                ]])
+                @include('partials.dashboard.notice', ['unread' => $unreadAnnouncements, 'url' => '/secretary/announcements'])
 
-            @if($unreadAnnouncements->isNotEmpty())
-                <div class="announcement-banner">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                    <div class="announcement-banner-text">
-                        <strong>{{ $unreadAnnouncementsCount }} new announcement{{ $unreadAnnouncementsCount > 1 ? 's' : '' }}:</strong>
-                        {{ $unreadAnnouncements->pluck('title')->implode(' · ') }}
+                <div class="db-grid">
+                    <div class="db-panel db-rise">
+                        <div class="db-panel-head">
+                            <span class="db-panel-icon">{!! \App\Support\SidebarMenu::icon('inbox', 'db-icon') !!}</span>
+                            <span class="db-panel-title">Needs Your Attention</span>
+                            @if($pendingDistribution->count() > 0)<span class="db-count">{{ $pendingDistribution->count() }}</span>@endif
+                            <a class="db-more" href="{{ url('/secretary/template-distribution') }}">View all {!! \App\Support\SidebarMenu::icon('arrow', 'db-icon') !!}</a>
+                        </div>
+                        @forelse($pendingDistribution as $template)
+                            <div class="db-row">
+                                @include('partials.dashboard.file', ['type' => $template->file_type])
+                                <div class="db-row-main">
+                                    <div class="db-row-title">{{ $template->title }}</div>
+                                    <div class="db-row-meta">{{ \App\Models\TemplateDocument::typeLabel($template->type) }}@if($template->isReturned()) · {{ $template->return_reason }}@endif</div>
+                                </div>
+                                <span class="db-pill {{ $template->isReturned() ? 'back' : 'wait' }}">{{ $template->isReturned() ? 'Returned' : 'Waiting for Dean' }}</span>
+                            </div>
+                        @empty
+                            <div class="db-empty"><span class="db-empty-icon">{!! \App\Support\SidebarMenu::icon('checkCircle', 'db-icon') !!}</span>No templates waiting for the Dean or returned to you.</div>
+                        @endforelse
                     </div>
-                    <a href="{{ url('/secretary/announcements') }}" class="announcement-banner-link">View →</a>
-                </div>
-            @endif
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
-                    <div class="stat-info">
-                        <div class="stat-value">{{ $awaitingApproval }}</div>
-                        <div class="stat-label">Waiting for Dean Approval</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
-                    <div class="stat-info">
-                        <div class="stat-value">{{ $approvedCount }}</div>
-                        <div class="stat-label">Approved by the Dean</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
-                    <div class="stat-info">
-                        <div class="stat-value">{{ $facultyCount }}</div>
-                        <div class="stat-label">Faculty Members</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                    <div class="stat-info">
-                        <div class="stat-value">{{ $returnedCount }}</div>
-                        <div class="stat-label">Returned to You</div>
-                    </div>
+                    @include('partials.dashboard.activities', ['activities' => $upcomingActivities, 'url' => '/secretary/calendar'])
                 </div>
             </div>
-
-            <div class="dash-row">
-                <div class="panel">
-                    <div class="panel-title">
-                        Needs Your Attention
-                        <a href="{{ url('/secretary/template-distribution') }}">View all →</a>
-                    </div>
-                    @forelse($pendingDistribution as $template)
-                        <div class="list-item">
-                            <div class="li-left">
-                                <span class="li-icon">@if($template->file_type == 'pdf') 📄 @else 📝 @endif</span>
-                                <div>
-                                    <div class="li-title">{{ $template->title }}</div>
-                                    <div class="li-meta">{{ \App\Models\TemplateDocument::typeLabel($template->type) }}@if($template->isReturned()) · {{ $template->return_reason }}@endif</div>
-                                </div>
-                            </div>
-                            <span class="li-badge">{{ $template->isReturned() ? 'Returned' : 'Waiting for Dean' }}</span>
-                        </div>
-                    @empty
-                        <div class="empty-mini">No templates waiting for the Dean or returned to you.</div>
-                    @endforelse
-                </div>
-
-                <div class="panel">
-                    <div class="panel-title">
-                        Upcoming Activities
-                        <a href="{{ url('/secretary/calendar') }}">Calendar →</a>
-                    </div>
-                    @forelse($upcomingActivities as $activity)
-                        <div class="list-item">
-                            <div class="li-left">
-                                <div class="event-date-box">
-                                    <div class="m">{{ $activity->activity_date->format('M') }}</div>
-                                    <div class="d">{{ $activity->activity_date->format('d') }}</div>
-                                </div>
-                                <div>
-                                    <div class="li-title">{{ $activity->title }}</div>
-                                    <div class="li-meta">{{ $activity->location ?? 'No location' }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        <div class="empty-mini">No upcoming activities.</div>
-                    @endforelse
-                </div>
-            </div>
-
         </div>
     </div>
 

@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CourseMaterial extends Model
 {
+    use \App\Models\Concerns\HasAcademicTerm;
+
     protected $fillable = [
         'course_id',
         'uploaded_by',

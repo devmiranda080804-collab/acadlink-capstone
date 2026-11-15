@@ -72,180 +72,160 @@
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
-            <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
-            <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
-        </div>
-
-        <ul class="nav-list">
-    @if($navPermissions['dashboard'] ?? true)
-    <li class="{{ request()->is('admin/dashboard') ? 'active' : '' }}">
-        <a href="{{ url('/admin/dashboard') }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Dashboard
-        </a>
-    </li>
-    @endif
-    @if($navPermissions['account-management'] ?? true)
-    <li class="{{ request()->is('admin/account-management*') ? 'active' : '' }}">
-        <a href="{{ url('/admin/account-management') }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-            Account Management
-        </a>
-    </li>
-    @endif
-    @if($navPermissions['roles-permissions'] ?? true)
-    <li class="{{ request()->is('admin/roles-permissions*') ? 'active' : '' }}">
-        <a href="{{ url('/admin/roles-permissions') }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Roles & Permissions
-        </a>
-    </li>
-    @endif
-    @if($navPermissions['template-approvals'] ?? true)
-    <li class="{{ request()->is('admin/template-approvals*') ? 'active' : '' }}">
-        <a href="{{ url('/admin/template-approvals') }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-            Templates
-        </a>
-    </li>
-    @endif
-    @if($navPermissions['program-assignment'] ?? true)
-    <li class="{{ request()->is('admin/program-assignment*') ? 'active' : '' }}"><a href="{{ url('/admin/program-assignment') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>Program Assignment</a></li>
-    @endif
-    @if($navPermissions['audit-logs'] ?? true)
-    <li class="{{ request()->is('admin/audit-logs*') ? 'active' : '' }}">
-        <a href="{{ url('/admin/audit-logs') }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-            Audit Logs
-        </a>
-    </li>
-    @endif
-    @if($navPermissions['announcements'] ?? true)
-    <li class="{{ request()->is('admin/announcements*') ? 'active' : '' }}">
-        <a href="{{ url('/admin/announcements') }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-            Announcements
-            @if(($unreadAnnouncementsCount ?? 0) > 0)
-                <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
-            @endif
-        </a>
-    </li>
-    @endif
-    @if($navPermissions['calendar'] ?? true)
-    <li class="{{ request()->is('admin/calendar*') ? 'active' : '' }}">
-        <a href="{{ url('/admin/calendar') }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Calendar of Activities
-        </a>
-    </li>
-    @endif
-    @if($navPermissions['analytics'] ?? true)
-    <li class="{{ request()->is('admin/analytics*') ? 'active' : '' }}">
-        <a href="{{ url('/admin/analytics') }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Analytics
-        </a>
-    </li>
-    @endif
-    <li class="{{ request()->is('admin/settings*') ? 'active' : '' }}"><a href="{{ url('/admin/settings') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</a></li>
-            @if($navPermissions['system-cms'] ?? true)
-            <li class="{{ request()->is('admin/system-cms*') ? 'active' : '' }}"><a href="{{ url('/admin/system-cms') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>System CMS</a></li>
-            @endif
-</ul>
-
-        <div class="sidebar-logout">
-            <a href="#" onclick="openLogoutModal()">
-                <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Log out
-            </a>
-            <form id="logout-form" method="POST" action="{{ url('/logout') }}" style="display:none;">@csrf</form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     <div class="main">
         <div class="topnav">
-            <span class="label">Current role</span>
-            <div class="topnav-right">
-                <span class="role-badge">Admin/Dean</span>
-                @include('partials.notification-bell')
-                <div class="user-info">
-                    <div class="user-text">
-                        <div class="user-name">{{ auth()->user()->name }}</div>
-                        <div class="user-email">{{ auth()->user()->email }}</div>
-                    </div>
-                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
-                </div>
+            <div class="topnav-right" style="margin-left:auto;">
+                @include('partials.topnav-user')
             </div>
         </div>
 
         <div class="content">
+            @php
+                $rpRoles = ['program_head' => 'Program Head', 'secretary' => 'Secretary', 'faculty' => 'Faculty'];
+                $rpRoleIcons = ['program_head' => 'userCheck', 'secretary' => 'archive', 'faculty' => 'cap'];
+                // How many modules each role can open, for the menu.
+                $rpCounts = [];
+                foreach ($rpRoles as $roleKey => $roleLabel) {
+                    $saved = \Illuminate\Support\Facades\DB::table('role_permissions')->where('role', $roleKey)->pluck('is_enabled', 'module');
+                    $mods = array_keys($roleModules[$roleKey] ?? []);
+                    $rpCounts[$roleKey] = [count(array_filter($mods, fn ($m) => $m === 'dashboard' || ($saved[$m] ?? true))), count($mods)];
+                }
+                // Each module's icon, the same as in that role's sidebar.
+                $rpIcons = [];
+                foreach (\App\Support\SidebarMenu::MENUS[$selectedRole] ?? [] as $items) {
+                    foreach ($items as $item) {
+                        if ($item[0]) { $rpIcons[$item[0]] = $item[4]; }
+                    }
+                }
+                $rpOn = count(array_filter($permissions, fn ($v, $k) => $k === 'dashboard' || $v, ARRAY_FILTER_USE_BOTH));
+                $rpTotal = count($modules);
+                $rpLabel = $rpRoles[$selectedRole] ?? ucwords(str_replace('_', ' ', $selectedRole));
+            @endphp
+            <style>
+                .rp { font-family: 'Plus Jakarta Sans', Arial, sans-serif; color: #14213d; }
+                .rp .rp-ic { width: 19px; height: 19px; flex-shrink: 0; }
+                .rp-eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 2px; color: #1b3d7a; text-transform: uppercase; }
+                .rp-title { font-size: 28px; font-weight: 800; letter-spacing: -.4px; margin: 4px 0 6px; }
+                .rp-sub { font-size: 14px; color: #475467; }
+                .rp-layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; margin-top: 22px; align-items: start; }
+                .rp-nav { display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; }
+                .rp-tab { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid transparent; border-radius: 12px; color: #344054; text-decoration: none;
+                    transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease; }
+                .rp-tab:hover { background: #fff; border-color: #e7eaf1; }
+                .rp-tab.is-active { background: #fff; border-color: #e7eaf1; color: #0f2557; box-shadow: 0 4px 14px rgba(15, 37, 87, .07); }
+                .rp-tab strong { display: block; font-size: 14.5px; font-weight: 700; }
+                .rp-tab small { display: block; font-size: 12px; color: #667085; margin-top: 2px; }
+                .rp-card { background: #fff; border: 1px solid #e7eaf1; border-radius: 16px; padding: 20px 22px; box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05); margin-bottom: 16px; }
+                .rp-status { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+                .rp-status-icon { width: 46px; height: 46px; border-radius: 12px; background: #eef2fa; color: #0f2557; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .rp-status-icon .rp-ic { width: 23px; height: 23px; }
+                .rp-status-title { font-size: 17px; font-weight: 800; }
+                .rp-status-sub { font-size: 13px; color: #667085; margin-top: 2px; }
+                .rp-meter { width: 100%; height: 8px; border-radius: 8px; background: #eef2fa; overflow: hidden; margin-top: 14px; }
+                .rp-meter span { display: block; height: 100%; background: #0f2557; border-radius: 8px; transition: width .3s ease; }
+                .rp-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+                .rp-card-title { font-size: 16px; font-weight: 800; }
+                .rp-card-sub { font-size: 13px; color: #667085; margin-bottom: 10px; }
+                .rp-row { display: flex; align-items: center; gap: 14px; padding: 13px 4px; border-top: 1px solid #f1f3f8; }
+                .rp-row:first-of-type { border-top: 0; }
+                .rp-row-icon { width: 38px; height: 38px; border-radius: 10px; background: #f4f6fb; color: #0f2557; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+                .rp-row-main { flex: 1; min-width: 0; }
+                .rp-row-name, .rp-row-state { display: block; }
+    .rp-row-name { font-size: 14px; font-weight: 700; }
+                .rp-row-state { font-size: 12px; color: #667085; margin-top: 2px; }
+                .rp-row-state.off { color: #b45309; }
+                /* The checkbox, shown as a switch. */
+                .rp .perm-check { appearance: none; -webkit-appearance: none; width: 44px; height: 24px; border-radius: 12px; background: #d0d5dd; position: relative; cursor: pointer;
+                    flex-shrink: 0; transition: background-color .2s ease; margin: 0; }
+                .rp .perm-check::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .2s ease; }
+                .rp .perm-check:checked { background: #0f2557; }
+                .rp .perm-check:checked::after { transform: translateX(20px); }
+                .rp .perm-check:disabled { opacity: .55; cursor: not-allowed; }
+                .rp .perm-check:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+                .rp-actions { display: flex; justify-content: flex-end; padding-top: 14px; border-top: 1px solid #f1f3f8; margin-top: 4px; }
+                .rp-actions .btn-save { padding: 10px 22px; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; }
+                @media (max-width: 900px) { .rp-layout { grid-template-columns: 1fr; } .rp-nav { position: static; flex-direction: row; flex-wrap: wrap; } }
+            </style>
 
-            @if(session('success'))
-                <div class="alert-success">{{ session('success') }}</div>
-            @endif
+            <div class="rp">
+                @if(session('success'))
+                    <div class="alert-success">{{ session('success') }}</div>
+                @endif
 
-            <div class="page-header">
-                <div class="page-header-left">
-                    <h1>Roles & Permissions</h1>
-                    <p>Viewing access for {{ ucwords(str_replace('_', ' ', $selectedRole)) }}</p>
-                </div>
-                <button type="submit" form="permissions-form" class="btn-save">
-                    <svg style="width:14px;height:14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                    Save Changes
-                </button>
-            </div>
+                <div class="rp-eyebrow">Access control</div>
+                <div class="rp-title">Roles &amp; Permissions</div>
+                <div class="rp-sub">Choose which pages each role can open. A page that is switched off disappears from that role's sidebar.</div>
 
-            <div class="layout">
+                <div class="rp-layout">
+                    <nav class="rp-nav" aria-label="Roles">
+                        @foreach($rpRoles as $roleKey => $roleLabel)
+                            <a href="{{ url('/admin/roles-permissions/' . $roleKey) }}" class="rp-tab {{ $selectedRole === $roleKey ? 'is-active' : '' }}" @if($selectedRole === $roleKey) aria-current="page" @endif>
+                                {!! \App\Support\SidebarMenu::icon($rpRoleIcons[$roleKey], 'rp-ic') !!}
+                                <span><strong>{{ $roleLabel }}</strong><small>{{ $rpCounts[$roleKey][0] }} of {{ $rpCounts[$roleKey][1] }} pages on</small></span>
+                            </a>
+                        @endforeach
+                    </nav>
 
-                {{-- Role tabs --}}
-                <div class="role-sidebar">
-                    @foreach(['program_head' => 'Program Head', 'secretary' => 'Secretary', 'faculty' => 'Faculty'] as $roleKey => $roleLabel)
-                        <a href="{{ url('/admin/roles-permissions/' . $roleKey) }}"
-                        class="role-tab {{ $selectedRole === $roleKey ? 'active' : '' }}">
-                            {{ $roleLabel }}
-                        </a>
-                    @endforeach
-                </div>
+                    <div>
+                        <div class="rp-card">
+                            <div class="rp-status">
+                                <span class="rp-status-icon">{!! \App\Support\SidebarMenu::icon('shield', 'rp-ic') !!}</span>
+                                <div>
+                                    <div class="rp-status-title">{{ $rpLabel }} can open {{ $rpOn }} of {{ $rpTotal }} pages</div>
+                                    <div class="rp-status-sub">{{ $rpOn === $rpTotal ? 'Every page is on.' : ($rpTotal - $rpOn) . ' ' . ($rpTotal - $rpOn === 1 ? 'page is' : 'pages are') . ' switched off for this role.' }} The Dashboard is always on.</div>
+                                </div>
+                                <div class="rp-meter" aria-hidden="true"><span style="width: {{ $rpTotal ? round($rpOn / $rpTotal * 100) : 0 }}%"></span></div>
+                            </div>
+                        </div>
 
-                {{-- Permissions table --}}
-                <div class="perm-panel">
-                    <form id="permissions-form" method="POST" action="{{ url('/admin/roles-permissions/' . $selectedRole) }}">
-                        @csrf
-                        <table class="perm-table">
-                            <thead>
-                                <tr>
-                                    <th>Module</th>
-                                    <th>{{ ucwords(str_replace('_', ' ', $selectedRole)) }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        <div class="rp-card">
+                            <div class="rp-card-head">
+                                <div class="rp-card-title">Pages for {{ $rpLabel }}</div>
+                            </div>
+                            <div class="rp-card-sub">Switch a page off to hide it from every {{ $rpLabel }} account. Changes apply after you save.</div>
+
+                            <form id="permissions-form" method="POST" action="{{ url('/admin/roles-permissions/' . $selectedRole) }}">
+                                @csrf
                                 @foreach($modules as $slug => $label)
-                                    <tr>
-                                        <td>{{ $label }}</td>
-                                        <td>
-                                            @if($slug === 'dashboard')
-                                                {{-- Dashboard is always checked and cannot be unchecked --}}
-                                                <input type="checkbox" class="perm-check" checked disabled title="Dashboard is always enabled">
-                                                <input type="hidden" name="permissions[dashboard]" value="1">
-                                            @else
-                                                <input
-                                                    type="checkbox"
-                                                    class="perm-check"
-                                                    name="permissions[{{ $slug }}]"
-                                                    {{ ($permissions[$slug] ?? true) ? 'checked' : '' }}>
-                                            @endif
-                                        </td>
-                                    </tr>
+                                    @php $on = $slug === 'dashboard' || ($permissions[$slug] ?? true); @endphp
+                                    <label class="rp-row">
+                                        <span class="rp-row-icon">{!! \App\Support\SidebarMenu::icon($rpIcons[$slug] ?? 'files', 'rp-ic') !!}</span>
+                                        <span class="rp-row-main">
+                                            <span class="rp-row-name">{{ $label }}</span>
+                                            <span class="rp-row-state {{ $on ? '' : 'off' }}" data-state>{{ $slug === 'dashboard' ? 'Always on' : ($on ? 'On — shown in the sidebar' : 'Off — hidden from the sidebar') }}</span>
+                                        </span>
+                                        @if($slug === 'dashboard')
+                                            {{-- Dashboard is always checked and cannot be unchecked --}}
+                                            <input type="checkbox" class="perm-check" checked disabled title="Dashboard is always enabled" aria-label="{{ $label }}">
+                                            <input type="hidden" name="permissions[dashboard]" value="1">
+                                        @else
+                                            <input type="checkbox" class="perm-check" name="permissions[{{ $slug }}]" aria-label="{{ $label }}" {{ ($permissions[$slug] ?? true) ? 'checked' : '' }}>
+                                        @endif
+                                    </label>
                                 @endforeach
-                            </tbody>
-                        </table>
-                    </form>
-                </div>
 
+                                <div class="rp-actions">
+                                    <button type="submit" class="btn-save">{!! \App\Support\SidebarMenu::icon('checkCircle', 'rp-ic') !!} Save Changes</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <script>
+                // The words under each page follow its switch before saving.
+                document.querySelectorAll('.rp .perm-check:not(:disabled)').forEach(function (box) {
+                    box.addEventListener('change', function () {
+                        var state = box.closest('.rp-row').querySelector('[data-state]');
+                        state.textContent = box.checked ? 'On — shown in the sidebar' : 'Off — hidden from the sidebar';
+                        state.classList.toggle('off', !box.checked);
+                    });
+                });
+            </script>
         </div>
     </div>
 

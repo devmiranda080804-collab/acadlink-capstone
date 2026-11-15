@@ -51,7 +51,7 @@
 <body>
     <main class="card tone-@yield('tone', 'info')">
         <div class="head">
-            <img src="{{ asset('images/cbma-logo.png') }}" alt="CBMA logo">
+            <img src="{{ asset('images/cbma-logo-256.png') }}" alt="CBMA logo">
             <div class="college">College of Business Management and Accountancy</div>
             <div class="uni">Urdaneta City University · CBMA System</div>
         </div>

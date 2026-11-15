@@ -31,6 +31,8 @@
     </div>
     <div class="editor-area"><div id="document-editor"></div></div>
     @if($libraryModule ?? null)
+        {{-- The system's modal look, for the Share to Library dialog. --}}
+        @include('partials.theme')
         @include('documents.partials.library-share')
     @endif
     <div class="editor-error" id="editor-error">

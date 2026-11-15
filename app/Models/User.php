@@ -108,6 +108,17 @@ public function sendPasswordResetNotification($token)
         return implode(', ', $this->programCodes());
     }
 
+    // The small line under the name in the top bar: a faculty member's program(s), e.g.
+    // "BSA" or "BSA · BSMA"; everyone else sees their email.
+    public function getTopnavSubtitleAttribute(): string
+    {
+        if ($this->role === 'faculty') {
+            return implode(' · ', $this->programCodes()) ?: 'Faculty';
+        }
+
+        return (string) $this->email;
+    }
+
     public function scopeInProgram($query, string|array $codes)
     {
         $codes = array_values((array) $codes);

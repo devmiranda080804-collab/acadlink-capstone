@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class SharedResource extends Model
 {
     use HasEditableFile;
+    use \App\Models\Concerns\HasAcademicTerm;
 
     const ONLYOFFICE_SOURCE = 'shared';
 

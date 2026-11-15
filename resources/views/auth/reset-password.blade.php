@@ -20,8 +20,8 @@
         .field input::placeholder { color:#b0b0b0; font-size:11.5px; }
         .hint { font-size:10.5px; color:#999; margin-top:3px; }
         .error-msg { background:#fee2e2; border:1px solid #fca5a5; color:#b91c1c; font-size:11px; padding:6px 10px; border-radius:4px; margin-bottom:10px; }
-        .btn-submit { width:100%; height:34px; margin-top:2px; background-color:#1d4ed8; color:#fff; font-size:13.5px; font-weight:600; border:none; border-radius:4px; cursor:pointer; transition:background-color .15s; }
-        .btn-submit:hover { background-color:#1e40af; }
+        .btn-submit { width:100%; height:34px; margin-top:2px; background-color:#0f2557; color:#fff; font-size:13.5px; font-weight:600; border:none; border-radius:4px; cursor:pointer; transition:background-color .15s; }
+        .btn-submit:hover { background-color:#1b3d7a; }
         .back-link { text-align:center; margin-top:10px; }
         .back-link a { font-size:11px; color:#2563eb; text-decoration:none; }
         .back-link a:hover { text-decoration:underline; }

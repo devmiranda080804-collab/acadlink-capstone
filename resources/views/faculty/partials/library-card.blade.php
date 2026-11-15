@@ -16,6 +16,7 @@
         <span>By {{ $item['shared_by'] }}</span>
         <span class="dot">·</span>
         <span>{{ $item['date']->format('M d, Y') }}</span>
+        @if(!empty($item['term']))<span class="term-tag">{{ $item['term'] }}</span>@endif
         @if(!empty($item['file_size']))
             <span class="dot">·</span>
             <span>{{ $item['file_size'] }}</span>

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class TemplateDocument extends Model
 {
     use HasEditableFile;
+    use \App\Models\Concerns\HasAcademicTerm;
 
     const ONLYOFFICE_SOURCE = 'templates';
 

@@ -81,199 +81,100 @@
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="{{ \App\Support\SiteContent::imageUrl('login_logo') }}" alt="Logo">
-            <span class="brand">{{ \App\Support\SiteContent::text('sidebar_name') }}</span>
-            <span class="brand-sub">{{ \App\Support\SiteContent::text('sidebar_subtitle') }}</span>
-        </div>
-        <ul class="nav-list">
-            @if($navPermissions['dashboard'] ?? true)
-            <li class="{{ request()->is('faculty/dashboard') ? 'active' : '' }}"><a href="{{ url('/faculty/dashboard') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard</a></li>
-            @endif
-            @if($navPermissions['my-template'] ?? true)
-            <li class="{{ request()->is('faculty/my-template*') ? 'active' : '' }}"><a href="{{ url('/faculty/my-template') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Templates
-                @if(($newTemplatesCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $newTemplatesCount }}</span>
-                @endif
-            </a></li>
-            @endif
-            @if($navPermissions['exam-generator'] ?? true)
-            <li class="{{ request()->is('faculty/exam-generator*') ? 'active' : '' }}"><a href="{{ url('/faculty/exam-generator') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Assessment Generator</a></li>
-            @endif
-            @if($navPermissions['shared-library'] ?? true)
-            <li class="{{ request()->is('faculty/shared-library*') ? 'active' : '' }}"><a href="{{ url('/faculty/shared-library') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>Shared Library</a></li>
-            @endif
-            @if($navPermissions['course-coordination'] ?? true)
-            <li class="{{ request()->is('faculty/course-coordination*') ? 'active' : '' }}"><a href="{{ url('/faculty/course-coordination') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Course Coordination</a></li>
-            @endif
-            @if($navPermissions['analytics'] ?? true)
-            <li class="{{ request()->is('faculty/analytics*') ? 'active' : '' }}"><a href="{{ url('/faculty/analytics') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></li>
-            @endif
-            @if($navPermissions['calendar'] ?? true)
-            <li class="{{ request()->is('faculty/calendar*') ? 'active' : '' }}"><a href="{{ url('/faculty/calendar') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendar of Activities</a></li>
-            @endif
-            @if($navPermissions['announcements'] ?? true)
-            <li class="{{ request()->is('faculty/announcements*') ? 'active' : '' }}"><a href="{{ url('/faculty/announcements') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>Announcements
-                @if(($unreadAnnouncementsCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $unreadAnnouncementsCount }}</span>
-                @endif
-            </a></li>
-            @endif
-            @if($navPermissions['submissions'] ?? true)
-            <li class="{{ request()->is('faculty/submissions*') ? 'active' : '' }}"><a href="{{ url('/faculty/submissions') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>Submissions and Deadline
-                @if(($urgentSubmissionsCount ?? 0) > 0)
-                    <span class="nav-badge">{{ $urgentSubmissionsCount }}</span>
-                @endif
-            </a></li>
-            @endif
-            @if($navPermissions['cms'] ?? true)
-            <li class="{{ request()->is('faculty/cms*') ? 'active' : '' }}"><a href="{{ url('/faculty/cms') }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>CMS</a></li>
-            @endif
-        </ul>
-        <div class="sidebar-logout">
-            <a href="#" onclick="openLogoutModal()">
-                <svg style="width:14px;height:14px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Log out
-            </a>
-            <form id="logout-form" method="POST" action="{{ url('/logout') }}" style="display:none;">@csrf</form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     <div class="main">
         <div class="topnav">
-            <span class="label">Current role</span>
-            <div class="topnav-right">
-                <span class="role-badge">Faculty</span>
-                @include('partials.notification-bell')
-                <div class="user-info">
-                    <div class="user-text">
-                        <div class="user-name">{{ auth()->user()->name }}</div>
-                        <div class="user-email">{{ auth()->user()->email }}</div>
-                    </div>
-                    <div class="user-avatar">{{ auth()->user()->initials }}</div>
-                </div>
+            <div class="topnav-right" style="margin-left:auto;">
+                @include('partials.topnav-user')
             </div>
         </div>
 
         <div class="content">
-            <div class="page-title">Welcome back, {{ auth()->user()->name }}!</div>
-            <div class="page-sub">Summary of your templates and updates.</div>
+            @include('partials.dashboard.styles')
+            <div class="db">
+                @include('partials.dashboard.hero', [
+                    'subtitle' => 'Here’s what’s new in your templates, courses and deadlines' . (auth()->user()->programCodes() ? ' for <strong>' . e(implode(', ', auth()->user()->programCodes())) . '</strong>.' : '.'),
+                    'actions' => [
+                        ['Open Templates', '/faculty/my-template', 'files', 'my-template', true],
+                        ['Generate an exam', '/faculty/exam-generator', 'sparkles', 'exam-generator'],
+                        ['Submissions', '/faculty/submissions', 'deadline', 'submissions'],
+                    ],
+                ])
+                @include('partials.dashboard.kpis', ['kpis' => [
+                    ['Syllabus Templates', $syllabusCount, 'fileText', 'blue', '/faculty/my-template', 'my-template', 'From the Dean'],
+                    ['Course Guide Templates', $courseGuideCount, 'compass', 'green', '/faculty/my-template', 'my-template', 'From the Dean'],
+                    ['Module Templates', $moduleCount, 'layers', 'amber', '/faculty/my-template', 'my-template', 'From the Dean'],
+                    ['My Courses', $myCourses->count(), 'cap', 'violet', '/faculty/course-coordination', 'course-coordination', 'This semester'],
+                ]])
+                @include('partials.dashboard.notice', ['unread' => $unreadAnnouncements, 'url' => '/faculty/announcements'])
 
-            @if($unreadAnnouncements->isNotEmpty())
-                <div class="announcement-banner">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                    <div class="announcement-banner-text">
-                        <strong>{{ $unreadAnnouncementsCount }} new announcement{{ $unreadAnnouncementsCount > 1 ? 's' : '' }}:</strong>
-                        {{ $unreadAnnouncements->pluck('title')->implode(' · ') }}
+                <div class="db-grid">
+                    <div class="db-panel db-rise">
+                        <div class="db-panel-head">
+                            <span class="db-panel-icon">{!! \App\Support\SidebarMenu::icon('files', 'db-icon') !!}</span>
+                            <span class="db-panel-title">Recently Received Templates</span>
+                            @if($revisionTemplates->count() > 0)<span class="db-count">{{ $revisionTemplates->count() }}</span>@endif
+                            <a class="db-more" href="{{ url('/faculty/my-template') }}">Templates {!! \App\Support\SidebarMenu::icon('arrow', 'db-icon') !!}</a>
+                        </div>
+                        @forelse($revisionTemplates as $template)
+                            <div class="db-row">
+                                @include('partials.dashboard.file', ['type' => $template->file_type])
+                                <div class="db-row-main">
+                                    <div class="db-row-title">{{ $template->title }}</div>
+                                    <div class="db-row-meta">{{ \App\Models\TemplateDocument::typeLabel($template->type) }}</div>
+                                </div>
+                                <span class="db-pill new">New</span>
+                            </div>
+                        @empty
+                            <div class="db-empty"><span class="db-empty-icon">{!! \App\Support\SidebarMenu::icon('inbox', 'db-icon') !!}</span>The Dean hasn't sent any templates to your program yet.</div>
+                        @endforelse
                     </div>
-                    <a href="{{ url('/faculty/announcements') }}" class="announcement-banner-link">View →</a>
-                </div>
-            @endif
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                    <div class="stat-info">
-                        <div class="stat-value">{{ $syllabusCount }}</div>
-                        <div class="stat-label">Syllabus Templates</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                    <div class="stat-info">
-                        <div class="stat-value">{{ $courseGuideCount }}</div>
-                        <div class="stat-label">Course Guide Templates</div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                    <div class="stat-info">
-                        <div class="stat-value">{{ $moduleCount }}</div>
-                        <div class="stat-label">Module Templates</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="dash-row">
-                <div class="panel">
-                    <div class="panel-title">
-                        Recently Received Templates
-                        <a href="{{ url('/faculty/my-template') }}">Templates →</a>
-                    </div>
-                    @forelse($revisionTemplates as $template)
-                        <div class="list-item">
-                            <div class="li-left">
-                                <span class="li-icon">@if($template->file_type == 'pdf') 📄 @else 📝 @endif</span>
-                                <div>
-                                    <div class="li-title">{{ $template->title }}</div>
-                                    <div class="li-meta">{{ str_replace('_',' ',$template->type) }}</div>
+                    <div class="db-panel db-rise">
+                        <div class="db-panel-head">
+                            <span class="db-panel-icon">{!! \App\Support\SidebarMenu::icon('megaphone', 'db-icon') !!}</span>
+                            <span class="db-panel-title">Recent Announcements</span>
+                            @if($recentAnnouncements->count() > 0)<span class="db-count">{{ $recentAnnouncements->count() }}</span>@endif
+                            <a class="db-more" href="{{ url('/faculty/announcements') }}">View all {!! \App\Support\SidebarMenu::icon('arrow', 'db-icon') !!}</a>
+                        </div>
+                        @forelse($recentAnnouncements as $ann)
+                            <div class="db-row">
+                                <span class="db-file other">{!! \App\Support\SidebarMenu::icon('megaphone', 'db-icon') !!}</span>
+                                <div class="db-row-main">
+                                    <div class="db-row-title">{{ $ann->title }}</div>
+                                    <div class="db-row-meta">{{ $ann->user->name }} · {{ $ann->created_at->diffForHumans() }}</div>
                                 </div>
                             </div>
-                            <span class="li-badge">New</span>
-                        </div>
-                    @empty
-                        <div class="empty-mini">The Dean hasn't sent any templates to your program yet.</div>
-                    @endforelse
-                </div>
-
-                <div class="panel">
-                    <div class="panel-title">
-                        Recent Announcements
-                        <a href="{{ url('/faculty/announcements') }}">View all →</a>
+                        @empty
+                            <div class="db-empty"><span class="db-empty-icon">{!! \App\Support\SidebarMenu::icon('megaphone', 'db-icon') !!}</span>No announcements.</div>
+                        @endforelse
                     </div>
-                    @forelse($recentAnnouncements as $ann)
-                        <div class="ann-item">
-                            <div class="ann-title">{{ $ann->title }}</div>
-                            <div class="ann-meta">{{ $ann->user->name }} · {{ $ann->created_at->diffForHumans() }}</div>
-                        </div>
-                    @empty
-                        <div class="empty-mini">No announcements.</div>
-                    @endforelse
-                </div>
-            </div>
 
-            <div class="panel">
-                <div class="panel-title">
-                    Upcoming Activities
-                    <a href="{{ url('/faculty/calendar') }}">Calendar →</a>
-                </div>
-                @forelse($upcomingActivities as $activity)
-                    <div class="list-item">
-                        <div class="li-left">
-                            <div class="event-date-box">
-                                <div class="m">{{ $activity->activity_date->format('M') }}</div>
-                                <div class="d">{{ $activity->activity_date->format('d') }}</div>
+                    @include('partials.dashboard.activities', ['activities' => $upcomingActivities, 'url' => '/faculty/calendar'])
+
+                    <div class="db-panel db-rise">
+                        <div class="db-panel-head">
+                            <span class="db-panel-icon">{!! \App\Support\SidebarMenu::icon('cap', 'db-icon') !!}</span>
+                            <span class="db-panel-title">My Courses This Semester</span>
+                            @if($myCourses->count() > 0)<span class="db-count">{{ $myCourses->count() }}</span>@endif
+                        </div>
+                        @if($myCourses->isNotEmpty())
+                            <div class="db-courses">
+                                @foreach($myCourses as $ca)
+                                    <div class="db-course">
+                                        <span class="db-course-code">{{ $ca->course->code }}</span>
+                                        <div class="db-course-title">{{ $ca->course->title }}</div>
+                                        <div class="db-course-meta">{{ $ca->course->program }} · {{ $ca->school_year }} · {{ $ca->semester }}</div>
+                                    </div>
+                                @endforeach
                             </div>
-                            <div>
-                                <div class="li-title">{{ $activity->title }}</div>
-                                <div class="li-meta">{{ $activity->location ?? 'No location' }}</div>
-                            </div>
-                        </div>
-                    </div>
-                @empty
-                    <div class="empty-mini">No upcoming activities.</div>
-                @endforelse
-            </div>
-            <div class="panel" style="margin-top:20px;">
-            <div class="panel-title">
-                My Courses This Semester
-            </div>
-            @forelse($myCourses as $ca)
-                <div class="list-item">
-                    <div class="li-left">
-                        <span class="li-icon">📘</span>
-                        <div>
-                            <div class="li-title">{{ $ca->course->code }} — {{ $ca->course->title }}</div>
-                            <div class="li-meta">{{ $ca->course->program }} · {{ $ca->school_year }} · {{ $ca->semester }}</div>
-                        </div>
+                        @else
+                            <div class="db-empty"><span class="db-empty-icon">{!! \App\Support\SidebarMenu::icon('cap', 'db-icon') !!}</span>You have no assigned courses this semester.</div>
+                        @endif
                     </div>
                 </div>
-            @empty
-                <div class="empty-mini">You have no assigned courses this semester.</div>
-            @endforelse
-        </div>
-
+            </div>
         </div>
     </div>
 
