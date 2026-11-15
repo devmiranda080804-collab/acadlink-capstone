@@ -11,6 +11,7 @@ use App\Models\ProgramAssignment;
 use App\Models\Tos;
 use App\Models\TosTopic;
 use App\Services\ExamDocumentBuilder;
+use App\Services\PrintPreview;
 use App\Services\QuestionGeneratorService;
 use App\Services\TosDocumentBuilder;
 use App\Support\AcademicTerm;
@@ -484,6 +485,21 @@ class ExamGeneratorController extends Controller
         ])->deleteFileAfterSend();
     }
 
+    // The TOS file the download makes, for the TOS preview in the Exam Builder.
+    public function tosPreviewFile(Request $request, Exam $exam)
+    {
+        abort_unless($exam->faculty_id === auth()->id(), 403);
+
+        $exam->load('sections.questions.children', 'programAssignment.course');
+
+        $tos = $exam->finalTos();
+        abort_unless(empty($tos['issues']), 422, "The TOS isn't ready yet:\n" . implode("\n", $tos['issues']));
+
+        $path = (new TosDocumentBuilder())->build($exam->programAssignment->course, $exam->grading_period, $tos, auth()->user());
+
+        return $this->previewResponse($request, $path);
+    }
+
     public function finalize(Exam $exam)
     {
         abort_unless($exam->faculty_id === auth()->id(), 403);
@@ -626,7 +642,23 @@ class ExamGeneratorController extends Controller
         $tempPath = tempnam(sys_get_temp_dir(), 'exampreview_');
         IOFactory::createWriter($phpWord, 'Word2007')->save($tempPath);
 
-        return response()->file($tempPath, [
+        return $this->previewResponse($request, $tempPath);
+    }
+
+    // The Word file, or with ?format=pdf the same file as a PDF laid out by the document
+    // editor service (exact pages). 503 when that isn't available, so the page draws the
+    // Word file itself instead.
+    protected function previewResponse(Request $request, string $docxPath)
+    {
+        if ($request->query('format') === 'pdf') {
+            $pdf = app(PrintPreview::class)->pdf($docxPath);
+            @unlink($docxPath);
+            abort_if($pdf === null, 503, 'The PDF preview is not available right now.');
+
+            return response($pdf, 200, ['Content-Type' => 'application/pdf', 'Cache-Control' => 'private, no-store']);
+        }
+
+        return response()->file($docxPath, [
             'Content-Type'  => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'Cache-Control' => 'private, no-store',
         ])->deleteFileAfterSend(true);

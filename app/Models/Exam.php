@@ -157,29 +157,31 @@ class Exam extends Model
         }
 
         // Numbered like ExamDocumentBuilder: continuous across the sections, with a
-        // sub-question printed under its question's number as "12.a".
+        // sub-question printed under its question's number as "12.a". Each number
+        // carries its test (I, II, ...) so the TOS reads "I.1-3, II.31".
         $cells = [];
         $unclassified = 0;
-        $add = function ($question, $label) use (&$cells, &$unclassified) {
+        $add = function ($question, $label, $test) use (&$cells, &$unclassified) {
             if (!$question->bloom_level) {
                 $unclassified++;
 
                 return;
             }
             $cell = &$cells[$question->topic][$question->bloom_level];
-            $cell['labels'][] = $label;
+            $cell['labels'][] = [$test, $label];
             $cell['points'] = ($cell['points'] ?? 0) + (int) $question->points;
         };
 
         $number = 0;
-        foreach ($this->sections as $section) {
+        foreach ($this->sections->values() as $si => $section) {
+            $test = self::ROMAN[$si] ?? (string) ($si + 1);
             foreach ($section->questions as $question) {
                 $number++;
                 foreach ($question->children as $i => $child) {
-                    $add($child, $number . '.' . chr(97 + $i));
+                    $add($child, $number . '.' . chr(97 + $i), $test);
                 }
                 if ($question->children->isEmpty() && $question->type !== 'case-analysis') {
-                    $add($question, $number);
+                    $add($question, $number, $test);
                 }
             }
         }
@@ -214,27 +216,38 @@ class Exam extends Model
         return $breakdown;
     }
 
-    // [1, 2, 3, 7, '9.a'] -> "1-3, 7, 9.a"
+    const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+
+    // [['I',1], ['I',2], ['I',4], ['II',7], ['II','9.a']] -> "I.1-2, 4, II.7, 9.a"
+    // A run of numbers stays one range only inside the same test, and the test is
+    // written where it changes, like the college's TOS ("I.1-2", "II.1").
     protected static function itemRange(array $labels): string
     {
         $ranges = [];
-        $start = $previous = null;
-        $close = function () use (&$ranges, &$start, &$previous) {
+        $test = $start = $previous = $written = null;
+        $label = function ($labelTest, $text) use (&$written) {
+            $prefix = $labelTest === $written ? '' : $labelTest . '.';
+            $written = $labelTest;
+
+            return $prefix . $text;
+        };
+        $close = function () use (&$ranges, &$test, &$start, &$previous, $label) {
             if ($start !== null) {
-                $ranges[] = $start === $previous ? (string) $start : "{$start}-{$previous}";
+                $ranges[] = $label($test, $start === $previous ? $start : "{$start}-{$previous}");
             }
             $start = $previous = null;
         };
 
-        foreach ($labels as $label) {
-            if (!is_int($label)) {
+        foreach ($labels as [$labelTest, $text]) {
+            if (!is_int($text)) {
                 $close();
-                $ranges[] = $label;
-            } elseif ($previous !== null && $label === $previous + 1) {
-                $previous = $label;
+                $ranges[] = $label($labelTest, $text);
+            } elseif ($previous !== null && $labelTest === $test && $text === $previous + 1) {
+                $previous = $text;
             } else {
                 $close();
-                $start = $previous = $label;
+                $test = $labelTest;
+                $start = $previous = $text;
             }
         }
         $close();

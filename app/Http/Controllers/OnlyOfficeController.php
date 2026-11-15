@@ -32,6 +32,15 @@ class OnlyOfficeController extends Controller
         return response()->file(Storage::disk('public')->path($document->file_path), ['Cache-Control' => 'no-store']);
     }
 
+    // A generated file the service turns into a PDF preview (see App\Services\PrintPreview).
+    public function previewCopy(string $token)
+    {
+        $path = \App\Services\PrintPreview::copyPath($token);
+        abort_unless($path, 404);
+
+        return response()->file($path, ['Cache-Control' => 'no-store']);
+    }
+
     // The editor treats anything except {"error":0} as a failed save and keeps its copy.
     public function callback(Request $request, OnlyOffice $onlyOffice, string $source, int $id)
     {

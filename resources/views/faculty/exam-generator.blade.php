@@ -564,6 +564,7 @@
         .modal-overlay.open { display: flex; }
         .modal { background: #fff; border-radius: 10px; padding: 24px 26px; width: 420px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
         /* Exam Preview: the real .docx (same file as the download) drawn as pages. */
+        .pv-modal.pv-wide { width: 1180px; }
         .pv-modal { width: 920px; max-height: 92vh; display: flex; flex-direction: column; padding: 18px 20px; }
         .pv-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
         .pv-note { font-size: 12px; color: #777; margin-top: 3px; }
@@ -571,9 +572,11 @@
         .pv-switch button { border: 0; background: #fff; padding: 7px 12px; font-size: 12.5px; cursor: pointer; color: #555; font-family: inherit; }
         .pv-switch button + button { border-left: 1px solid #ddd; }
         .pv-switch button.on { background: var(--navy, #1e2a5a); color: #fff; font-weight: 600; }
-        #preview-body { overflow: auto; flex: 1; min-height: 240px; background: #e9ebf0; border-radius: 8px; padding: 16px; }
-        #preview-body .docx-wrapper { background: transparent !important; padding: 0 !important; align-items: center; }
-        #preview-body .docx-wrapper > section.docx { box-shadow: 0 2px 10px rgba(0,0,0,.18); margin: 0 auto 16px !important; }
+        .pv-body { overflow: auto; flex: 1; min-height: 240px; background: #e9ebf0; border-radius: 8px; padding: 16px; }
+        .pv-body .docx-wrapper { background: transparent !important; padding: 0 !important; align-items: center; }
+        .pv-body .docx-wrapper > section.docx { box-shadow: 0 2px 10px rgba(0,0,0,.18); margin: 0 auto 16px !important; }
+        .pv-pdf { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+        .pv-pdf canvas { background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.18); max-width: 100%; height: auto; }
         .pv-loading { text-align: center; padding: 60px 20px; color: #888; font-size: 13px; }
         .pv-loading .spin { width: 26px; height: 26px; border: 3px solid #cfd3dc; border-top-color: var(--navy, #1e2a5a); border-radius: 50%; margin: 0 auto 10px; animation: pv-spin .8s linear infinite; }
         @keyframes pv-spin { to { transform: rotate(360deg); } }
@@ -1136,10 +1139,15 @@
 
     {{-- ════════════ FINALIZE CONFIRM MODAL ════════════ --}}
     <div class="modal-overlay" id="exam-tos-overlay">
-        <div class="modal" style="width:980px;">
-            <div class="modal-title">Table of Specifications</div>
+        <div class="modal pv-modal pv-wide">
+            <div class="pv-head">
+                <div>
+                    <div class="modal-title" style="margin:0;">Table of Specifications</div>
+                    <div class="pv-note" id="exam-tos-note">Shown exactly as it downloads, with the header and footer from System CMS → Document Layouts.</div>
+                </div>
+            </div>
             <div class="modal-error" id="exam-tos-issues" style="white-space:pre-line;"></div>
-            <div id="exam-tos-table"></div>
+            <div id="exam-tos-table" class="pv-body"></div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeExamTos()">Close</button>
                 <a class="btn-save" id="exam-tos-download" href="#" style="display:none;text-decoration:none;">⬇ Download TOS</a>
@@ -1224,7 +1232,7 @@
                     <button type="button" class="btn-cancel" onclick="closePreview()">Close</button>
                 </div>
             </div>
-            <div id="preview-body"></div>
+            <div id="preview-body" class="pv-body"></div>
         </div>
     </div>
 
@@ -2808,13 +2816,27 @@
             var issues = document.getElementById('exam-tos-issues');
             issues.style.display = ready ? 'none' : 'block';
             issues.textContent = ready ? '' : 'Finish these to complete the TOS:\n' + tos.issues.join('\n');
-            document.getElementById('exam-tos-table').innerHTML = tosTableHtml(tos, ready);
+            document.getElementById('exam-tos-note').textContent = ready
+                ? 'Shown exactly as it downloads, with the header and footer from System CMS → Document Layouts.'
+                : 'The printed TOS appears here once the exam is complete.';
+            var box = document.getElementById('exam-tos-table');
+            var tableHtml = '<div class="pv-plain">' + tosTableHtml(tos, ready) + '</div>';
             var download = document.getElementById('exam-tos-download');
             download.style.display = ready ? '' : 'none';
             download.href = '/faculty/exam-generator/' + currentExam.id + '/tos/download';
+            var run = ++tosPreviewRun;
+            box.innerHTML = ready ? '<div class="pv-loading"><div class="spin"></div>Preparing the TOS as it will download…</div>' : tableHtml;
             document.getElementById('exam-tos-overlay').classList.add('open');
+            if (!ready) return;
+            try {
+                await renderDocxInto(box, '/faculty/exam-generator/' + currentExam.id + '/tos/preview/file', function() { return run === tosPreviewRun; });
+            } catch (e) {
+                if (run !== tosPreviewRun) return;
+                box.innerHTML = '<div class="pv-warn">The print layout could not be shown here (' + escapeHtml(e.message) + '). This is the TOS without the header and footer; the download has them.</div>' + tableHtml;
+            }
         }
-        function closeExamTos() { document.getElementById('exam-tos-overlay').classList.remove('open'); }
+        var tosPreviewRun = 0;
+        function closeExamTos() { tosPreviewRun++; document.getElementById('exam-tos-overlay').classList.remove('open'); }
         document.getElementById('exam-tos-overlay').addEventListener('click', function(e) { if (e.target === this) closeExamTos(); });
 
         function openSaveResult(success, message) {
@@ -2888,27 +2910,92 @@
                 return;
             }
             try {
-                var results = await Promise.all([
-                    loadDocxPreview(),
-                    fetch('/faculty/exam-generator/' + currentExam.id + '/preview/file?kind=' + previewKind + '&t=' + Date.now(), { credentials: 'same-origin' })
-                ]);
-                var res = results[1];
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                var blob = await res.blob();
-                if (run !== previewRun) return; // a newer preview started
-                var holder = document.createElement('div');
-                await window.docx.renderAsync(blob, holder, null, { inWrapper: true, ignoreLastRenderedPageBreak: false, renderHeaders: true, renderFooters: true, experimental: true });
-                if (run !== previewRun) return;
-                bodyEl.innerHTML = '';
-                bodyEl.appendChild(holder);
-                paginatePreview(holder, await keepWithNext(blob));
-                fillPageNumbers(holder);
-                fitPreview(holder);
-                bodyEl.scrollTop = 0;
+                await renderDocxInto(bodyEl, '/faculty/exam-generator/' + currentExam.id + '/preview/file?kind=' + previewKind, function() { return run === previewRun; });
             } catch (e) {
                 if (run !== previewRun) return;
                 previewPlain('The print layout could not be shown here (' + e.message + '). This is a simple preview without the header and footer — use “↗ New tab” to see the printed version.');
             }
+        }
+
+        // Draws a generated file into box as printed pages. stillWanted() says whether the
+        // result is still needed (the person may have moved on). First choice is the PDF
+        // the document editor service makes from the Word file: the exact pages Word
+        // would print. Without that service, the Word file is drawn in the browser.
+        var PRINT_PDF = @json(\App\Services\OnlyOffice::isConfigured());
+        var pdfLib = null;
+        function loadPdfJs() {
+            if (!pdfLib) {
+                pdfLib = loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js').then(function() {
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    return window.pdfjsLib;
+                }).catch(function(e) { pdfLib = null; throw e; });
+            }
+            return pdfLib;
+        }
+
+        async function renderDocxInto(box, url, stillWanted) {
+            if (PRINT_PDF) {
+                try {
+                    if (await renderPdfInto(box, url, stillWanted) !== false) return;
+                } catch (e) { /* falls back to drawing the Word file */ }
+                if (!stillWanted()) return;
+            }
+            await drawDocxInto(box, url, stillWanted);
+        }
+
+        async function renderPdfInto(box, url, stillWanted) {
+            var results = await Promise.all([
+                loadPdfJs(),
+                fetch(url + (url.indexOf('?') < 0 ? '?' : '&') + 'format=pdf&t=' + Date.now(), { credentials: 'same-origin' })
+            ]);
+            var res = results[1];
+            if (!res.ok || (res.headers.get('Content-Type') || '').indexOf('pdf') < 0) return false;
+            var data = await res.arrayBuffer();
+            if (!stillWanted()) return;
+            var pdf = await results[0].getDocument({ data: data }).promise;
+            var holder = document.createElement('div');
+            holder.className = 'pv-pdf';
+            var room = Math.max(280, box.clientWidth - 32);
+            var ratio = window.devicePixelRatio || 1;
+            for (var n = 1; n <= pdf.numPages; n++) {
+                var page = await pdf.getPage(n);
+                var base = page.getViewport({ scale: 1 });
+                var scale = Math.min(room / base.width, 1.4);
+                var view = page.getViewport({ scale: scale * ratio });
+                var canvas = document.createElement('canvas');
+                canvas.width = Math.floor(view.width);
+                canvas.height = Math.floor(view.height);
+                canvas.style.width = Math.floor(base.width * scale) + 'px';
+                canvas.style.height = Math.floor(base.height * scale) + 'px';
+                canvas.setAttribute('role', 'img');
+                canvas.setAttribute('aria-label', 'Page ' + n + ' of ' + pdf.numPages);
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport: view }).promise;
+                if (!stillWanted()) return;
+                holder.appendChild(canvas);
+            }
+            box.innerHTML = '';
+            box.appendChild(holder);
+            box.scrollTop = 0;
+        }
+
+        async function drawDocxInto(box, url, stillWanted) {
+            var results = await Promise.all([
+                loadDocxPreview(),
+                fetch(url + (url.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now(), { credentials: 'same-origin' })
+            ]);
+            var res = results[1];
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            var blob = await res.blob();
+            if (!stillWanted()) return;
+            var holder = document.createElement('div');
+            await window.docx.renderAsync(blob, holder, null, { inWrapper: true, ignoreLastRenderedPageBreak: false, renderHeaders: true, renderFooters: true, experimental: true });
+            if (!stillWanted()) return;
+            box.innerHTML = '';
+            box.appendChild(holder);
+            paginatePreview(holder, await keepWithNext(blob));
+            fillPageNumbers(holder);
+            fitPreview(holder);
+            box.scrollTop = 0;
         }
 
         // The drawn file is one long sheet; Word splits it into pages when it opens.

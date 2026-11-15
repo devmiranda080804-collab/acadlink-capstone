@@ -77,6 +77,11 @@ Route::whereIn('source', ['modules', 'system-documents', 'templates'])->whereNum
         ->name('onlyoffice.callback');
 });
 
+// A generated file for the document editor service to turn into a PDF preview
+// (see App\Services\PrintPreview). Signed and short-lived.
+Route::get('/print-preview/{token}', [OnlyOfficeController::class, 'previewCopy'])
+    ->middleware('signed:relative')->where('token', '[A-Za-z0-9]{40}')->name('print-preview.file');
+
 // Images on the login page, shown before anyone has signed in.
 Route::get('/site-content/{key}', [SystemCmsController::class, 'image']);
 
@@ -115,6 +120,7 @@ Route::middleware('role:faculty')->prefix('faculty')->group(function () {
     Route::put('/exam-generator/{exam}', [ExamGeneratorController::class, 'update']);
     Route::get('/exam-generator/{exam}/tos', [ExamGeneratorController::class, 'tos']);
     Route::get('/exam-generator/{exam}/tos/download', [ExamGeneratorController::class, 'tosDownload']);
+    Route::get('/exam-generator/{exam}/tos/preview/file', [ExamGeneratorController::class, 'tosPreviewFile']);
     Route::post('/exam-generator/{exam}/finalize', [ExamGeneratorController::class, 'finalize']);
     Route::get('/exam-generator/{exam}/download', [ExamGeneratorController::class, 'download']);
     Route::get('/exam-generator/{exam}/answer-key', [ExamGeneratorController::class, 'answerKey']);
