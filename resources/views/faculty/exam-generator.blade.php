@@ -563,6 +563,22 @@
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 999; align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
         .modal { background: #fff; border-radius: 10px; padding: 24px 26px; width: 420px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.25); }
+        /* Exam Preview: the real .docx (same file as the download) drawn as pages. */
+        .pv-modal { width: 920px; max-height: 92vh; display: flex; flex-direction: column; padding: 18px 20px; }
+        .pv-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+        .pv-note { font-size: 12px; color: #777; margin-top: 3px; }
+        .pv-switch { display: inline-flex; border: 1px solid #ddd; border-radius: 7px; overflow: hidden; }
+        .pv-switch button { border: 0; background: #fff; padding: 7px 12px; font-size: 12.5px; cursor: pointer; color: #555; font-family: inherit; }
+        .pv-switch button + button { border-left: 1px solid #ddd; }
+        .pv-switch button.on { background: var(--navy, #1e2a5a); color: #fff; font-weight: 600; }
+        #preview-body { overflow: auto; flex: 1; min-height: 240px; background: #e9ebf0; border-radius: 8px; padding: 16px; }
+        #preview-body .docx-wrapper { background: transparent !important; padding: 0 !important; align-items: center; }
+        #preview-body .docx-wrapper > section.docx { box-shadow: 0 2px 10px rgba(0,0,0,.18); margin: 0 auto 16px !important; }
+        .pv-loading { text-align: center; padding: 60px 20px; color: #888; font-size: 13px; }
+        .pv-loading .spin { width: 26px; height: 26px; border: 3px solid #cfd3dc; border-top-color: var(--navy, #1e2a5a); border-radius: 50%; margin: 0 auto 10px; animation: pv-spin .8s linear infinite; }
+        @keyframes pv-spin { to { transform: rotate(360deg); } }
+        .pv-plain { background: #fff; padding: 24px; border-radius: 6px; }
+        .pv-warn { background: #fff7e6; border: 1px solid #f3d08a; color: #8a5a00; font-size: 12.5px; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; }
         .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 16px; }
         .modal-row { display: flex; gap: 10px; }
         .modal-row .modal-field { flex: 1; }
@@ -1193,12 +1209,18 @@
 
     {{-- ════════════ EXAM PREVIEW MODAL ════════════ --}}
     <div class="modal-overlay" id="preview-overlay">
-        <div class="modal" style="width:760px;max-height:85vh;overflow-y:auto;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <div class="modal-title" style="margin:0;">Exam Preview</div>
+        <div class="modal pv-modal">
+            <div class="pv-head">
+                <div>
+                    <div class="modal-title" style="margin:0;">Exam Preview</div>
+                    <div class="pv-note">Shown exactly as it downloads, with the header and footer from System CMS → Document Layouts.</div>
+                </div>
                 <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
-                    <button type="button" class="btn-cancel" onclick="openPrintPreview('exam')" title="See the exam as it will print, with the CBMA header — even before finalizing">📄 Print Preview</button>
-                    <button type="button" class="btn-cancel" onclick="openPrintPreview('answer-key')" title="See the answer key as it will print">🔑 Answer Key</button>
+                    <div class="pv-switch" role="tablist" aria-label="Document">
+                        <button type="button" role="tab" id="pv-kind-exam" class="on" aria-selected="true" onclick="previewExam('exam')">📄 Exam</button>
+                        <button type="button" role="tab" id="pv-kind-answer-key" aria-selected="false" onclick="previewExam('answer-key')">🔑 Answer Key</button>
+                    </div>
+                    <button type="button" class="btn-cancel" onclick="openPrintPreview(previewKind)" title="Open this preview in a new tab">↗ New tab</button>
                     <button type="button" class="btn-cancel" onclick="closePreview()">Close</button>
                 </div>
             </div>
@@ -2822,7 +2844,164 @@
             return '';
         }
 
-        function previewExam() {
+        // The preview is the real .docx the download makes (same builder, same Print
+        // Settings, same System CMS header and footer), drawn in the modal as pages.
+        // The exam is saved first so the file has what's on screen.
+        var previewKind = 'exam';
+        var previewRun = 0;
+        var docxLib = null;
+        function loadScript(src) {
+            return new Promise(function(resolve, reject) {
+                var s = document.createElement('script');
+                s.src = src; s.onload = resolve; s.onerror = function() { reject(new Error('Could not load ' + src)); };
+                document.head.appendChild(s);
+            });
+        }
+        function loadDocxPreview() {
+            if (!docxLib) {
+                docxLib = loadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')
+                    .then(function() { return loadScript('https://cdn.jsdelivr.net/npm/docx-preview@0.4.1/dist/docx-preview.min.js'); })
+                    .catch(function(e) { docxLib = null; throw e; });
+            }
+            return docxLib;
+        }
+
+        async function previewExam(kind) {
+            previewKind = kind === 'answer-key' ? 'answer-key' : 'exam';
+            ['exam', 'answer-key'].forEach(function(k) {
+                var b = document.getElementById('pv-kind-' + k);
+                b.classList.toggle('on', k === previewKind);
+                b.setAttribute('aria-selected', k === previewKind ? 'true' : 'false');
+            });
+            var bodyEl = document.getElementById('preview-body');
+            if (!currentExam || currentExam.sections.length === 0) {
+                previewPlain();
+                return;
+            }
+            var run = ++previewRun;
+            bodyEl.innerHTML = '<div class="pv-loading"><div class="spin"></div>Preparing the ' + (previewKind === 'exam' ? 'exam' : 'answer key') + ' as it will download…</div>';
+            document.getElementById('preview-overlay').classList.add('open');
+
+            // A finalized exam can't change, so there's nothing to save.
+            if (currentExam.status !== 'finalized' && !(await saveExam(true))) {
+                closePreview();
+                return;
+            }
+            try {
+                var results = await Promise.all([
+                    loadDocxPreview(),
+                    fetch('/faculty/exam-generator/' + currentExam.id + '/preview/file?kind=' + previewKind + '&t=' + Date.now(), { credentials: 'same-origin' })
+                ]);
+                var res = results[1];
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                var blob = await res.blob();
+                if (run !== previewRun) return; // a newer preview started
+                var holder = document.createElement('div');
+                await window.docx.renderAsync(blob, holder, null, { inWrapper: true, ignoreLastRenderedPageBreak: false, renderHeaders: true, renderFooters: true, experimental: true });
+                if (run !== previewRun) return;
+                bodyEl.innerHTML = '';
+                bodyEl.appendChild(holder);
+                paginatePreview(holder, await keepWithNext(blob));
+                fillPageNumbers(holder);
+                fitPreview(holder);
+                bodyEl.scrollTop = 0;
+            } catch (e) {
+                if (run !== previewRun) return;
+                previewPlain('The print layout could not be shown here (' + e.message + '). This is a simple preview without the header and footer — use “↗ New tab” to see the printed version.');
+            }
+        }
+
+        // The drawn file is one long sheet; Word splits it into pages when it opens.
+        // Here it's split the same way: each page is the paper's height and gets the
+        // header and footer, like the printed exam. Paragraphs marked "keep with next"
+        // in the file (a question and its choices) move to the next page together, as
+        // in Word. A part taller than a page (a long table) stays whole.
+        function paginatePreview(holder, keep) {
+            var offset = 0; // keep[] runs over the whole file; each section takes its share
+            holder.querySelectorAll('section.docx').forEach(function(sec) {
+                var article = sec.querySelector(':scope > article');
+                var kids = article ? Array.prototype.slice.call(article.children) : [];
+                var base = offset;
+                offset += kids.length;
+                var pageH = parseFloat(getComputedStyle(sec).minHeight) || 0;
+                if (!kids.length || !pageH || sec.offsetHeight <= pageH + 2) return;
+                var room = pageH - (sec.offsetHeight - article.offsetHeight) - 4;
+                if (room < 200) return;
+
+                var tops = kids.map(function(el) { return el.offsetTop; });
+                var bottoms = kids.map(function(el, i) { return tops[i] + el.offsetHeight; });
+                var kept = function(i) { return !!(keep && keep[base + i]); };
+                var starts = [0], s = 0;
+                for (var i = 0; i < kids.length; i++) {
+                    if (i > s && bottoms[i] - tops[s] > room) {
+                        var j = i;
+                        while (j > s && kept(j - 1)) j--;
+                        if (j === s) j = i; // the whole page is one block: split where it overflows
+                        starts.push(j);
+                        s = j;
+                    }
+                }
+                if (starts.length < 2) return;
+
+                var header = sec.querySelector(':scope > header'), footer = sec.querySelector(':scope > footer');
+                starts.forEach(function(from, n) {
+                    var page = sec.cloneNode(false), body = article.cloneNode(false);
+                    if (header) page.appendChild(header.cloneNode(true));
+                    kids.slice(from, starts[n + 1] || kids.length).forEach(function(el) { body.appendChild(el); });
+                    page.appendChild(body);
+                    if (footer) page.appendChild(footer.cloneNode(true));
+                    page.style.height = pageH + 'px';
+                    sec.parentNode.insertBefore(page, sec);
+                });
+                sec.remove();
+            });
+        }
+
+        // Which top-level paragraphs of the file say "keep with next", in file order.
+        // Null if it can't be read; the pages are then split only by height.
+        async function keepWithNext(blob) {
+            try {
+                var zip = await window.JSZip.loadAsync(blob);
+                var xml = new DOMParser().parseFromString(await zip.file('word/document.xml').async('string'), 'application/xml');
+                var body = xml.getElementsByTagName('w:body')[0];
+                return Array.prototype.filter.call(body.children, function(el) { return el.tagName !== 'w:sectPr'; }).map(function(el) {
+                    if (el.tagName !== 'w:p') return false;
+                    var k = el.getElementsByTagName('w:keepNext')[0];
+                    return !!k && !/^(0|false)$/.test(k.getAttribute('w:val') || '');
+                });
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // On a narrow screen the pages are shrunk to fit instead of cut off.
+        function fitPreview(holder) {
+            var page = holder.querySelector('section.docx');
+            if (!page) return;
+            var room = holder.parentNode.clientWidth - 32;
+            if (page.offsetWidth > room) holder.style.zoom = (room / page.offsetWidth).toFixed(3);
+        }
+
+        // Word fills the footer's "Page X of Y" when it opens the file; the preview
+        // can't, so the numbers are written in from the drawn pages. A page drawn taller
+        // than the paper holds several printed pages, so it gets "#" instead of a guess.
+        function fillPageNumbers(holder) {
+            var pages = holder.querySelectorAll('section.docx');
+            pages.forEach(function(page, i) {
+                var tall = page.scrollHeight > (parseFloat(page.style.minHeight) || 0) * 1.37 + 20; // in px vs pt
+                page.querySelectorAll('footer p').forEach(function(p) {
+                    if (!/^\s*Page\s+of\s*$/.test(p.textContent)) return;
+                    var label = tall ? 'Page # of #' : 'Page ' + (i + 1) + ' of ' + pages.length;
+                    var spans = p.querySelectorAll('span');
+                    if (!spans.length) { p.textContent = label; return; }
+                    spans[0].textContent = label;
+                    for (var s = 1; s < spans.length; s++) spans[s].textContent = '';
+                });
+            });
+        }
+
+        // Simple text-only preview, used when there's nothing yet or the file can't be drawn.
+        function previewPlain(warning) {
             if (!currentExam || currentExam.sections.length === 0) {
                 document.getElementById('preview-body').innerHTML =
                     '<div style="text-align:center;padding:40px 20px;color:#999;font-family:Arial, sans-serif;">' +
@@ -2864,7 +3043,7 @@
             });
             html += '</div>';
 
-            document.getElementById('preview-body').innerHTML = html;
+            document.getElementById('preview-body').innerHTML = (warning ? '<div class="pv-warn">' + escapeHtml(warning) + '</div>' : '') + '<div class="pv-plain">' + html + '</div>';
             document.getElementById('preview-overlay').classList.add('open');
         }
         // Saves first so the preview shows what's on screen, then opens the printed
@@ -2879,7 +3058,7 @@
             var url = '/faculty/exam-generator/' + currentExam.id + '/preview?kind=' + kind;
             if (tab) tab.location = url; else window.location.href = url;
         }
-        function closePreview() { document.getElementById('preview-overlay').classList.remove('open'); }
+        function closePreview() { previewRun++; document.getElementById('preview-overlay').classList.remove('open'); }
         document.getElementById('preview-overlay').addEventListener('click', function(e) { if (e.target === this) closePreview(); });
 
         // ── Download Options (font, size, paper, layout) ──
