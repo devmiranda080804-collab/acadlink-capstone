@@ -47,7 +47,8 @@ class SubmissionController extends Controller
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'type'        => ['required', Rule::in(array_keys(SubmissionRequirement::typeOptions()))],
-            'priority'    => ['required', Rule::in(array_keys(SubmissionRequirement::PRIORITIES))],
+            // A checkbox: ticked is Urgent, unticked is Standard.
+            'priority'    => ['required', Rule::in(['urgent', 'standard'])],
             'file_types'   => 'nullable|array',
             'file_types.*' => [Rule::in(array_keys(SubmissionRequirement::FILE_TYPES))],
             'deadline'    => 'required|date|after_or_equal:today',
@@ -84,7 +85,8 @@ class SubmissionController extends Controller
             'title'       => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'type'        => ['required', Rule::in([...array_keys(SubmissionRequirement::typeOptions()), $requirement->type])],
-            'priority'    => ['required', Rule::in(array_keys(SubmissionRequirement::PRIORITIES))],
+            // A checkbox: ticked is Urgent, unticked is Standard.
+            'priority'    => ['required', Rule::in(['urgent', 'standard'])],
             'file_types'   => 'nullable|array',
             'file_types.*' => [Rule::in(array_keys(SubmissionRequirement::FILE_TYPES))],
             'deadline'    => $deadlineChanged ? 'required|date|after_or_equal:today' : 'required|date',

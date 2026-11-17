@@ -311,13 +311,13 @@
                 </div>
 
                 <div class="modal-field">
-                    <label>Priority <span style="color:#ef4444">*</span></label>
-                    <select name="priority" id="f-priority">
-                        @foreach(\App\Models\SubmissionRequirement::PRIORITIES as $key => $label)
-                            <option value="{{ $key }}" {{ $key === 'standard' ? 'selected' : '' }}>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    <div class="modal-hint">Urgent and Important requirements are listed first for faculty.</div>
+                    {{-- Unticked sends "standard"; ticked sends "urgent" (the later field wins). --}}
+                    <input type="hidden" name="priority" value="standard">
+                    <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">
+                        <input type="checkbox" name="priority" value="urgent" id="f-urgent" style="width:auto;margin:0;">
+                        Mark as urgent
+                    </label>
+                    <div class="modal-hint">Urgent requirements are listed first for faculty and marked in red. Leave it unticked for a standard requirement.</div>
                 </div>
 
                 <div class="modal-field">
@@ -447,7 +447,7 @@
             document.getElementById('f-description').value = '';
             removeHiddenTypeOption();
             document.getElementById('f-type').selectedIndex = 0;
-            document.getElementById('f-priority').value = 'standard';
+            document.getElementById('f-urgent').checked = false;
             document.getElementById('f-per-course').checked = true;
             document.getElementById('f-per-course').disabled = false;
             setFileTypes(FILE_TYPE_DEFAULTS);
@@ -476,7 +476,7 @@
                 typeSelect.add(option);
             }
             typeSelect.value = req.type;
-            document.getElementById('f-priority').value = req.priority || 'standard';
+            document.getElementById('f-urgent').checked = req.priority === 'urgent';
             document.getElementById('f-per-course').checked = !!req.per_course;
             setFileTypes(req.file_types && req.file_types.length ? req.file_types : FILE_TYPE_DEFAULTS);
             // Who submits what can only change before anything is submitted.
