@@ -136,10 +136,7 @@
         .action-row { display: flex; gap: 6px; min-width: 0; }
         .action-row > * { min-width: 0; }
         .btn-distribute { display: inline-flex; align-items: center; justify-content: center; gap: 5px; background: #0f2557; color: #fff; border: none; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; cursor: pointer; flex: 1; }
-        .btn-distribute:hover { background: #1a3a7a; }
-        .btn-upload-alt { align-self: center; background: none; border: none; color: #5b6377; font-size: 11px; text-decoration: underline; cursor: pointer; padding: 2px 4px; font-family: inherit; }
-        .btn-upload-alt:hover { color: #0f2557; }
-        .btn-view { display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #fff; color: #444; border: 1px solid #d0d0d0; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; text-decoration: none; flex: 1; }
+        .btn-distribute:hover { background: #1a3a7a; }        .btn-view { display: inline-flex; align-items: center; justify-content: center; gap: 4px; background: #fff; color: #444; border: 1px solid #d0d0d0; font-size: 11.5px; font-weight: 600; padding: 8px 12px; border-radius: 5px; text-decoration: none; flex: 1; }
         .btn-view:hover { background: #f5f5f5; }
         .action-buttons svg { width: 12px; height: 12px; }
 

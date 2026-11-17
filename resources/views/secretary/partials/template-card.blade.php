@@ -69,12 +69,6 @@
                         <button type="submit" class="btn-distribute" style="width:100%;">{{ $template->isReturned() ? 'Edit & Resubmit' : 'Edit in System' }}</button>
                     </form>
                 </div>
-                {{-- A returned template is fixed in the editor only; an approved one can still take a new file. --}}
-                @unless($template->isReturned())
-                    <button type="button" class="btn-upload-alt" onclick="openNewVersionModal({{ $template->id }}, @js($template->title))">
-                        or upload a new file instead
-                    </button>
-                @endunless
             @else
                 <div class="action-row">
                     <button type="button" class="btn-distribute" onclick="openNewVersionModal({{ $template->id }}, @js($template->title))">
