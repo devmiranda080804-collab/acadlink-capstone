@@ -499,13 +499,11 @@
                     <input type="text" name="topic" id="topic-field-topic" required>
                 </div>
                 <div class="modal-row-3">
-                    <div class="modal-field">
-                        <label>From week</label>
-                        <input type="number" name="week_from" id="topic-field-week-from" min="1" max="{{ \App\Models\CourseTopic::MAX_WEEK }}" step="1" placeholder="e.g. 1" required oninput="computeTopicHours()">
-                    </div>
-                    <div class="modal-field">
-                        <label>To week</label>
-                        <input type="number" name="week_to" id="topic-field-week-to" min="1" max="{{ \App\Models\CourseTopic::MAX_WEEK }}" step="1" placeholder="e.g. 2" oninput="computeTopicHours()">
+                    <div class="modal-field" style="grid-column: span 2;">
+                        <label>Week</label>
+                        <input type="text" name="week" id="topic-field-week" inputmode="numeric" autocomplete="off" placeholder="e.g. 3, or 1-2" required
+                            pattern="\s*\d{1,2}\s*(?:(?:-|–|—|to)\s*\d{1,2}\s*)?" title="A week like 3, or a range like 1-2" oninput="computeTopicHours()">
+                        <div class="field-note">One week (3), or a range for a topic over several weeks (1-2).</div>
                     </div>
                     <div class="modal-field">
                         <label>Hours per week</label>
@@ -515,7 +513,7 @@
                 <div class="modal-field">
                     <label>Hours</label>
                     <input type="number" name="hours" id="topic-field-hours" min="1" required>
-                    <div class="field-note" id="topic-hours-note">Computed from the weeks above. You can change it.</div>
+                    <div class="field-note" id="topic-hours-note">Computed from the week above. You can change it.</div>
                 </div>
                 <div class="modal-field">
                     <label>Module <span id="topic-field-module-hint" style="font-size:10px;color:#999;">(PDF or Word — the AI reads it to suggest key points and to write exam questions)</span></label>
@@ -766,14 +764,23 @@
 
         // Hours = number of weeks x hours per week. Re-runs whenever the weeks or the
         // hours per week change; the faculty can still type a different total.
+        // "3" -> [3, 3]; "1-2" -> [1, 2]; anything else -> null.
+        function topicWeekRange() {
+            var m = /^\s*(\d+)\s*(?:(?:-|–|—|to)\s*(\d+))?\s*$/i.exec(document.getElementById('topic-field-week').value);
+            return m ? [parseInt(m[1], 10), parseInt(m[2] || m[1], 10)] : null;
+        }
+
         function computeTopicHours() {
-            var from = parseInt(document.getElementById('topic-field-week-from').value, 10);
-            var to = parseInt(document.getElementById('topic-field-week-to').value, 10) || from;
+            var range = topicWeekRange();
             var perWeek = parseInt(document.getElementById('topic-field-hours-per-week').value, 10);
             var note = document.getElementById('topic-hours-note');
-            if (!from || !perWeek) return;
+            if (!range || !range[0] || !perWeek) {
+                note.textContent = 'Computed from the week above. You can change it.';
+                return;
+            }
+            var from = range[0], to = range[1];
             if (to < from) {
-                note.textContent = '"To week" can\'t be earlier than "From week".';
+                note.textContent = 'In a range of weeks, the second week can\'t be earlier than the first (for example 1-2).';
                 return;
             }
             var weeks = to - from + 1;
@@ -783,11 +790,10 @@
 
         function resetTopicForm() {
             document.getElementById('topic-field-topic').value = '';
-            document.getElementById('topic-field-week-from').value = '';
-            document.getElementById('topic-field-week-to').value = '';
+            document.getElementById('topic-field-week').value = '';
             document.getElementById('topic-field-hours-per-week').value = 3;
             document.getElementById('topic-field-hours').value = '';
-            document.getElementById('topic-hours-note').textContent = 'Computed from the weeks above. You can change it.';
+            document.getElementById('topic-hours-note').textContent = 'Computed from the week above. You can change it.';
             document.getElementById('topic-field-key-points').value = '';
             document.getElementById('topic-field-module').value = '';
             setKeyPointsStatus('', '');
@@ -900,8 +906,7 @@
             var range = /^(\d+)(?:-(\d+))?$/.exec(topic.weeks || '');
             var weekFrom = range ? parseInt(range[1], 10) : '';
             var weekTo = range ? parseInt(range[2] || range[1], 10) : '';
-            document.getElementById('topic-field-week-from').value = weekFrom;
-            document.getElementById('topic-field-week-to').value = weekTo !== weekFrom ? weekTo : '';
+            document.getElementById('topic-field-week').value = range ? (weekTo !== weekFrom ? weekFrom + '-' + weekTo : String(weekFrom)) : '';
             var weekCount = range ? weekTo - weekFrom + 1 : 0;
             document.getElementById('topic-field-hours-per-week').value =
                 weekCount && topic.hours % weekCount === 0 ? topic.hours / weekCount : 3;

@@ -67,16 +67,34 @@ class CourseCoordinationController extends Controller
     // the same topic list. Feeds the Assessment Generator's TOS Generator
     // (Panel comment #8: Total Hours must be auto-fetched from OBE data).
 
-    // How the topic form's fields are named in validation messages.
-    const TOPIC_FIELD_NAMES = ['week_from' => '"From week"', 'week_to' => '"To week"'];
+    // How the topic form's fields are named in validation messages. The form has one
+    // "Week" box ("3", or "1-2" for several weeks), split into week_from/week_to.
+    const TOPIC_FIELD_NAMES = ['week_from' => 'Week', 'week_to' => 'Week'];
     const TOPIC_MESSAGES = [
-        'week_from.integer' => 'Enter "From week" as a number, for example 1.',
-        'week_to.integer'   => 'Enter "To week" as a number, for example 2.',
-        'week_to.gte'       => '"To week" can\'t be earlier than "From week".',
+        'week_from.required' => 'Enter the week, for example 3, or 1-2 for a topic over several weeks.',
+        'week_from.integer'  => 'Enter the week as a number, for example 3, or a range like 1-2.',
+        'week_to.integer'    => 'Enter the week as a number, for example 3, or a range like 1-2.',
+        'week_to.gte'        => 'In a range of weeks, the second week can\'t be earlier than the first (for example 1-2, not 2-1).',
     ];
+
+    // "3" -> week 3; "1-2" (or "1 – 2", "1 to 2") -> weeks 1 to 2. Anything else is left
+    // as-is in week_from so the validation explains what to type.
+    protected function splitWeek(Request $request): void
+    {
+        if (!$request->has('week')) {
+            return;
+        }
+        $week = trim((string) $request->input('week'));
+        if (preg_match('/^(\d+)\s*(?:-|–|—|to)\s*(\d+)$/iu', $week, $m)) {
+            $request->merge(['week_from' => $m[1], 'week_to' => $m[2]]);
+        } else {
+            $request->merge(['week_from' => $week === '' ? null : $week, 'week_to' => null]);
+        }
+    }
 
     public function storeCourseTopic(Request $request)
     {
+        $this->splitWeek($request);
         $request->validate([
             'course_id'      => 'required|exists:courses,id',
             'grading_period' => 'required|in:Prelim,Midterm,Final',
@@ -132,6 +150,7 @@ class CourseCoordinationController extends Controller
     {
         abort_unless($this->assignedCourseIds()->contains($courseTopic->course_id), 403);
 
+        $this->splitWeek($request);
         $request->validate([
             'topic'  => 'required|string|max:255',
             'week_from' => 'required|integer|min:1|max:' . CourseTopic::MAX_WEEK,
