@@ -48,6 +48,11 @@
         .btn-download-primary { display: inline-flex; align-items: center; gap: 6px; background: #0f2557; color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; padding: 10px 18px; border-radius: 6px; }
         .btn-download-primary:hover { background: #1a3a7a; }
 
+        /* Shown inside another page (?embed=1): just the file. */
+        body.embed .viewer-head { display: none; }
+        body.embed .content.viewer-content { padding: 0; }
+        body.embed .viewer-body { border: none; border-radius: 0; }
+
         @media (max-width: 600px) {
             .content.viewer-content { padding: 12px; gap: 10px; }
             .viewer-body { padding: 8px; }
@@ -55,7 +60,8 @@
         }
     </style>
 </head>
-<body>
+@php $embed = request()->boolean('embed'); @endphp
+<body class="{{ $embed ? 'embed' : '' }}">
     @php
         $icon = match ($previewAs) { 'pdf' => '📄', 'image' => '🖼️', 'docx' => '📝', default => '📎' };
         $size = !$file['size'] ? null : ($file['size'] >= 1048576 ? round($file['size'] / 1048576, 1) . ' MB' : round($file['size'] / 1024, 1) . ' KB');
@@ -84,14 +90,18 @@
         ])->filter()->implode(' · ');
     @endphp
 
+    @unless($embed)
     @include('partials.sidebar', ['sbActivePath' => $sbActivePath])
+    @endunless
 
     <div class="main">
+        @unless($embed)
         <div class="topnav">
             <div class="topnav-right">
                 @include('partials.topnav-user')
             </div>
         </div>
+        @endunless
 
         <div class="content viewer-content">
             <div class="viewer-head">
@@ -161,6 +171,7 @@
         </script>
     @endif
 
+    @unless($embed)
     <script>
         // Going back through the browser's history returns to the page as it was left
         // (open folder, filters, scroll). Without that history, the link's address is used.
@@ -182,5 +193,6 @@
         })();
     </script>
     @include('partials.system-feedback')
+    @endunless
 </body>
 </html>

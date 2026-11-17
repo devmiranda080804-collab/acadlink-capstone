@@ -7,14 +7,30 @@
     <title>Review: {{ $template->title }} – CBMA System</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { height: 100%; font-family: Arial, sans-serif; background: #f0f0f0; color: #333; }
-        body { display: flex; flex-direction: column; }
-        .review-bar { display: flex; align-items: center; gap: 14px; height: 46px; flex-shrink: 0; padding: 0 16px; background: #0f2557; color: #fff; }
-        .review-back { color: #c8d6ec; text-decoration: none; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
-        .review-back:hover { color: #fff; }
-        .review-title { font-size: 13.5px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .review-mode { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px; background: rgba(255,255,255,0.15); white-space: nowrap; }
-        .review-body { flex: 1; min-height: 0; display: flex; }
+        body { font-family: Arial, sans-serif; background: #f5f6fa; color: #333; display: flex; height: 100vh; overflow: hidden; }
+
+        /* Same frame as every page: sidebar, top bar, then the review. */
+        .main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; background: #f5f6fa; }
+        .topnav { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 0 24px; height: 52px; display: flex; align-items: center; flex-shrink: 0; }
+        .topnav-right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+        .user-info { display: flex; align-items: center; gap: 8px; }
+        .user-text { text-align: right; }
+        .user-name { font-size: 12px; font-weight: 600; color: #222; }
+        .user-email { font-size: 10px; color: #888; }
+        .user-avatar { width: 34px; height: 34px; border-radius: 50%; background-color: #0f2557; color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+        .content.review-content { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 14px; padding: 20px 24px; overflow: hidden; }
+
+        .review-head { display: flex; align-items: center; gap: 14px; flex-shrink: 0; flex-wrap: wrap; }
+        .review-back { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; color: #0f2557; text-decoration: none; font-size: 13px; font-weight: 700;
+            padding: 8px 14px 8px 11px; border-radius: 9px; background: #fff; border: 1px solid #dfe3ec; box-shadow: 0 1px 2px rgba(15, 37, 87, .05); transition: background .15s, border-color .15s; }
+        .review-back:hover { background: #f1f4fa; border-color: #c9d1e2; }
+        .review-back:focus-visible { outline: 2px solid #f5b700; outline-offset: 2px; }
+        .review-back svg { width: 15px; height: 15px; }
+        .review-info { flex: 1; min-width: 0; }
+        .review-title { font-size: 17px; font-weight: 800; color: #0f2557; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .review-sub { font-size: 12px; color: #6b7287; margin-top: 3px; }
+        .review-mode { font-size: 11.5px; font-weight: 700; padding: 6px 12px; border-radius: 999px; background: #eef2ff; color: #3730a3; white-space: nowrap; }
+        .review-body { flex: 1; min-height: 0; display: flex; background: #fff; border: 1px solid #e1e5ee; border-radius: 14px; overflow: hidden; }
         .review-doc { flex: 1; min-width: 0; position: relative; }
         .review-doc iframe { width: 100%; height: 100%; border: none; background: #fff; }
         .review-error { display: none; max-width: 460px; margin: 80px auto; padding: 24px; background: #fff; border-radius: 10px; text-align: center; font-size: 13px; line-height: 1.6; }
@@ -48,16 +64,34 @@
         .divider { border: none; border-top: 1px solid #eee; margin: 18px 0; }
         .program-tag { display: inline-block; font-size: 10.5px; font-weight: 700; color: #0f2557; background: #eef2ff; border-radius: 10px; padding: 2px 8px; margin: 0 4px 4px 0; }
         @media (max-width: 860px) {
-            .review-body { flex-direction: column; }
+            .content.review-content { overflow-y: auto; padding: 12px; }
+            .review-body { flex-direction: column; flex: none; }
             .review-doc { min-height: 60vh; }
             .review-panel { width: 100%; border-left: none; border-top: 1px solid #e0e0e0; }
         }
     </style>
 </head>
 <body>
-    <div class="review-bar">
-        <a class="review-back" href="{{ url('/admin/template-approvals') }}">← Back to Templates</a>
-        <div class="review-title">{{ $template->title }}</div>
+    {{-- Opened from the Templates page, which stays highlighted in the sidebar. --}}
+    @include('partials.sidebar', ['sbActivePath' => 'admin/template-approvals'])
+
+    <div class="main">
+    <div class="topnav">
+        <div class="topnav-right">
+            @include('partials.topnav-user')
+        </div>
+    </div>
+
+    <div class="content review-content">
+    <div class="review-head">
+        <a class="review-back" href="{{ url('/admin/template-approvals') }}" id="review-back" title="Back to Templates (Esc)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back
+        </a>
+        <div class="review-info">
+            <h1 class="review-title">{{ $template->title }}</h1>
+            <div class="review-sub">{{ \App\Models\TemplateDocument::typeLabel($template->type) }} · v{{ $template->version }} · Uploaded by {{ $template->creator->name ?? 'Unknown' }}</div>
+        </div>
         <span class="review-mode">{{ $canComment ? 'You can add comments' : 'View only' }}</span>
     </div>
 
@@ -67,10 +101,10 @@
                 <div id="document-editor"></div>
                 <div class="review-error" id="review-error">
                     <strong>The document could not be loaded</strong>
-                    Please check your connection and try again. You can still <a href="{{ \App\Support\FileLinks::view('template', $template->id) }}">open the file</a> in a new tab.
+                    Please check your connection and try again. You can still <a href="{{ \App\Support\FileLinks::view('template', $template->id) }}">open the file</a> in the viewer.
                 </div>
             @else
-                <iframe src="{{ \App\Support\FileLinks::view('template', $template->id) }}" title="{{ $template->title }}"></iframe>
+                <iframe src="{{ \App\Support\FileLinks::view('template', $template->id) }}?embed=1" title="{{ $template->title }}"></iframe>
             @endif
         </div>
 
@@ -138,11 +172,27 @@
             @endif
         </aside>
     </div>
+    </div>
+    </div>
 
     @if($config)
         <script src="{{ $scriptUrl }}" onerror="showReviewError()"></script>
     @endif
     <script>
+        // Back (and Esc) returns to the Templates page as it was left, open folder included.
+        (function () {
+            var back = document.getElementById('review-back');
+            var fromList = document.referrer && new URL(document.referrer).pathname.replace(/\/$/, '') === '/admin/template-approvals';
+            back.addEventListener('click', function (e) {
+                if (fromList && history.length > 1) { e.preventDefault(); history.back(); }
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key !== 'Escape' || e.defaultPrevented) return;
+                if (document.querySelector('.nb-panel.open, .sf-confirm.open') || /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName)) return;
+                back.click();
+            }, true);
+        })();
+
         function showReviewError() {
             var editor = document.getElementById('document-editor');
             if (editor) editor.style.display = 'none';
@@ -202,5 +252,6 @@
             });
         });
     </script>
+    @include('partials.system-feedback')
 </body>
 </html>
