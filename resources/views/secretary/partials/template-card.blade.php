@@ -25,7 +25,7 @@
     @if($template->isReturned())
         <div class="return-reason">
             <strong>Returned by {{ $template->reviewer->name ?? 'the Dean' }}:</strong> {{ $template->return_reason }}
-            @if($template->isEditableFile())<div style="margin-top:4px;font-size:11px;">Click <strong>Edit in System</strong> to see the Dean's comments in the document.</div>@endif
+            @if($template->isEditableFile())<div style="margin-top:4px;font-size:11px;">Click <strong>{{ $template->open_draft_id ? 'Continue Editing' : 'Edit & Resubmit' }}</strong> to fix it in the document, where the Dean's comments are, then submit it from the editor. No need to upload a new file.</div>@endif
         </div>
     @endif
 
@@ -50,20 +50,36 @@
                     <button type="submit" class="btn-distribute" style="width:100%;">Submit to Dean</button>
                 </form>
             </div>
+        @elseif($template->isReturned() && $template->open_draft_id)
+            {{-- Being fixed in the editor: carry on, or submit the fixed copy. --}}
+            <div class="action-row">
+                <a class="btn-distribute" style="text-decoration:none;" href="{{ url('/secretary/template-distribution/' . $template->open_draft_id . '/editor') }}">Continue Editing</a>
+            </div>
+            <div class="action-row">
+                <form method="POST" action="{{ url('/secretary/template-distribution/' . $template->open_draft_id . '/submit') }}" style="flex:1;margin:0;" data-confirm="Close the editor first so your latest changes are saved. Submit the corrected template to the Dean?" data-confirm-title="Submit to Dean?" data-confirm-button="Submit">
+                    @csrf
+                    <button type="submit" class="btn-distribute" style="width:100%;">Submit to Dean</button>
+                </form>
+            </div>
         @elseif(!$template->isPending())
             @if($template->isEditableFile())
                 <div class="action-row">
                     <form method="POST" action="{{ url('/secretary/template-distribution/' . $template->id . '/edit') }}" style="flex:1;margin:0;">
                         @csrf
-                        <button type="submit" class="btn-distribute" style="width:100%;">Edit in System</button>
+                        <button type="submit" class="btn-distribute" style="width:100%;">{{ $template->isReturned() ? 'Edit & Resubmit' : 'Edit in System' }}</button>
                     </form>
                 </div>
-            @endif
-            <div class="action-row">
-                <button type="button" class="btn-distribute" onclick="openNewVersionModal({{ $template->id }}, @js($template->title))">
-                    {{ $template->isReturned() ? 'Upload Corrected Version' : 'Upload New Version' }}
+                {{-- Fixing it in the editor is the usual way; uploading stays for a file made elsewhere. --}}
+                <button type="button" class="btn-upload-alt" onclick="openNewVersionModal({{ $template->id }}, @js($template->title))">
+                    or upload a {{ $template->isReturned() ? 'corrected' : 'new' }} file instead
                 </button>
-            </div>
+            @else
+                <div class="action-row">
+                    <button type="button" class="btn-distribute" onclick="openNewVersionModal({{ $template->id }}, @js($template->title))">
+                        {{ $template->isReturned() ? 'Upload Corrected Version' : 'Upload New Version' }}
+                    </button>
+                </div>
+            @endif
         @endif
         <div class="action-row">
             <a class="btn-view" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank">

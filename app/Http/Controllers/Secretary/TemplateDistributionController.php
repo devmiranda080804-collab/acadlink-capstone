@@ -25,6 +25,18 @@ class TemplateDistributionController extends Controller
             ->latest()
             ->get();
 
+        // A returned template being fixed in the editor shows as one card: the returned
+        // one, with the draft's Continue Editing and Submit. The draft isn't listed twice.
+        $drafts = $templates->filter(fn ($t) => $t->isDraft())->keyBy('root_template_id');
+        $merged = [];
+        foreach ($templates as $t) {
+            if ($t->isReturned() && $drafts->has($t->root_template_id)) {
+                $t->setAttribute('open_draft_id', $drafts[$t->root_template_id]->id);
+                $merged[] = $t->open_draft_id;
+            }
+        }
+        $templates = $templates->reject(fn ($t) => in_array($t->id, $merged, true))->values();
+
         return view('secretary.template-distribution', compact('templates', 'term'));
     }
 
@@ -137,6 +149,14 @@ class TemplateDistributionController extends Controller
             return redirect('/secretary/template-distribution')->withErrors(['template' => 'The document editor is not available right now.']);
         }
 
+        // What the Dean asked to change, shown above the document while editing.
+        $returned = TemplateDocument::with('reviewer')
+            ->where('root_template_id', $template->root_template_id)
+            ->where('status', TemplateDocument::STATUS_RETURNED)
+            ->whereNull('superseded_at')
+            ->latest('reviewed_at')
+            ->first();
+
         return view('documents.editor', [
             'title'     => $template->title . ' (draft v' . $template->version . ')',
             'backUrl'   => url('/secretary/template-distribution'),
@@ -144,10 +164,35 @@ class TemplateDistributionController extends Controller
             'canEdit'   => $template->canEdit(auth()->user()),
             'config'    => (new OnlyOffice())->editorConfig($template, auth()->user()),
             'scriptUrl' => OnlyOffice::scriptUrl(),
+            'returnNote' => $returned ? [
+                'by'     => $returned->reviewer->name ?? 'the Dean',
+                'reason' => $returned->return_reason,
+            ] : null,
+            'submitDraft' => [
+                'url'     => url('/secretary/template-distribution/' . $template->id),
+                'version' => $template->version,
+            ],
         ]);
     }
 
-    public function submitDraft(TemplateDocument $template)
+    // Before submitting from the editor: ask it to save now; saveStatus() says when the
+    // file has arrived, so the Dean gets the latest changes.
+    public function prepareSubmit(TemplateDocument $template, OnlyOffice $onlyOffice)
+    {
+        abort_unless($template->isDraft() && $template->created_by === auth()->id(), 403);
+        $stamp = optional($template->last_edited_at)->toIso8601String();
+
+        return response()->json(['saving' => $onlyOffice->forceSave($template), 'stamp' => $stamp]);
+    }
+
+    public function saveStatus(TemplateDocument $template)
+    {
+        abort_unless($template->created_by === auth()->id(), 403);
+
+        return response()->json(['stamp' => optional($template->fresh()->last_edited_at)->toIso8601String()]);
+    }
+
+    public function submitDraft(Request $request, TemplateDocument $template)
     {
         abort_unless($template->isDraft(), 422, 'This draft has already been submitted.');
 
@@ -161,7 +206,15 @@ class TemplateDistributionController extends Controller
 
         AuditLog::record('Template Submitted', "{$template->title} (v{$template->version}) edited in the system and submitted to the Dean by " . auth()->user()->name);
 
-        return back()->with('success', "Version {$template->version} submitted to the Dean for approval.");
+        $message = "Version {$template->version} submitted to the Dean for approval.";
+        // From the editor page: it goes back to the templates list itself.
+        if ($request->expectsJson()) {
+            session()->flash('success', $message);
+
+            return response()->json(['redirect' => url('/secretary/template-distribution')]);
+        }
+
+        return back()->with('success', $message);
     }
 
     // The Secretary can withdraw their own submission while it's pending or returned.

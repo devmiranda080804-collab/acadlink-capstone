@@ -299,6 +299,8 @@ Route::middleware('role:secretary')->prefix('secretary')->group(function () {
     Route::post('/template-distribution/{template}/edit', [TemplateDistributionController::class, 'startEditing']);
     Route::get('/template-distribution/{template}/editor', [TemplateDistributionController::class, 'editor']);
     Route::post('/template-distribution/{template}/submit', [TemplateDistributionController::class, 'submitDraft']);
+    Route::post('/template-distribution/{template}/prepare', [TemplateDistributionController::class, 'prepareSubmit']);
+    Route::get('/template-distribution/{template}/status', [TemplateDistributionController::class, 'saveStatus']);
     Route::get('/dashboard', [SecDashboardController::class, 'index']);
     Route::get('/document-repository', [DocumentRepositoryController::class, 'index']);
     Route::post('/document-repository', [DocumentRepositoryController::class, 'store']);
