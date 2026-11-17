@@ -49,7 +49,7 @@
             </div>
         </div>
         <div class="library-actions">
-            <a class="library-primary" id="library-go" href="{{ url('/faculty/shared-library') }}" target="_blank" style="display:none;">Open Shared Library</a>
+            <a class="library-primary" id="library-go" href="{{ url('/faculty/shared-library') }}" style="display:none;">Open Shared Library</a>
             <button type="button" id="library-close" onclick="closeLibraryShare()">Cancel</button>
             <button type="submit" class="library-primary" id="library-submit">Share</button>
         </div>
