@@ -6,8 +6,17 @@
 <meta name="x-apple-disable-message-reformatting">
 <title>@yield('title')</title>
 </head>
-{{-- Email clients (Gmail especially) drop <style> rules and external images, so everything is
-     table-based with inline styles, and the logo is embedded in the message itself (CID). --}}
+{{-- Email clients (Gmail especially) drop <style> rules, so everything is table-based with
+     inline styles. The logo is a public link to the live site, which every inbox shows (web
+     inboxes such as Mailinator don't show logos attached to the message). On a local copy the
+     site isn't reachable from outside, so there the logo is attached instead (CID). --}}
+@php
+    $appUrl = (string) config('app.url');
+    $publicSite = str_starts_with($appUrl, 'https://') && !preg_match('#//(localhost|127\.|0\.0\.0\.0)#', $appUrl);
+    $emailLogo = $publicSite
+        ? rtrim($appUrl, '/') . '/images/cbma-email-logo.png'
+        : $message->embed(resource_path('templates/branding/cbma-email-logo.png'));
+@endphp
 <body style="margin:0; padding:0; background-color:#eef1f7; -webkit-text-size-adjust:100%;">
 <div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#eef1f7;">@yield('preheader')</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#eef1f7;">
@@ -17,7 +26,7 @@
                 {{-- Letterhead --}}
                 <tr>
                     <td align="center" style="background-color:#0f2557; padding:28px 24px 22px; border-bottom:4px solid #f2b705;">
-                        <img src="{{ $message->embed(resource_path('templates/branding/cbma-email-logo.png')) }}" width="76" height="74" alt="CBMA logo" style="display:block; border:0; width:76px; height:74px; margin:0 auto 12px;">
+                        <img src="{{ $emailLogo }}" width="76" height="74" alt="CBMA logo" style="display:block; border:0; width:76px; height:74px; margin:0 auto 12px;">
                         <div style="font-family:Arial, Helvetica, sans-serif; font-size:11px; font-weight:bold; letter-spacing:1.6px; color:#f2b705; text-transform:uppercase; line-height:16px;">College of Business Management and Accountancy</div>
                         <div style="font-family:Arial, Helvetica, sans-serif; font-size:12px; color:#c9d3ee; line-height:18px; margin-top:2px;">Urdaneta City University</div>
                     </td>
