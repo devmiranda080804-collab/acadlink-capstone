@@ -258,13 +258,14 @@
                                             <div class="return-note"><strong>Returned by {{ $cs->checker->name ?? 'the Secretary' }}:</strong> {{ $cs->filing_return_reason }}</div>
                                         @endif
                                     @endif
-                                    @if(!$cs || $mine)
-                                        @include('faculty.partials.submission-upload', ['requirementId' => $req['id'], 'accept' => $req['accept'], 'courseId' => $row['course']->id, 'label' => $cs ? 'Re-submit' : 'Submit', 'current' => $cs?->file_name, 'returned' => (bool) $cs?->is_returned])
-                                    @endif
                                 </div>
                             @empty
                                 <div class="course-empty">You have no assigned {{ $req['program'] }} courses in {{ $req['term'] }}, so there is nothing to submit here.</div>
                             @endforelse
+                            {{-- One upload for all the courses: pick the course, then the file. --}}
+                            @if($req['courses']->isNotEmpty())
+                                @include('faculty.partials.submission-course-upload', ['requirementId' => $req['id'], 'accept' => $req['accept'], 'rows' => $req['courses']])
+                            @endif
                         @else
                             @if($sub)
                                 <div class="my-status-row">
