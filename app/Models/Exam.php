@@ -9,7 +9,7 @@ class Exam extends Model
 {
     protected $fillable = [
         'program_assignment_id', 'faculty_id', 'title', 'grading_period',
-        'duration_minutes', 'target_items', 'status', 'finalized_at',
+        'duration_minutes', 'target_items', 'restart_numbering', 'status', 'finalized_at',
         'export_file_path', 'export_file_type',
         'print_font', 'print_font_size', 'print_paper', 'print_layout', 'archived_questions',
     ];
@@ -19,6 +19,7 @@ class Exam extends Model
         return [
             'finalized_at' => 'datetime',
             'archived_questions' => 'array',
+            'restart_numbering' => 'boolean',
         ];
     }
 
@@ -115,7 +116,7 @@ class Exam extends Model
         return array_merge(
             $reasons,
             $this->tosCountIssues($counts, $untagged, true),
-            \App\Support\QuestionSimilarity::exactDuplicateIssues(\App\Support\QuestionSimilarity::examItems($this->sections))
+            \App\Support\QuestionSimilarity::exactDuplicateIssues(\App\Support\QuestionSimilarity::examItems($this->sections, (bool) $this->restart_numbering))
         );
     }
 
@@ -212,6 +213,9 @@ class Exam extends Model
         $number = 0;
         foreach ($this->sections->values() as $si => $section) {
             $test = self::ROMAN[$si] ?? (string) ($si + 1);
+            if ($this->restart_numbering) {
+                $number = 0; // each test starts again at 1 ("II.1")
+            }
             foreach ($section->questions as $question) {
                 $number++;
                 foreach ($question->children as $i => $child) {

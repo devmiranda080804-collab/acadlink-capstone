@@ -252,6 +252,7 @@ class ExamGeneratorController extends Controller
         $request->validate([
             'title'                        => 'required|string|max:255',
             'duration_minutes'             => 'nullable|integer|min:1',
+            'restart_numbering'            => 'nullable|boolean',
             'sections'                     => 'array',
             'sections.*.title'             => 'required|string|max:255',
             'sections.*.instructions'      => 'nullable|string',
@@ -284,15 +285,17 @@ class ExamGeneratorController extends Controller
         }
 
         // The same question twice is never allowed (nearly-same is only flagged in the builder).
-        $duplicates = QuestionSimilarity::exactDuplicateIssues(QuestionSimilarity::examItems($request->input('sections', [])));
+        $restart = $request->has('restart_numbering') ? $request->boolean('restart_numbering') : (bool) $exam->restart_numbering;
+        $duplicates = QuestionSimilarity::exactDuplicateIssues(QuestionSimilarity::examItems($request->input('sections', []), $restart));
         if (!empty($duplicates)) {
             return response()->json(['message' => "The exam has repeated questions:\n" . implode("\n", $duplicates)], 422);
         }
 
-        DB::transaction(function () use ($request, $exam) {
+        DB::transaction(function () use ($request, $exam, $restart) {
             $exam->update([
-                'title'            => $request->title,
-                'duration_minutes' => $request->duration_minutes,
+                'title'             => $request->title,
+                'duration_minutes'  => $request->duration_minutes,
+                'restart_numbering' => $restart,
             ]);
             if ($request->has('archived')) {
                 $exam->update(['archived_questions' => array_map(fn ($q) => $this->archivedItem((array) $q), array_values($request->input('archived') ?? [])) ?: null]);
@@ -916,7 +919,7 @@ class ExamGeneratorController extends Controller
             Exam::tallyTopics($section->questions, $counts, $untagged);
         }
         $match = QuestionSimilarity::findMatch($question->question_text, array_filter(
-            QuestionSimilarity::examItems($exam->sections),
+            QuestionSimilarity::examItems($exam->sections, (bool) $exam->restart_numbering),
             fn($item) => QuestionSimilarity::normalize($item['text']) === QuestionSimilarity::normalize($question->question_text)
         ));
         if ($match) {

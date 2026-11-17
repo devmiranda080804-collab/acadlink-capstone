@@ -72,15 +72,23 @@ class QuestionSimilarity
     // Every question of an exam with the item label the builder shows: numbers run
     // across the whole exam ("Item 7"), sub-questions get a letter ("Item 7b").
     // Works on the builder's payload arrays and on loaded models alike.
-    public static function examItems(iterable $sections): array
+    // $restart: each test starts at 1, so items are named with their test ("Item II.3").
+    public static function examItems(iterable $sections, bool $restart = false): array
     {
+        $roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
         $items = [];
         $number = 1;
+        $si = 0;
         foreach ($sections as $section) {
+            if ($restart) {
+                $number = 1;
+            }
+            $prefix = $restart ? ($roman[$si] ?? (string) ($si + 1)) . '.' : '';
+            $si++;
             foreach (data_get($section, 'questions') ?? [] as $question) {
-                $items[] = ['label' => "Item {$number}", 'text' => data_get($question, 'question_text')];
+                $items[] = ['label' => "Item {$prefix}{$number}", 'text' => data_get($question, 'question_text')];
                 foreach (data_get($question, 'children') ?? [] as $i => $child) {
-                    $items[] = ['label' => "Item {$number}" . chr(97 + $i), 'text' => data_get($child, 'question_text')];
+                    $items[] = ['label' => "Item {$prefix}{$number}" . chr(97 + $i), 'text' => data_get($child, 'question_text')];
                 }
                 $number++;
             }

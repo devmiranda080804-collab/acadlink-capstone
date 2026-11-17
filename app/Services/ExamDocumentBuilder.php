@@ -87,6 +87,9 @@ class ExamDocumentBuilder
         $questionNumber = 0;
 
         foreach ($exam->sections as $si => $examSection) {
+            if ($exam->restart_numbering) {
+                $questionNumber = 0; // "Start each test at number 1"
+            }
             $section->addText($this->sectionHeading($examSection->title, $si), ['bold' => true, 'size' => $size], ['spaceAfter' => 60, 'keepNext' => true]);
             if ($examSection->instructions) {
                 $directions = $section->addTextRun(['spaceAfter' => 120, 'keepNext' => true]);
@@ -132,6 +135,9 @@ class ExamDocumentBuilder
         $questionNumber = 0;
 
         foreach ($exam->sections as $si => $examSection) {
+            if ($exam->restart_numbering) {
+                $questionNumber = 0;
+            }
             $section->addText($this->sectionHeading($examSection->title, $si), ['bold' => true, 'size' => $size], ['spaceAfter' => 80, 'keepNext' => true]);
 
             $short = [];
@@ -276,6 +282,9 @@ class ExamDocumentBuilder
         $questionNumber = 0;
 
         foreach ($exam->sections as $si => $examSection) {
+            if ($exam->restart_numbering) {
+                $questionNumber = 0;
+            }
             $section->addText($this->sectionHeading($examSection->title, $si), ['bold' => true, 'size' => $size], ['spaceAfter' => 60, 'keepNext' => true]);
 
             foreach ($examSection->questions as $question) {

@@ -397,6 +397,9 @@
 
         .eb-form-group { display: flex; flex-direction: column; gap: 4px; }
         .eb-form-group label { font-size: 11px; font-weight: 700; color: #555; }
+        .eb-form-group label.eb-check { display: flex; align-items: center; gap: 7px; height: 32px; font-size: 12.5px; font-weight: 600; color: #333; cursor: pointer; white-space: nowrap; }
+        .eb-check input { width: auto; margin: 0; accent-color: #0f2557; }
+        .eb-check:has(input:disabled) { color: #aaa; cursor: default; }
         .eb-form-group select {
             height: 32px; padding: 0 28px 0 8px; border: 1px solid #ccc;
             border-radius: 5px; font-size: 12px; color: #333; background: #fff;
@@ -861,6 +864,13 @@
                     <div class="eb-form-group">
                         <label>Exam Type</label>
                         <div class="eb-readonly" id="eb-type-label">—</div>
+                    </div>
+                    <div class="eb-form-group">
+                        <label>Numbering</label>
+                        <label class="eb-check" title="Off: numbers run on across the tests (Test II continues after Test I). On: each test starts again at 1.">
+                            <input type="checkbox" id="eb-restart-numbering" disabled onchange="setRestartNumbering(this.checked)">
+                            Start each test at number 1
+                        </label>
                     </div>
                     <div class="eb-btn-group">
                         <button class="btn-eb-save" onclick="saveExam()" id="btn-save-exam" disabled>💾 Save</button>
@@ -1710,6 +1720,8 @@
             document.getElementById('eb-exam-select').value = currentExam.id;
             document.getElementById('eb-title-input').value = currentExam.title;
             document.getElementById('eb-title-input').disabled = false;
+            document.getElementById('eb-restart-numbering').checked = !!currentExam.restart_numbering;
+            document.getElementById('eb-restart-numbering').disabled = false;
             document.getElementById('eb-subject-label').textContent = currentExam.program_assignment.course.code + ' — ' + currentExam.program_assignment.course.title;
             var finalized = currentExam.status === 'finalized';
             document.getElementById('eb-type-label').textContent = currentExam.grading_period + (finalized ? ' 🔒 Finalized' : '');
@@ -1767,6 +1779,8 @@
             currentExam = null;
             document.getElementById('eb-title-input').value = '';
             document.getElementById('eb-title-input').disabled = true;
+            document.getElementById('eb-restart-numbering').checked = false;
+            document.getElementById('eb-restart-numbering').disabled = true;
             document.getElementById('eb-subject-label').textContent = '—';
             document.getElementById('eb-type-label').textContent = '—';
             document.getElementById('btn-save-exam').disabled = true;
@@ -2032,9 +2046,11 @@
             // Item numbers run continuously across the whole exam (Test 1 ending at
             // 30 means Test 2 starts at 31), not restarting per section — this
             // counter is declared outside the sections loop so it never resets.
+            // Unless "Start each test at number 1" is ticked: then it resets per test.
             var globalNum = 1;
 
             currentExam.sections.forEach(function(sec) {
+                if (currentExam.restart_numbering) globalNum = 1;
                 var div = document.createElement('div');
                 div.className = 'section-panel';
                 div.id = 'sec-' + sec.id;
@@ -2637,13 +2653,16 @@
         function liveExamItems() {
             var items = [], number = 1;
             if (!currentExam) return items;
-            currentExam.sections.forEach(function(sec) {
+            currentExam.sections.forEach(function(sec, si) {
+                // Restarted numbers repeat, so the test goes in front ("Item II.3").
+                var prefix = currentExam.restart_numbering ? toRoman(si + 1) + '.' : '';
+                if (currentExam.restart_numbering) number = 1;
                 (sec.questions || []).forEach(function(q, qi) {
                     var norm = normalizeQuestionText(q.question_text);
-                    items.push({ label: 'Item ' + number, cardId: 'q-' + sec.id + '-' + qi, q: q, norm: norm, words: norm ? norm.split(' ').length : 0 });
+                    items.push({ label: 'Item ' + prefix + number, cardId: 'q-' + sec.id + '-' + qi, q: q, norm: norm, words: norm ? norm.split(' ').length : 0 });
                     (q.children || []).forEach(function(c, ci) {
                         var cn = normalizeQuestionText(c.question_text);
-                        items.push({ label: 'Item ' + number + String.fromCharCode(97 + ci), cardId: 'q-' + sec.id + '-' + qi + '-' + ci, q: c, norm: cn, words: cn ? cn.split(' ').length : 0 });
+                        items.push({ label: 'Item ' + prefix + number + String.fromCharCode(97 + ci), cardId: 'q-' + sec.id + '-' + qi + '-' + ci, q: c, norm: cn, words: cn ? cn.split(' ').length : 0 });
                     });
                     number++;
                 });
@@ -2878,6 +2897,7 @@
             var body = {
                 title: document.getElementById('eb-title-input').value,
                 duration_minutes: currentExam.duration_minutes || null,
+                restart_numbering: !!currentExam.restart_numbering,
                 archived: currentExam.archived_questions || [],
                 sections: currentExam.sections.map(function(sec) {
                     return {
@@ -2958,6 +2978,13 @@
         }
         function closeSaveResult() { document.getElementById('save-result-overlay').classList.remove('open'); }
         document.getElementById('save-result-overlay').addEventListener('click', function(e) { if (e.target === this) closeSaveResult(); });
+
+        // "Start each test at number 1": redraws the numbers now; saved with the exam.
+        function setRestartNumbering(on) {
+            if (!currentExam) return;
+            currentExam.restart_numbering = !!on;
+            renderEB();
+        }
 
         function toRoman(n) { return ['I','II','III','IV','V','VI','VII','VIII'][n - 1] || n; }
 
@@ -3225,6 +3252,7 @@
             // instead of letting the browser restart it at 1 per list.
             var previewGlobalNum = 1;
             currentExam.sections.forEach(function(sec, si) {
+                if (currentExam.restart_numbering) previewGlobalNum = 1;
                 html += '<div style="margin-bottom:20px;">' +
                     '<div style="font-weight:700;font-size:1.05em;margin-bottom:4px;">Test ' + toRoman(si + 1) + ' — ' + escapeHtml(sec.title) + '</div>' +
                     (sec.instructions ? '<div style="font-style:italic;font-size:0.95em;color:#666;margin-bottom:8px;">' + escapeHtml(sec.instructions) + '</div>' : '') +
