@@ -1,7 +1,8 @@
 {{-- Loading indicator, toast notifications, and confirm dialog shared by every page.
      Included once, just before </body>. Pages call window.showToast(), window.showLoading()
-     and window.hideLoading() directly; forms get a loading state automatically, and a form
-     with data-confirm="Message" asks for confirmation before submitting. --}}
+     and window.hideLoading() directly; forms get a loading state automatically that names
+     the action ("Deleting…", "Uploading report.pdf…"), and a form or a submit button with
+     data-confirm="Message" asks for confirmation before submitting. --}}
 @include('partials.ui-polish')
 @include('partials.theme')
 <style>
@@ -67,6 +68,10 @@
         cursor: pointer; flex-shrink: 0; transition: background .15s, color .15s; }
     .sf-toast-close:hover { background: #f0f2f7; color: var(--sf-ink); }
     .sf-toast-close:focus-visible { outline: 2px solid var(--sf-blue); outline-offset: 1px; }
+    .sf-toast-action { display: inline-block; margin-top: 8px; padding: 5px 12px; border-radius: 7px; border: 1px solid var(--sf-accent); background: #fff; color: var(--sf-accent);
+        font: 600 12.5px "Segoe UI", Arial, sans-serif; cursor: pointer; transition: background .15s, color .15s; }
+    .sf-toast-action:hover { background: var(--sf-accent); color: #fff; }
+    .sf-toast-action:focus-visible { outline: 2px solid var(--sf-accent); outline-offset: 2px; }
     .sf-toast-timer { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--sf-accent); opacity: .35; transform-origin: left;
         animation: sf-timer linear forwards; }
     .sf-toast:hover .sf-toast-timer { animation-play-state: paused; }
@@ -160,6 +165,24 @@
         info: { title: 'Notice', icon: SVG('<path d="M12 11v6M12 7h.01"/>') }
     };
     var MAX_TOASTS = 4;
+    // A success toast is titled by what happened, so it reads at a glance.
+    var SUCCESS_TITLES = [
+        [/\b(deleted|removed)\b/i, 'Deleted'],
+        [/\b(archived)\b/i, 'Archived'],
+        [/\b(restored|unarchived)\b/i, 'Restored'],
+        [/\b(approved)\b/i, 'Approved'],
+        [/\b(returned|rejected)\b/i, 'Sent back'],
+        [/\b(sent|submitted|forwarded|distributed|published|posted)\b/i, 'Sent'],
+        [/\b(uploaded)\b/i, 'Uploaded'],
+        [/\b(saved|updated|changed)\b/i, 'Saved'],
+        [/\b(added|created)\b/i, 'Added']
+    ];
+    function successTitle(message) {
+        for (var i = 0; i < SUCCESS_TITLES.length; i++) {
+            if (SUCCESS_TITLES[i][0].test(message)) return SUCCESS_TITLES[i][1];
+        }
+        return TOAST_TYPES.success.title;
+    }
 
     // Technical text that can still reach a toast (a dropped connection, or a page's own
     // "Request failed (500)" fallback) is reworded so the user knows what to do next.
@@ -188,10 +211,16 @@
 
     window.humanizeMessage = humanizeMessage;
 
-    window.showToast = function (message, type, timeout) {
+    // options: { title, action: { label, onClick }, sticky: true (stays until closed), id }
+    window.showToast = function (message, type, timeout, options) {
+        options = options || {};
         type = TOAST_TYPES[type] ? type : 'info';
         if (type === 'error') message = humanizeMessage(message);
         var duration = timeout || (type === 'error' ? 8000 : 4500); // errors stay longer so they can be read
+        if (options.id) {
+            var same = toasts.querySelector('.sf-toast[data-id="' + options.id + '"]:not(.leaving)');
+            if (same) same.dismiss(); // one of each kind at a time (e.g. "You're offline")
+        }
 
         // Keep the stack short: drop the oldest when too many pile up.
         var current = toasts.querySelectorAll('.sf-toast:not(.leaving)');
@@ -199,6 +228,7 @@
 
         var toast = document.createElement('div');
         toast.className = 'sf-toast ' + type;
+        if (options.id) toast.setAttribute('data-id', options.id);
         toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
 
         var icon = document.createElement('span');
@@ -209,11 +239,19 @@
         body.className = 'sf-toast-body';
         var title = document.createElement('div');
         title.className = 'sf-toast-title';
-        title.textContent = TOAST_TYPES[type].title;
+        title.textContent = options.title || (type === 'success' ? successTitle(message) : TOAST_TYPES[type].title);
         var msg = document.createElement('div');
         msg.className = 'sf-toast-msg';
         msg.textContent = message;
         body.append(title, msg);
+        if (options.action) {
+            var action = document.createElement('button');
+            action.type = 'button';
+            action.className = 'sf-toast-action';
+            action.textContent = options.action.label;
+            action.addEventListener('click', function () { toast.dismiss(); options.action.onClick(); });
+            body.appendChild(action);
+        }
 
         var close = document.createElement('button');
         close.type = 'button';
@@ -221,11 +259,14 @@
         close.setAttribute('aria-label', 'Dismiss');
         close.textContent = '×';
 
-        var timer = document.createElement('span');
-        timer.className = 'sf-toast-timer';
-        timer.style.animationDuration = duration + 'ms';
-
-        toast.append(icon, body, close, timer);
+        toast.append(icon, body, close);
+        var timer = null;
+        if (!options.sticky) {
+            timer = document.createElement('span');
+            timer.className = 'sf-toast-timer';
+            timer.style.animationDuration = duration + 'ms';
+            toast.appendChild(timer);
+        }
         toasts.appendChild(toast);
 
         var gone = false;
@@ -237,15 +278,18 @@
         };
         close.addEventListener('click', toast.dismiss);
         // The countdown bar drives auto-dismiss, so hovering (which pauses it) keeps the toast open.
-        timer.addEventListener('animationend', toast.dismiss);
-        if (reduceMotion) setTimeout(toast.dismiss, duration);
+        if (timer) {
+            timer.addEventListener('animationend', toast.dismiss);
+            if (reduceMotion) setTimeout(toast.dismiss, duration);
+        }
+        return toast;
     };
 
     // Full-screen "Processing…" for actions that save or change something.
     var loadingTimer = null, slowTimer = null, loadingOn = false;
-    window.showLoading = function (text) {
+    window.showLoading = function (text, sub) {
         document.getElementById('sf-loading-text').textContent = text || 'Processing…';
-        document.getElementById('sf-loading-sub').textContent = 'Please wait';
+        document.getElementById('sf-loading-sub').textContent = sub || 'Please wait';
         loadingOn = true;
         overlay.classList.add('open');
         requestAnimationFrame(function () { if (loadingOn) overlay.classList.add('visible'); });
@@ -254,8 +298,12 @@
         slowTimer = setTimeout(function () {
             document.getElementById('sf-loading-sub').textContent = 'This is taking a little longer than usual';
         }, 7000);
-        // Never trap the page if a response doesn't navigate (e.g. a file download).
-        loadingTimer = setTimeout(window.hideLoading, 20000);
+        // Never trap the page if a response doesn't navigate (e.g. a file download), and
+        // say so, so nobody clicks again and sends it twice.
+        loadingTimer = setTimeout(function () {
+            window.hideLoading();
+            showToast('This is still being processed. The page will update by itself when it\'s done, so there\'s no need to click again.', 'info', 9000, { title: 'Still working', id: 'slow' });
+        }, 20000);
     };
     window.hideLoading = function () {
         loadingOn = false;
@@ -287,19 +335,80 @@
         var originalFetch = window.fetch;
         window.fetch = function () {
             progressStart();
-            return originalFetch.apply(this, arguments).finally(progressDone);
+            return originalFetch.apply(this, arguments).then(function (res) {
+                if (res.status === 419 || res.status === 401) sessionEnded(res.status);
+                return res;
+            }).finally(progressDone);
         };
     }
 
-    function startFormLoading(form) {
+    // A background save found the session over: say what to do instead of failing quietly.
+    function sessionEnded(status) {
+        showToast(status === 419 ? STATUS_MESSAGES[419] : STATUS_MESSAGES[401], 'warning', 0, {
+            title: status === 419 ? 'Session timed out' : 'Signed out',
+            sticky: true,
+            id: 'session',
+            action: { label: status === 419 ? 'Refresh page' : 'Log in again', onClick: function () { window.location.reload(); } }
+        });
+    }
+
+    // What the loading box says: the action from the button that was pressed, so the
+    // person knows what is happening ("Deleting…", "Uploading report.pdf…").
+    var ACTION_WORDS = [
+        [/\b(delete|remove)\b/i, 'Deleting…'],
+        [/\bupload/i, 'Uploading…'],
+        [/\bapprove/i, 'Approving…'],
+        [/\b(reject|return|send back)\b/i, 'Sending back…'],
+        [/\b(send|submit|forward|distribute)\b/i, 'Sending…'],
+        [/\b(sign ?in|log ?in)\b/i, 'Signing in…'],
+        [/\b(sign ?out|log ?out)\b/i, 'Signing out…'],
+        [/\bunarchive|\brestore/i, 'Restoring…'],
+        [/\barchive/i, 'Archiving…'],
+        [/\bgenerate/i, 'Generating…'],
+        [/\breset/i, 'Resetting…'],
+        [/\bfinali[sz]e/i, 'Finalizing…'],
+        [/\b(publish|post)\b/i, 'Publishing…'],
+        [/\b(save|update|change|add|create|assign|apply)\b/i, 'Saving…']
+    ];
+    function readableSize(bytes) {
+        return bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(bytes / 1024)) + ' KB';
+    }
+    function loadingLabel(form, submitter) {
+        var own = (submitter && submitter.getAttribute('data-loading-text')) || form.getAttribute('data-loading-text');
+        var files = [];
+        form.querySelectorAll('input[type=file]').forEach(function (input) {
+            Array.prototype.forEach.call(input.files || [], function (file) { files.push(file); });
+        });
+        var sub = 'Please wait';
+        if (files.length) {
+            var total = files.reduce(function (sum, file) { return sum + file.size; }, 0);
+            sub = (files.length === 1 ? files[0].name : files.length + ' files') + ' · ' + readableSize(total);
+        }
+        if (own) return [own, sub];
+        var method = form.querySelector('input[name=_method]');
+        if (method && method.value.toUpperCase() === 'DELETE') return ['Deleting…', sub];
+        var words = submitter ? (submitter.getAttribute('aria-label') || submitter.textContent || submitter.value || '') : '';
+        words = words.replace(/\s+/g, ' ').trim();
+        for (var i = 0; i < ACTION_WORDS.length; i++) {
+            if (ACTION_WORDS[i][0].test(words)) return [ACTION_WORDS[i][1], sub];
+        }
+        return [files.length ? 'Uploading…' : 'Processing…', sub];
+    }
+
+    function startFormLoading(form, submitter) {
         if (form.hasAttribute('data-no-loading') || (form.target && form.target !== '_self')) return;
         var method = (form.getAttribute('method') || 'get').toLowerCase();
         if (method === 'get') {
             progressStart();
             return;
         }
-        form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (btn) { btn.disabled = true; });
-        showLoading(form.getAttribute('data-loading-text') || 'Processing…');
+        // Disabled just after the browser has read the form, so the pressed button's own
+        // name and value (e.g. name="reset" value="1") are still sent.
+        setTimeout(function () {
+            form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (btn) { btn.disabled = true; });
+        }, 0);
+        var label = loadingLabel(form, submitter || form.querySelector('button[type=submit], input[type=submit], button:not([type])'));
+        showLoading(label[0], label[1]);
     }
 
     // Programmatic form.submit() skips the submit event, so cover it too.
@@ -365,20 +474,44 @@
         }
     });
 
+    // Offline: nothing is sent (the browser would only show its own error page), and the
+    // person is told why. Runs before every other submit handler.
+    document.addEventListener('submit', function (e) {
+        var method = (e.target.getAttribute('method') || 'get').toLowerCase();
+        if (navigator.onLine === false && method !== 'get') {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            showOffline();
+        }
+    }, true);
+
     document.addEventListener('submit', function (e) {
         var form = e.target;
-        if (!form.hasAttribute('data-confirm') || form.dataset.confirmed === '1') return;
+        var submitter = e.submitter && e.submitter.hasAttribute('data-confirm') ? e.submitter : null;
+        var source = submitter || (form.hasAttribute('data-confirm') ? form : null);
+        if (!source || form.dataset.confirmed === '1') return;
         e.preventDefault();
         e.stopImmediatePropagation();
-        confirmAction(form.getAttribute('data-confirm'), function () {
+        confirmAction(source.getAttribute('data-confirm'), function () {
             form.dataset.confirmed = '1';
-            form.submit();
-        }, { title: form.getAttribute('data-confirm-title') || 'Are you sure?', confirmText: form.getAttribute('data-confirm-button') || 'Confirm' });
+            if (submitter && form.requestSubmit) form.requestSubmit(submitter);
+            else form.submit();
+            delete form.dataset.confirmed;
+        }, { title: source.getAttribute('data-confirm-title') || 'Are you sure?', confirmText: source.getAttribute('data-confirm-button') || 'Confirm' });
     }, true);
 
     // Bubble phase: by now a page's own handler has had its chance to cancel the submit.
     document.addEventListener('submit', function (e) {
-        if (!e.defaultPrevented) startFormLoading(e.target);
+        if (!e.defaultPrevented) startFormLoading(e.target, e.submitter);
+    });
+
+    // Connection lost / back.
+    function showOffline() {
+        showToast('You\'re offline. Check your internet connection; nothing was sent, so you can try again once you\'re back online.', 'warning', 0, { title: 'No internet connection', sticky: true, id: 'network' });
+    }
+    window.addEventListener('offline', showOffline);
+    window.addEventListener('online', function () {
+        showToast('You\'re back online.', 'success', 3500, { title: 'Connected', id: 'network' });
     });
 
     // Coming back via the browser's Back button can restore a frozen "loading" page.

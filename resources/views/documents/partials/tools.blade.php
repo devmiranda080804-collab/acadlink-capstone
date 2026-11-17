@@ -199,7 +199,7 @@
             if (window.confirmAction) {
                 window.confirmAction(e.message || 'The file could not be converted.', function () {}, { title: 'Could not convert', confirmText: 'OK' });
             } else {
-                alert(e.message || 'The file could not be converted.');
+                window.showToast && window.showToast(e.message || 'The file could not be converted.', 'error');
             }
         }
     }

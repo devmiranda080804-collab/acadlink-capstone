@@ -127,7 +127,7 @@
                         <a class="btn-type" href="{{ url('/admin/system-cms/layouts/' . $doc . '/template') }}" title="Save first; the template uses the saved layout">⬇ Download template</a>
                     @endif
                     <button type="submit" name="reset" value="1" class="btn-type danger" formnovalidate
-                        onclick="return confirm('Put the {{ $meta['title'] }} back to the default header, contents and footer?')">Reset to default</button>
+                        data-confirm="Put the {{ $meta['title'] }} back to the default header, contents and footer? Your changes to this layout will be lost." data-confirm-title="Reset to default?" data-confirm-button="Reset" data-loading-text="Resetting…">Reset to default</button>
                 </div>
             </form>
         </div>
