@@ -32,16 +32,20 @@ class TosDocumentBuilder
 
     public function build(Course $course, string $gradingPeriod, array $breakdown, User $faculty): string
     {
-        $doc = new TemplateProcessor(resource_path(self::TEMPLATE));
+        $doc = new TosTemplate(resource_path(self::TEMPLATE));
 
-        $programHead = Signatories::programHead($course->program);
+        // An instructor in two programs gets both on the TOS, and both Program Heads sign.
+        $programs = self::programsFor($course, $faculty);
+        $heads = Signatories::programHeads($programs);
+        $programHead = $heads[0];
         $dean = Signatories::dean();
+        $doc->addProgramHeadLines(count($heads));
 
         $doc->setValues([
             'term'               => mb_strtoupper(AcademicTerm::currentSemester()) . ', A.Y. ' . AcademicTerm::currentSchoolYear(),
             'subject'            => $course->title,
             'course_code'        => $course->code,
-            'program'            => $course->program ?: self::BLANK,
+            'program'            => $programs ? implode(', ', $programs) : self::BLANK,
             'schedule'           => self::BLANK,
             'prelim_mark'        => $this->periodMark($gradingPeriod, 'Prelim'),
             'midterm_mark'       => $this->periodMark($gradingPeriod, 'Midterm'),
@@ -53,6 +57,11 @@ class TosDocumentBuilder
             'dean'               => $dean['name'] ? mb_strtoupper($dean['name']) : self::BLANK,
             'dean_title'         => $dean['title'],
         ]);
+        foreach (array_slice($heads, 1) as $i => $head) {
+            $n = $i + 2;
+            $doc->setValue('program_head_' . $n, $head['name'] ? mb_strtoupper($head['name']) : self::BLANK);
+            $doc->setValue('program_head_title_' . $n, $head['title']);
+        }
 
         $this->fillTable($doc, $breakdown);
 
@@ -61,6 +70,12 @@ class TosDocumentBuilder
         $this->applySiteContent($path);
 
         return $path;
+    }
+
+    // The course's program first, then the instructor's other programs.
+    public static function programsFor(Course $course, User $faculty): array
+    {
+        return array_values(array_unique(array_filter([$course->program, ...$faculty->programCodes()])));
     }
 
     // Puts the header, labels and footer from System CMS → Document Layouts → TOS into the
