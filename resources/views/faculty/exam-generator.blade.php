@@ -779,11 +779,11 @@
                             <div class="form-row">
                                 <div class="form-group">
                                     <label>Total Items</label>
-                                    <input type="number" id="tos-total-items" min="1">
+                                    <input type="number" id="tos-total-items" min="1" step="1" inputmode="numeric">
                                 </div>
                                 <div class="form-group">
                                     <label>Exam Duration (mins)</label>
-                                    <input type="number" id="tos-duration" min="1">
+                                    <input type="number" id="tos-duration" min="1" step="1" inputmode="numeric">
                                 </div>
                             </div>
 
@@ -977,7 +977,7 @@
                 </div>
                 <div class="modal-field">
                     <label>Duration (mins)</label>
-                    <input type="number" id="ne-duration" min="1" placeholder="e.g. 120">
+                    <input type="number" id="ne-duration" min="1" step="1" inputmode="numeric" placeholder="e.g. 120">
                 </div>
             </div>
             <div class="modal-field">
@@ -986,7 +986,7 @@
             </div>
             <div class="modal-field">
                 <label>Target Items <span style="font-size:10px;color:#999;">(optional — leave blank to use the TOS total)</span></label>
-                <input type="number" id="ne-target-items" min="1" placeholder="e.g. 50">
+                <input type="number" id="ne-target-items" min="1" step="1" inputmode="numeric" placeholder="e.g. 50">
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeNewExamModal()">Cancel</button>
@@ -1084,7 +1084,7 @@
                 </div>
                 <div class="modal-field">
                     <label>How many items?</label>
-                    <input type="number" id="ai-gen-count" min="1" max="10" value="1">
+                    <input type="number" id="ai-gen-count" min="1" max="10" step="1" inputmode="numeric" value="1">
                 </div>
             </div>
             <div style="font-size:10.5px;color:#888;margin:-4px 0 10px;">
@@ -1364,6 +1364,19 @@
         var tosTestCount = 1;
         var tosPartsStale = false;
 
+        // A whole number from min to max ("3"), or null for anything else ("2.5", "1e2", "-1", "").
+        // parseInt would quietly turn "2.5" into 2, so every count goes through this instead.
+        function wholeNumber(value, min, max) {
+            var text = String(value == null ? '' : value).trim();
+            if (!/^\d+$/.test(text)) return null;
+            var n = parseInt(text, 10);
+            if (n < (min == null ? 1 : min) || (max != null && n > max)) return null;
+            return n;
+        }
+        function wholeNumberMessage(label, min, max) {
+            return label + ' must be a whole number' + (max != null ? ' from ' + min + ' to ' + max : ' (' + min + ' or more)') + ', with no decimals.';
+        }
+
         function setTosTestCount(value) {
             var count = Number(value);
             if (!Number.isInteger(count) || count < 1 || count > TOS_MAX_TESTS || count === tosTestCount) return;
@@ -1379,11 +1392,27 @@
         async function generateTOS() {
             var assignmentId = document.getElementById('tos-subject').value;
             var period       = document.getElementById('tos-period').value;
-            var totalItems   = parseInt(document.getElementById('tos-total-items').value);
+            var totalItemsRaw = document.getElementById('tos-total-items').value;
+            var totalItems   = wholeNumber(totalItemsRaw, 1);
+            var durationRaw  = document.getElementById('tos-duration').value;
             var testCount    = document.getElementById('tos-test-count');
             var panel        = document.getElementById('tos-result-panel');
+            var showTosError = function (message) {
+                panel.innerHTML =
+                    '<div class="tos-panel-title">Generated Table of Specifications</div>' +
+                    '<div class="tos-empty" style="color:#ef4444;"><div class="empty-icon">⚠️</div>' + escapeHtml(message) + '</div>';
+            };
 
-            if (!testCount.value || !testCount.checkValidity()) {
+            if (String(totalItemsRaw).trim() !== '' && totalItems === null) {
+                showTosError(wholeNumberMessage('Total Items', 1));
+                return;
+            }
+            if (String(durationRaw).trim() !== '' && wholeNumber(durationRaw, 1) === null) {
+                showTosError(wholeNumberMessage('Exam Duration (mins)', 1));
+                return;
+            }
+
+            if (wholeNumber(testCount.value, 1, Number(testCount.max)) === null) {
                 panel.innerHTML =
                     '<div class="tos-panel-title">Generated Table of Specifications</div>' +
                     '<div class="tos-empty" style="color:#ef4444;"><div class="empty-icon">⚠️</div>Number of Tests must be a whole number from 1 to ' + testCount.max + '.</div>';
@@ -1558,6 +1587,16 @@
         }
 
         async function createExam() {
+            var errorEl = document.getElementById('new-exam-error');
+            var checks = [['ne-duration', 'Duration'], ['ne-target-items', 'Target items']];
+            for (var i = 0; i < checks.length; i++) {
+                var raw = document.getElementById(checks[i][0]).value;
+                if (String(raw).trim() !== '' && wholeNumber(raw, 1) === null) {
+                    if (errorEl) { errorEl.textContent = wholeNumberMessage(checks[i][1], 1); errorEl.style.display = 'block'; }
+                    document.getElementById(checks[i][0]).focus();
+                    return;
+                }
+            }
             var body = {
                 program_assignment_id: document.getElementById('ne-subject').value,
                 grading_period: document.getElementById('ne-period').value,
@@ -2182,8 +2221,8 @@
                         '<select onchange="setQuestionTopic(\'' + secId + '\',' + qi + ',' + ciArg + ',this.value)" style="font-size:11px;padding:3px 6px;border:1px solid #ccc;border-radius:4px;">' + topicOptionsHtml(q.topic) + '</select>'
                         : '') +
                     (q.type !== 'case-analysis' ?
-                        '<div class="q-pts"><input type="number" value="' + (q.points || 1) + '" min="1" ' +
-                            'onchange="updatePts(\'' + secId + '\',' + qi + ',' + ciArg + ',this.value)" style="width:40px;height:24px;text-align:center;border:1px solid #ccc;border-radius:4px;font-size:12px;"> pts</div>'
+                        '<div class="q-pts"><input type="number" value="' + (q.points || 1) + '" min="1" step="1" inputmode="numeric" aria-label="Points" ' +
+                            'onchange="updatePts(\'' + secId + '\',' + qi + ',' + ciArg + ',this.value,this)" style="width:40px;height:24px;text-align:center;border:1px solid #ccc;border-radius:4px;font-size:12px;"> pts</div>'
                         : '') +
                 '</div>';
 
@@ -2215,7 +2254,18 @@
         // serializeQuestion()) and won't be silently recomputed on later renders/saves,
         // though it still shifts where the question sorts among its topic's others.
         function setQuestionBloomOverride(secId, qi, ci, value) { var q = findQuestion(secId, qi, ci); if (q) { q.bloom_level = value || null; renderEB({ skipSort: true }); } }
-        function updatePts(secId, qi, ci, val) { var q = findQuestion(secId, qi, ci); if (q) q.points = parseInt(val) || 1; }
+        function updatePts(secId, qi, ci, val, input) {
+            var q = findQuestion(secId, qi, ci);
+            if (!q) return;
+            var points = wholeNumber(val, 1);
+            if (points === null) {
+                // Keep the last good value instead of quietly rounding "1.5" down.
+                if (input) input.value = q.points || 1;
+                showToast(wholeNumberMessage('Points', 1), 'warning');
+                return;
+            }
+            q.points = points;
+        }
         function setOptionField(secId, qi, ci, field, value) { var q = findQuestion(secId, qi, ci); if (q) { if (!q.options) q.options = {}; q.options[field] = value; } }
         function setOptionListField(secId, qi, ci, field, text) { var q = findQuestion(secId, qi, ci); if (q) { if (!q.options) q.options = {}; q.options[field] = text.split('\n'); } }
         function setMcChoice(secId, qi, ci, idx, value) { var q = findQuestion(secId, qi, ci); if (q) q.options.choices[idx] = value; }
@@ -2676,9 +2726,17 @@
         async function submitAiGen() {
             var topicId = document.getElementById('ai-gen-topic').value;
             var type = document.getElementById('ai-gen-type').value;
-            var count = parseInt(document.getElementById('ai-gen-count').value) || 1;
+            var countInput = document.getElementById('ai-gen-count');
+            var count = wholeNumber(countInput.value, 1, Number(countInput.max) || 10);
             var errBox = document.getElementById('ai-gen-error');
             errBox.style.display = 'none';
+
+            if (count === null) {
+                errBox.textContent = 'How many items must be a whole number from 1 to ' + (Number(countInput.max) || 10) + ', with no decimals (for example 3, not 2.5).';
+                errBox.style.display = 'block';
+                countInput.focus();
+                return;
+            }
 
             if (!topicId) {
                 errBox.textContent = 'Please select a topic.';
