@@ -12,7 +12,7 @@
     <div class="review-card-meta">Uploaded by {{ $template->creator->name ?? 'Unknown' }} · {{ \App\Support\DisplayTime::format($template->created_at) }} <span class="term-tag">{{ $template->term_label }}</span><br>Received {{ \App\Support\DisplayTime::format($row?->distributed_at) }}</div>
 
     <div class="card-actions">
-        <a class="btn-view-file" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank">
+        <a class="btn-view-file" href="{{ \App\Support\FileLinks::view('template', $template->id) }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             View
         </a>

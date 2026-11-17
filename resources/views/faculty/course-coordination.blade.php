@@ -293,7 +293,7 @@
                                         </div>
                                     </div>
                                     <div class="file-actions">
-                                        <a class="btn-view" href="{{ \App\Support\FileLinks::view('material', $material->id) }}" target="_blank">View</a>
+                                        <a class="btn-view" href="{{ \App\Support\FileLinks::view('material', $material->id) }}">View</a>
                                         <a class="btn-view" href="{{ \App\Support\FileLinks::download('material', $material->id) }}">Download</a>
                                     </div>
                                 </div>
@@ -374,7 +374,7 @@
                                     </div>
                                 </div>
                                 <div class="file-actions">
-                                    <a class="btn-view" href="{{ \App\Support\FileLinks::view('material', $material->id) }}" target="_blank">View</a>
+                                    <a class="btn-view" href="{{ \App\Support\FileLinks::view('material', $material->id) }}">View</a>
                                     <a class="btn-view" href="{{ \App\Support\FileLinks::download('material', $material->id) }}">Download</a>
                                     <form method="POST" action="{{ url('/faculty/course-coordination/materials/' . $material->id) }}" id="remove-material-form-{{ $material->id }}">
                                         @csrf
@@ -428,7 +428,7 @@
                                     </div>
                                     <div class="file-actions">
                                         @if($topic->module_path)
-                                            <a class="btn-view" href="{{ \App\Support\FileLinks::view('topic', $topic->id) }}" target="_blank">View</a>
+                                            <a class="btn-view" href="{{ \App\Support\FileLinks::view('topic', $topic->id) }}">View</a>
                                             <a class="btn-view" href="{{ \App\Support\FileLinks::download('topic', $topic->id) }}">Download</a>
                                         @endif
                                         <button type="button" class="btn-view" onclick='openEditTopicModal(@json($topic))'>Edit</button>
@@ -543,7 +543,7 @@
                 <div class="modal-title">Upload OBTL Document</div>
                 @if($officialCourseGuide)
                     <div class="modal-hint" style="margin-top:0;margin-bottom:13px;">
-                        📙 Need the official format first? <a href="{{ \App\Support\FileLinks::view('template', $officialCourseGuide->id) }}" target="_blank">View the Course Guide template</a>
+                        📙 Need the official format first? <a href="{{ \App\Support\FileLinks::view('template', $officialCourseGuide->id) }}">View the Course Guide template</a>
                     </div>
                 @endif
                 <div class="modal-field">

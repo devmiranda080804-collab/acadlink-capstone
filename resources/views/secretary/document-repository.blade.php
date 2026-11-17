@@ -309,7 +309,7 @@
                                                 <td title="{{ $doc['date']->format('M d, Y') }}">{{ $doc['date']->format('M d, Y') }}</td>
                                                 <td>
                                                     <div class="action-buttons">
-                                                        <a class="btn-view" href="{{ $doc['view_url'] }}" target="_blank" title="View" aria-label="View">
+                                                        <a class="btn-view" href="{{ $doc['view_url'] }}" title="View" aria-label="View">
                                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                                                         </a>
                                                         <a class="btn-view" href="{{ $doc['download_url'] }}" title="Download" aria-label="Download">

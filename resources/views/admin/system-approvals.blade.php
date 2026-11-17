@@ -468,7 +468,7 @@
                             '<div class="history-row-meta">' + v.created_by + ' • ' + v.created_at + ' • ' + ({ pending: 'Waiting for approval', approved: 'Approved', returned: 'Returned' }[v.status] || v.status) + '</div>' +
                         '</div>' +
                         '<div style="display:flex;gap:6px;">' +
-                            '<a class="btn-view" style="flex:none;" href="' + v.view_url + '" target="_blank">View</a>' +
+                            '<a class="btn-view" style="flex:none;" href="' + v.view_url + '">View</a>' +
                             '<a class="btn-view" style="flex:none;" href="' + v.download_url + '">Download</a>' +
                         '</div>' +
                     '</div>';

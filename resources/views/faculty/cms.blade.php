@@ -208,7 +208,7 @@
                             @endif
                             <div class="card-meta">{{ strtoupper($document->file_type) }} • {{ $document->readable_size }}</div>
                             <div class="card-actions">
-                                <a class="icon-btn" href="{{ \App\Support\FileLinks::view('system', $document->id) }}" target="_blank" title="View" aria-label="View">@include('documents.partials.icon', ['name' => 'eye'])</a>
+                                <a class="icon-btn" href="{{ \App\Support\FileLinks::view('system', $document->id) }}" title="View" aria-label="View">@include('documents.partials.icon', ['name' => 'eye'])</a>
                                 <a class="icon-btn" href="{{ \App\Support\FileLinks::download('system', $document->id) }}" title="Download" aria-label="Download">@include('documents.partials.icon', ['name' => 'download'])</a>
                             </div>
                         </div>

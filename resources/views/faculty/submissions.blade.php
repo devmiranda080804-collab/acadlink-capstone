@@ -242,7 +242,7 @@
                                         <div class="my-status-info">
                                             {{ $mine ? 'You submitted' : 'Submitted by ' . ($cs->faculty->name ?? 'a former faculty member') }}
                                             on {{ ($cs->submitted_at ?? $cs->created_at)->format('M d, Y') }}:
-                                            <a class="file-link" href="{{ \App\Support\FileLinks::view('submission', $cs->id) }}" target="_blank">{{ $cs->file_name }}</a>
+                                            <a class="file-link" href="{{ \App\Support\FileLinks::view('submission', $cs->id) }}">{{ $cs->file_name }}</a>
                                             @unless($mine)<span class="course-covered">· Enough for this course</span>@endunless
                                         </div>
                                         @if($cs->is_returned)
@@ -260,7 +260,7 @@
                             @if($sub)
                                 <div class="my-status-row">
                                     <div class="my-status-info">
-                                        You submitted: <a class="file-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}" target="_blank">{{ $sub->file_name }}</a>
+                                        You submitted: <a class="file-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}">{{ $sub->file_name }}</a>
                                         (<a class="file-link" href="{{ \App\Support\FileLinks::download('submission', $sub->id) }}">Download</a>)
                                         <span class="my-status-badge status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
                                     </div>
@@ -268,7 +268,7 @@
                             @elseif($cov = $req['covered_by'])
                                 <div class="my-status-row">
                                     <div class="my-status-info">
-                                        Already counted: you submitted <a class="file-link" href="{{ \App\Support\FileLinks::view('submission', $cov->id) }}" target="_blank">{{ $cov->file_name }}</a>
+                                        Already counted: you submitted <a class="file-link" href="{{ \App\Support\FileLinks::view('submission', $cov->id) }}">{{ $cov->file_name }}</a>
                                         for <strong>{{ $cov->requirement->program }}</strong> – {{ $cov->requirement->title }}.
                                         <span class="course-covered">You teach in more than one program, so one file is enough. Submit here only if {{ $req['program'] }} needs a different file.</span>
                                     </div>

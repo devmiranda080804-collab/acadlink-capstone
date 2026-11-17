@@ -1228,7 +1228,7 @@
                         <button type="button" role="tab" id="pv-kind-exam" class="on" aria-selected="true" onclick="previewExam('exam')">📄 Exam</button>
                         <button type="button" role="tab" id="pv-kind-answer-key" aria-selected="false" onclick="previewExam('answer-key')">🔑 Answer Key</button>
                     </div>
-                    <button type="button" class="btn-cancel" onclick="openPrintPreview(previewKind)" title="Open this preview in a new tab">↗ New tab</button>
+                    <button type="button" class="btn-cancel" onclick="openPrintPreview(previewKind)" title="Open this preview as a full page">⤢ Full page</button>
                     <button type="button" class="btn-cancel" onclick="closePreview()">Close</button>
                 </div>
             </div>
@@ -2913,7 +2913,7 @@
                 await renderDocxInto(bodyEl, '/faculty/exam-generator/' + currentExam.id + '/preview/file?kind=' + previewKind, function() { return run === previewRun; });
             } catch (e) {
                 if (run !== previewRun) return;
-                previewPlain('The print layout could not be shown here (' + e.message + '). This is a simple preview without the header and footer — use “↗ New tab” to see the printed version.');
+                previewPlain('The print layout could not be shown here (' + e.message + '). This is a simple preview without the header and footer — use “⤢ Full page” to see the printed version.');
             }
         }
 
@@ -3135,15 +3135,13 @@
         }
         // Saves first so the preview shows what's on screen, then opens the printed
         // version in a new tab. Works for drafts too; only downloading needs Finalize.
+        // The full-page preview opens in this tab; its Back button returns here with
+        // the same exam open again.
         async function openPrintPreview(kind) {
             if (!currentExam) return;
-            var tab = window.open('', '_blank'); // opened now so the browser doesn't block it
-            if (!(await saveExam(true))) {
-                if (tab) tab.close();
-                return;
-            }
-            var url = '/faculty/exam-generator/' + currentExam.id + '/preview?kind=' + kind;
-            if (tab) tab.location = url; else window.location.href = url;
+            if (!(await saveExam(true))) return;
+            var back = '/faculty/exam-generator?exam=' + currentExam.id;
+            window.location.href = '/faculty/exam-generator/' + currentExam.id + '/preview?kind=' + kind + '&back=' + encodeURIComponent(back);
         }
         function closePreview() { previewRun++; document.getElementById('preview-overlay').classList.remove('open'); }
         document.getElementById('preview-overlay').addEventListener('click', function(e) { if (e.target === this) closePreview(); });
@@ -3520,6 +3518,15 @@
         function handleLogout() {
             window.location.href = '{{ url("/login") }}';
         }
+
+        // Coming back from the full-page preview (?exam=ID): open that exam again.
+        (function () {
+            var id = new URLSearchParams(location.search).get('exam');
+            if (!id || !/^\d+$/.test(id)) return;
+            history.replaceState(null, '', location.pathname);
+            switchTab('exam-builder');
+            loadExam(id);
+        })();
     </script>
 
 

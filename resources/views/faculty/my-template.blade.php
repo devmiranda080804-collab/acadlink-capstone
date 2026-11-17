@@ -309,6 +309,7 @@
             fetch('/faculty/my-template/' + id + '/view', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                keepalive: true, // the viewer opens in this tab; the request must outlive the page
             }).catch(function () {});
         }
     </script>

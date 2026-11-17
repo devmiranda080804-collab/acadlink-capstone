@@ -415,7 +415,7 @@
                         sub += '<div class="cf-file"><div class="cf-file-name">' + cfEsc(f.title) + '</div>'
                             + '<div class="cf-file-meta">' + cfEsc(f.file_type) + ' · ' + cfEsc(f.version) + ' · Submitted by '
                             + cfEsc(f.uploader) + ' on ' + cfEsc(f.uploaded_at)
-                            + '<a href="' + cfEsc(f.view_url) + '" target="_blank">View</a></div></div>';
+                            + '<a href="' + cfEsc(f.view_url) + '">View</a></div></div>';
                         chk += '<div class="cf-check">' + cfCheckCell(f) + '</div>';
                     });
                 }

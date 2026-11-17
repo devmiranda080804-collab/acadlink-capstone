@@ -256,7 +256,7 @@
                                 <div class="submitter-row">
                                     <span class="submitter-name">@if($sub->course)<strong>{{ $sub->course->code }}</strong> · @elseif($req->per_course)<em>No course chosen</em> · @endif{{ $sub->faculty->name ?? 'A former faculty member' }}</span>
                                     <div style="display:flex; align-items:center; gap:8px;">
-                                        <a class="submitter-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}" target="_blank">View</a>
+                                        <a class="submitter-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}">View</a>
                                         <span class="submitter-status status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
                                     </div>
                                 </div>
@@ -269,7 +269,7 @@
                                 <div class="submitter-row">
                                     <span class="submitter-name">{{ $sub->faculty->name }} <span style="color:#6b7280;font-size:11px;">· counted from {{ $sub->requirement->program }} – {{ $sub->requirement->title }} (teaches in more than one program)</span></span>
                                     <div style="display:flex; align-items:center; gap:8px;">
-                                        <a class="submitter-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}" target="_blank">View</a>
+                                        <a class="submitter-link" href="{{ \App\Support\FileLinks::view('submission', $sub->id) }}">View</a>
                                         <span class="submitter-status status-{{ $sub->status }}">{{ ucfirst($sub->status) }}</span>
                                     </div>
                                 </div>

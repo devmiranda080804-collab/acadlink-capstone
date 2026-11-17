@@ -11,6 +11,10 @@
         body { font-family: Arial, sans-serif; background: #e9ecf2; display: flex; flex-direction: column; color: #1a1a2e; }
 
         .viewer-bar { display: flex; align-items: center; gap: 14px; background: #0f2557; color: #fff; padding: 12px 20px; flex-shrink: 0; }
+        .viewer-back { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; color: #fff; text-decoration: none; font-size: 12.5px; font-weight: 700; padding: 8px 12px 8px 10px; border-radius: 6px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); }
+        .viewer-back:hover { background: rgba(255,255,255,0.22); }
+        .viewer-back:focus-visible { outline: 2px solid #f5c242; outline-offset: 2px; }
+        .viewer-back svg { width: 15px; height: 15px; }
         .viewer-icon { font-size: 26px; line-height: 1; flex-shrink: 0; }
         .viewer-info { flex: 1; min-width: 0; }
         .viewer-title { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -44,6 +48,19 @@
         $icon = match ($previewAs) { 'pdf' => '📄', 'image' => '🖼️', 'docx' => '📝', default => '📎' };
         $size = !$file['size'] ? null : ($file['size'] >= 1048576 ? round($file['size'] / 1048576, 1) . ' MB' : round($file['size'] / 1024, 1) . ' KB');
         $notice = $notice ?? null;
+        // Back goes to the page the file was opened from (same tab), or the dashboard.
+        $previous = url()->previous();
+        $home = match (auth()->user()->role ?? null) {
+            'admin' => '/admin/dashboard', 'program_head' => '/program-head/dashboard',
+            'secretary' => '/secretary/dashboard', 'faculty' => '/faculty/dashboard', default => '/',
+        };
+        $sameSite = $previous && parse_url($previous, PHP_URL_HOST) === request()->getHost();
+        $previousPath = trim((string) parse_url((string) $previous, PHP_URL_PATH), '/');
+        $isViewer = $previousPath === trim(request()->path(), '/') || str_contains($previousPath, '/download') || str_contains($previousPath, '/raw') || str_contains($previousPath, '/preview/file');
+        // A page can say where Back goes (?back=/path), e.g. to reopen the same exam.
+        $backParam = request()->query('back');
+        $backGiven = is_string($backParam) && preg_match('#^/(?!/)[^\s]*$#', $backParam);
+        $backUrl = $backGiven ? url($backParam) : ($sameSite && !$isViewer ? $previous : url($home));
         $meta = collect([
             $file['name'],
             strtoupper($file['type']),
@@ -54,6 +71,10 @@
     @endphp
 
     <div class="viewer-bar">
+        <a class="viewer-back" href="{{ $backUrl }}" id="viewer-back" title="Back to the previous page (Esc)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Back
+        </a>
         <span class="viewer-icon">{{ $icon }}</span>
         <div class="viewer-info">
             <div class="viewer-title">{{ $file['title'] }}</div>
@@ -114,6 +135,26 @@
         </script>
     @endif
 
+    <script>
+        // Going back through the browser's history returns to the page as it was left
+        // (open folder, filters, scroll). Without that history, the link's address is used.
+        (function () {
+            var back = document.getElementById('viewer-back');
+            var fromHere = !@json((bool) $backGiven) && document.referrer && new URL(document.referrer).origin === location.origin;
+            function goBack(e) {
+                if (fromHere && history.length > 1) {
+                    if (e) e.preventDefault();
+                    history.back();
+                }
+            }
+            back.addEventListener('click', goBack);
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !e.defaultPrevented) {
+                    if (fromHere && history.length > 1) history.back(); else location.href = back.href;
+                }
+            });
+        })();
+    </script>
     @include('partials.system-feedback')
 </body>
 </html>

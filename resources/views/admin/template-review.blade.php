@@ -67,7 +67,7 @@
                 <div id="document-editor"></div>
                 <div class="review-error" id="review-error">
                     <strong>The document could not be loaded</strong>
-                    Please check your connection and try again. You can still <a href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank">open the file</a> in a new tab.
+                    Please check your connection and try again. You can still <a href="{{ \App\Support\FileLinks::view('template', $template->id) }}">open the file</a> in a new tab.
                 </div>
             @else
                 <iframe src="{{ \App\Support\FileLinks::view('template', $template->id) }}" title="{{ $template->title }}"></iframe>

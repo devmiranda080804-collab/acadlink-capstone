@@ -25,7 +25,7 @@
                 <button type="submit" class="btn-sm btn-view-file" title="Make a new copy of this template and edit it">Make Copy</button>
             </form>
         @endif
-        <a class="icon-btn" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" target="_blank" title="View" aria-label="View" onclick="markTemplateViewed({{ $template->id }}, this)">@include('documents.partials.icon', ['name' => 'eye'])</a>
+        <a class="icon-btn" href="{{ \App\Support\FileLinks::view('template', $template->id) }}" title="View" aria-label="View" onclick="markTemplateViewed({{ $template->id }}, this)">@include('documents.partials.icon', ['name' => 'eye'])</a>
         <a class="icon-btn" href="{{ \App\Support\FileLinks::download('template', $template->id) }}" title="Download" aria-label="Download" onclick="markTemplateViewed({{ $template->id }}, this)">@include('documents.partials.icon', ['name' => 'download'])</a>
     </div>
 </div>
