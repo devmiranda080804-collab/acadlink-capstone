@@ -162,6 +162,12 @@
         .cc-title { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -.4px; margin: 4px 0 6px; color: #14213d; }
         .cc-sub { font-size: 14px; color: #475467; margin-bottom: 18px; }
         .course-select-box { border-radius: 16px !important; border: 1px solid #e7eaf1 !important; box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05) !important; }
+        .cc-layout[hidden] { display: none; }
+        .cc-pick-first { margin-top: 18px; background: #fff; border: 1px dashed #c9d1e2; border-radius: 16px; padding: 44px 24px; text-align: center; }
+        .cc-pick-icon { width: 54px; height: 54px; margin: 0 auto 12px; border-radius: 14px; background: #eef2ff; color: #0f2557; display: grid; place-items: center; }
+        .cc-pick-icon svg { width: 26px; height: 26px; }
+        .cc-pick-title { font-size: 16px; font-weight: 800; color: #0f2557; }
+        .cc-pick-sub { font-size: 13px; color: #6b7287; margin-top: 4px; }
         .cc-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 18px; }
         .cc-ic { width: 19px; height: 19px; flex-shrink: 0; }
         .cc-nav.sub-tabs { display: flex; flex-direction: column; gap: 4px; border: 0 !important; margin: 0 !important; padding: 0 !important; position: sticky; top: 0; background: none !important; }
@@ -231,7 +237,16 @@
                 </div>
             </div>
 
-            <div class="cc-layout">
+            {{-- Until a course is picked, only the picker shows; the sections appear after. --}}
+            @if(!$selectedCourse)
+                <div class="cc-pick-first" role="status">
+                    <span class="cc-pick-icon" aria-hidden="true">{!! \App\Support\SidebarMenu::icon('cap', 'cc-ic') !!}</span>
+                    <div class="cc-pick-title">Select a course to get started</div>
+                    <div class="cc-pick-sub">Choose a course from the list above to see its master folder, outcomes, topics and shared documents.</div>
+                </div>
+            @endif
+
+            <div class="cc-layout" @if(!$selectedCourse) hidden @endif>
             <nav class="cc-nav sub-tabs" aria-label="Course sections">
                 <span class="sub-tab active" role="button" tabindex="0" onclick="switchSubTab('master-folder', this)">{!! \App\Support\SidebarMenu::icon('folderCheck', 'cc-ic') !!}<span><strong>Master Folder</strong><small>Official course files</small></span>@if($selectedCourse)<em>{{ $ccMaterials }}</em>@endif</span>
                 <span class="sub-tab" role="button" tabindex="0" onclick="switchSubTab('outcomes', this)">{!! \App\Support\SidebarMenu::icon('checkCircle', 'cc-ic') !!}<span><strong>Outcomes (OBE)</strong><small>Course and program outcomes</small></span>@if($selectedCourse)<em>{{ $courseOutcomes->count() }}</em>@endif</span>

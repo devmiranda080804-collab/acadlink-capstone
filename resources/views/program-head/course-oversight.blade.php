@@ -128,6 +128,12 @@
         .co-title { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -.4px; margin: 4px 0 6px; color: #14213d; }
         .co-sub { font-size: 14px; color: #475467; margin-bottom: 18px; }
         .course-select-box { border-radius: 16px !important; border: 1px solid #e7eaf1 !important; box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05) !important; }
+        .co-layout[hidden] { display: none; }
+        .co-pick-first { margin-top: 18px; background: #fff; border: 1px dashed #c9d1e2; border-radius: 16px; padding: 44px 24px; text-align: center; }
+        .co-pick-icon { width: 54px; height: 54px; margin: 0 auto 12px; border-radius: 14px; background: #eef2ff; color: #0f2557; display: grid; place-items: center; }
+        .co-pick-icon svg { width: 26px; height: 26px; }
+        .co-pick-title { font-size: 16px; font-weight: 800; color: #0f2557; }
+        .co-pick-sub { font-size: 13px; color: #6b7287; margin-top: 4px; }
         .co-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; margin-top: 18px; }
         .co-ic { width: 19px; height: 19px; flex-shrink: 0; }
         .co-nav.sub-tabs { display: flex; flex-direction: column; gap: 4px; border: 0 !important; margin: 0 !important; padding: 0 !important; position: sticky; top: 0; background: none !important; }
@@ -206,7 +212,16 @@
                 </button>
             </div>
 
-            <div class="co-layout">
+            {{-- Until a course is picked, only the picker shows; the sections appear after. --}}
+            @if(!$selectedCourse)
+                <div class="co-pick-first" role="status">
+                    <span class="co-pick-icon" aria-hidden="true">{!! \App\Support\SidebarMenu::icon('cap', 'co-ic') !!}</span>
+                    <div class="co-pick-title">Select a course to get started</div>
+                    <div class="co-pick-sub">Choose a course from the list above to see its materials, outcomes and topics.</div>
+                </div>
+            @endif
+
+            <div class="co-layout" @if(!$selectedCourse) hidden @endif>
             <nav class="co-nav sub-tabs" aria-label="Course sections">
                 <span class="sub-tab active" role="button" tabindex="0" onclick="switchSubTab('materials', this)">{!! \App\Support\SidebarMenu::icon('folderCheck', 'co-ic') !!}<span><strong>Materials</strong><small>Master course files</small></span>@if($selectedCourse)<em>{{ $coMaterials }}</em>@endif</span>
                 <span class="sub-tab" role="button" tabindex="0" onclick="switchSubTab('outcomes', this)">{!! \App\Support\SidebarMenu::icon('checkCircle', 'co-ic') !!}<span><strong>Outcomes (OBE)</strong><small>Program and course outcomes</small></span><em>{{ $programOutcomes->count() + ($selectedCourse ? $courseOutcomes->count() : 0) }}</em></span>
