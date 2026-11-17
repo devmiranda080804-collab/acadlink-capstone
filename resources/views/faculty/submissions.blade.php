@@ -250,7 +250,7 @@
                                         @endif
                                     @endif
                                     @if(!$cs || $mine)
-                                        @include('faculty.partials.submission-upload', ['requirementId' => $req['id'], 'accept' => $req['accept'], 'courseId' => $row['course']->id, 'label' => $cs ? 'Replace' : 'Submit'])
+                                        @include('faculty.partials.submission-upload', ['requirementId' => $req['id'], 'accept' => $req['accept'], 'courseId' => $row['course']->id, 'label' => $cs ? 'Re-submit' : 'Submit', 'current' => $cs?->file_name, 'returned' => (bool) $cs?->is_returned])
                                     @endif
                                 </div>
                             @empty
@@ -274,7 +274,7 @@
                                     </div>
                                 </div>
                             @endif
-                            @include('faculty.partials.submission-upload', ['requirementId' => $req['id'], 'accept' => $req['accept'], 'label' => $sub ? 'Re-submit' : ($req['covered_by'] ? 'Submit a different file' : 'Submit')])
+                            @include('faculty.partials.submission-upload', ['requirementId' => $req['id'], 'accept' => $req['accept'], 'label' => $sub ? 'Re-submit' : ($req['covered_by'] ? 'Submit a different file' : 'Submit'), 'current' => $sub?->file_name, 'returned' => $sub && ($sub->is_returned ?? false)])
                         @endif
                     </div>
                 </div>
