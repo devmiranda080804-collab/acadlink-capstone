@@ -37,7 +37,7 @@ class DocumentLayoutController extends Controller
             DocumentLayouts::flush();
             AuditLog::record('Document Layout Updated', "{$title} layout reset to default by " . auth()->user()->name);
 
-            return back()->with(['success' => "{$title} layout is back to the default.", 'cms_panel' => 'panel-layouts']);
+            return back()->with(['success' => "{$title} layout is back to the default.", 'cms_panel' => 'panel-layouts', 'cms_layout' => $document]);
         }
 
         $rules = [];
@@ -89,7 +89,7 @@ class DocumentLayoutController extends Controller
         DocumentLayouts::flush();
         AuditLog::record('Document Layout Updated', "{$title} layout updated by " . auth()->user()->name);
 
-        return back()->with(['success' => "{$title} layout saved. The next download uses it.", 'cms_panel' => 'panel-layouts']);
+        return back()->with(['success' => "{$title} layout saved. The next download uses it.", 'cms_panel' => 'panel-layouts', 'cms_layout' => $document]);
     }
 
     // The Word template of a Memorandum, Request Letter or Advice Slip, built from its column.

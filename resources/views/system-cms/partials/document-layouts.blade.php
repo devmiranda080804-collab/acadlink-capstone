@@ -1,31 +1,58 @@
 {{-- Document Layouts: one column per downloaded document, with its header, contents and footer (Admin only). --}}
 @php use App\Support\DocumentLayouts; use App\Http\Controllers\Admin\DocumentLayoutController as Layouts; @endphp
 <style>
-    .layouts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; align-items: start; }
-    .layouts-grid .site-card { margin: 0; max-width: none; }
-    .layout-section { font-size: 11px; font-weight: 700; color: #0f2557; text-transform: uppercase; letter-spacing: .4px; margin: 18px 0 8px; padding-top: 12px; border-top: 1px solid #eee; }
-    .layout-check { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #333; margin-bottom: 12px; cursor: pointer; }
-    .layout-check input { width: auto; margin: 0; }
-    .layout-image { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
-    .layout-image img { width: 52px; height: 52px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 6px; background: #fff; padding: 3px; flex-shrink: 0; }
+    /* Pick a document, then edit it: the form on the left, its preview on the right. */
+    .layout-switch { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .layout-switch button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 999px; border: 1px solid #dfe3ec; background: #fff; color: #344054;
+        font: 600 13px inherit; font-family: inherit; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+    .layout-switch button:hover { border-color: #c9d1e2; background: #f8f9fc; }
+    .layout-switch button[aria-selected="true"] { background: #0f2557; border-color: #0f2557; color: #fff; }
+    .layout-switch .dot { width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; }
+    .layout-switch small { font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: #eef2ff; color: #3730a3; }
+    .layout-switch button[aria-selected="true"] small { background: rgba(255,255,255,.18); color: #fff; }
+
+    .layout-doc { background: #fff; border: 1px solid #e7eaf1; border-radius: 16px; padding: 22px 24px; }
+    .layout-doc[hidden] { display: none; }
+    .layout-doc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-bottom: 16px; margin-bottom: 4px; border-bottom: 1px solid #eef0f5; }
+    .layout-doc-title { font-size: 18px; font-weight: 800; color: #0f2557; }
+    .layout-doc-sub { font-size: 12.5px; color: #667085; margin-top: 3px; }
+    .layout-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 400px); grid-template-areas: "form aside"; gap: 28px; align-items: start; }
+    .layout-form { grid-area: form; min-width: 0; }
+    .layout-aside { grid-area: aside; position: sticky; top: 0; padding-top: 18px; }
+    .layout-aside-title { font-size: 11px; font-weight: 700; color: #667085; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .layout-aside-note { font-size: 11.5px; color: #8a90a2; line-height: 1.5; margin-top: 10px; }
+
+    .layout-section { font-size: 11px; font-weight: 800; color: #0f2557; text-transform: uppercase; letter-spacing: .5px; margin: 20px 0 12px; display: flex; align-items: center; gap: 10px; }
+    .layout-section::after { content: ""; flex: 1; height: 1px; background: #eef0f5; }
+    .layout-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+    .layout-fields .site-field { margin: 0; min-width: 0; }
+    .layout-fields .wide { grid-column: 1 / -1; }
+    .layout-fields input[type=text], .layout-fields select, .layout-fields textarea { width: 100%; box-sizing: border-box; }
+    .layout-check { display: flex; align-items: center; gap: 9px; font-size: 13px; color: #333; cursor: pointer; padding: 11px 12px; border: 1px solid #eef0f5; border-radius: 10px; background: #fafbfd; }
+    .layout-check input { width: auto; margin: 0; accent-color: #0f2557; }
+    .layout-image { display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid #eef0f5; border-radius: 12px; background: #fafbfd; min-width: 0; }
+    .layout-image img { width: 56px; height: 56px; object-fit: contain; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; padding: 4px; flex-shrink: 0; }
     .layout-image .site-field { margin: 0; flex: 1; min-width: 0; }
     .layout-image input[type=file] { font-size: 11.5px; max-width: 100%; }
     .layout-changed { display: inline-block; background: #fef3c7; color: #92400e; font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 8px; margin-left: 4px; vertical-align: middle; }
-    .layout-actions { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 16px; }
+    .layout-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 22px; padding-top: 16px; border-top: 1px solid #eef0f5; }
     .layout-actions .btn-save { margin: 0; }
+    .layout-actions .danger { margin-left: auto; }
+    @media (max-width: 1100px) { .layout-body { grid-template-columns: 1fr; grid-template-areas: "aside" "form"; } .layout-aside { position: static; } }
+    @media (max-width: 640px) { .layout-fields { grid-template-columns: 1fr; } .layout-doc { padding: 16px; } .layout-actions .danger { margin-left: 0; } }
     /* A small picture of the letterhead and footer, updated as the Admin types. */
-    .lh-preview { border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; padding: 10px 12px; margin-bottom: 6px; font-family: Calibri, Arial, sans-serif; }
+    .lh-preview { border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; padding: 14px 16px; font-family: Calibri, Arial, sans-serif; box-shadow: 0 6px 18px rgba(15, 37, 87, .06); }
     .lh-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; }
     .lh-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
-    .lh-left img { height: 30px; }
-    .lh-uni { color: #C12035; font-weight: 700; font-size: 12px; line-height: 1; text-transform: uppercase; }
-    .lh-note { color: #C12035; font-size: 6.5px; }
+    .lh-left img { height: 38px; }
+    .lh-uni { color: #C12035; font-weight: 700; font-size: 14px; line-height: 1; text-transform: uppercase; }
+    .lh-note { color: #C12035; font-size: 7.5px; }
     .lh-right { text-align: right; min-width: 0; }
-    .lh-right img { height: 22px; }
-    .lh-college { font-family: Tahoma, sans-serif; font-size: 6.5px; text-transform: uppercase; }
+    .lh-right img { height: 28px; }
+    .lh-college { font-family: Tahoma, sans-serif; font-size: 7.5px; text-transform: uppercase; }
     .lh-rule { border-bottom: 3px solid #273F89; margin: 4px 0 8px; }
-    .lh-body { font-size: 9px; color: #bbb; text-align: center; padding: 6px 0 10px; }
-    .lh-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 6px; font-size: 7px; }
+    .lh-body { font-size: 10px; color: #bbb; text-align: center; padding: 40px 0 46px; }
+    .lh-foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 6px; font-size: 7.5px; }
     .lh-tag-first { color: #273F89; font-weight: 700; }
     .lh-tag-rest { color: #C12035; font-weight: 700; }
     .lh-page { color: #555; }
@@ -33,16 +60,39 @@
 </style>
 
 <div class="site-card-sub" style="margin-bottom:14px;">
-    One column per downloaded document. Change the header, contents or footer of a document and the next download uses it. Anything you don't change follows Site Content and the original wording.
+    Pick a document, change its header, contents or footer, and the next download uses it. Anything you don't change follows Site Content and the original wording.
 </div>
 
-<div class="layouts-grid">
-    @foreach(DocumentLayouts::DOCUMENTS as $doc => $meta)
-        @php $fields = DocumentLayouts::fields($doc); @endphp
-        <div class="site-card" id="layout-{{ $doc }}">
-            <div class="site-card-title">{{ $meta['title'] }}</div>
-            <div class="site-card-sub">{{ $meta['hint'] }}</div>
+@php
+    $layoutDocs = DocumentLayouts::DOCUMENTS;
+    $openLayout = session('cms_layout');
+    $openLayout = isset($layoutDocs[$openLayout]) ? $openLayout : array_key_first($layoutDocs);
+@endphp
+<div class="layout-switch" role="tablist" aria-label="Documents">
+    @foreach($layoutDocs as $doc => $meta)
+        @php $docChanged = collect(DocumentLayouts::fields($doc))->keys()->contains(fn ($field) => DocumentLayouts::isChanged($doc, $field)); @endphp
+        <button type="button" role="tab" id="layout-tab-{{ $doc }}" data-layout-tab="{{ $doc }}" aria-controls="layout-{{ $doc }}" aria-selected="{{ $doc === $openLayout ? 'true' : 'false' }}" onclick="showLayoutDoc('{{ $doc }}')">
+            {{ $meta['title'] }}
+            @if(!empty($meta['template']))<small>Template</small>@endif
+            @if($docChanged)<span class="dot" title="Changed from the default"></span>@endif
+        </button>
+    @endforeach
+</div>
 
+<div class="layouts-docs">
+    @foreach($layoutDocs as $doc => $meta)
+        @php $fields = DocumentLayouts::fields($doc); @endphp
+        <section class="layout-doc" id="layout-{{ $doc }}" role="tabpanel" aria-labelledby="layout-tab-{{ $doc }}" @if($doc !== $openLayout) hidden @endif>
+            <div class="layout-doc-head">
+                <div>
+                    <div class="layout-doc-title">{{ $meta['title'] }}</div>
+                    <div class="layout-doc-sub">{{ $meta['hint'] }}</div>
+                </div>
+            </div>
+
+            <div class="layout-body">
+            <div class="layout-aside">
+            <div class="layout-aside-title">Preview</div>
             <div class="lh-preview" aria-label="Preview of the {{ $meta['title'] }} header and footer">
                 <div class="lh-top">
                     <div class="lh-left">
@@ -69,14 +119,17 @@
                 </div>
                 @endif
             </div>
+            <div class="layout-aside-note">Updates as you type. The real file uses the same header and footer on every page.</div>
+            </div>
 
-            <form method="POST" action="{{ url('/admin/system-cms/layouts/' . $doc) }}" enctype="multipart/form-data" data-layout="{{ $doc }}">
+            <form class="layout-form" method="POST" action="{{ url('/admin/system-cms/layouts/' . $doc) }}" enctype="multipart/form-data" data-layout="{{ $doc }}">
                 @csrf
                 @method('PUT')
                 @foreach(DocumentLayouts::SECTIONS as $sectionKey => $sectionLabel)
                     @php $sectionFields = array_filter($fields, fn ($f) => $f['section'] === $sectionKey); @endphp
                     @continue(!$sectionFields)
                     <div class="layout-section">{{ $sectionLabel }}</div>
+                    <div class="layout-fields">
                     @foreach($sectionFields as $field => $f)
                         @php
                             $name = Layouts::inputName($field);
@@ -96,13 +149,13 @@
                                 </div>
                             </div>
                         @elseif($f['type'] === 'bool')
-                            <label class="layout-check">
+                            <label class="layout-check wide">
                                 <input type="hidden" name="{{ $name }}" value="0">
                                 <input type="checkbox" name="{{ $name }}" value="1" @checked(DocumentLayouts::enabled($doc, $field)) data-field="{{ $doc }}-{{ $field }}">
                                 {{ $f['label'] }}
                             </label>
                         @else
-                            <div class="site-field">
+                            <div class="site-field {{ $f['type'] === 'textarea' ? 'wide' : '' }}">
                                 <label for="{{ $id }}">{{ $f['label'] }} @if($changed)<span class="layout-changed">Changed</span>@endif</label>
                                 @if($f['type'] === 'textarea')
                                     <textarea id="{{ $id }}" name="{{ $name }}" rows="3" maxlength="500" data-field="{{ $doc }}-{{ $field }}">{{ DocumentLayouts::text($doc, $field) }}</textarea>
@@ -119,6 +172,7 @@
                             </div>
                         @endif
                     @endforeach
+                    </div>
                 @endforeach
 
                 <div class="layout-actions">
@@ -130,12 +184,31 @@
                         data-confirm="Put the {{ $meta['title'] }} back to the default header, contents and footer? Your changes to this layout will be lost." data-confirm-title="Reset to default?" data-confirm-button="Reset" data-loading-text="Resetting…">Reset to default</button>
                 </div>
             </form>
-        </div>
+            </div>
+        </section>
     @endforeach
 </div>
 
 <script>
-    // Keeps each column's small preview in step with what the Admin types or picks.
+    // One document at a time; the last one opened is remembered on this browser.
+    function showLayoutDoc(doc) {
+        document.querySelectorAll('[data-layout-tab]').forEach(function (tab) {
+            tab.setAttribute('aria-selected', tab.dataset.layoutTab === doc ? 'true' : 'false');
+        });
+        document.querySelectorAll('.layout-doc').forEach(function (panel) {
+            panel.hidden = panel.id !== 'layout-' + doc;
+        });
+        try { localStorage.setItem('cms-layout', doc); } catch (e) {}
+    }
+    (function () {
+        // After saving, the server reopens the saved one; otherwise the last one used.
+        if (@json((bool) session('cms_layout'))) return;
+        var last = null;
+        try { last = localStorage.getItem('cms-layout'); } catch (e) {}
+        if (last && document.getElementById('layout-' + last)) showLayoutDoc(last);
+    })();
+
+    // Keeps each document's preview in step with what the Admin types or picks.
     (function () {
         function set(doc, key, text) {
             var el = document.querySelector('[data-preview="' + doc + '-' + key + '"]');
