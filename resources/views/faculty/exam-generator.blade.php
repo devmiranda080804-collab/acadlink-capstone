@@ -377,6 +377,18 @@
         .tab-empty .empty-icon { font-size: 34px; opacity: 0.3; margin-bottom: 10px; }
 
         /* ═══════════════════ EXAM BUILDER ═══════════════════ */
+        .shared-exams { background: #fff; border: 1px solid #e1e5ee; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+        .shared-exams-title { font-size: 13.5px; font-weight: 700; color: #0f2557; margin-bottom: 8px; }
+        .shared-exams-title span { display: block; font-size: 11.5px; font-weight: 500; color: #6b7287; margin-top: 2px; }
+        .shared-exam { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid #f0f2f6; }
+        .shared-exam-info { min-width: 0; }
+        .shared-exam-info strong { display: block; font-size: 13px; color: #1a1a2e; }
+        .shared-exam-info small { font-size: 11.5px; color: #6b7287; }
+        .btn-shared-tos { flex-shrink: 0; background: #fff; border: 1px solid #c9d1e2; color: #0f2557; font: 700 12px inherit; font-family: inherit; padding: 7px 12px; border-radius: 8px; cursor: pointer; }
+        .btn-shared-tos:hover { background: #f1f4fa; }
+        .shared-tos-note { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .shared-tos-row { display: flex; align-items: center; gap: 10px; background: #eef2ff; border: 1px solid #c7d2fe; color: #3730a3; border-radius: 10px; padding: 10px 12px; font-size: 12px; line-height: 1.5; }
+        .shared-tos-row span { flex: 1; min-width: 0; }
         .eb-form-bar {
             background: #fff; border: 1px solid #e4e4e4; border-radius: 8px;
             padding: 14px 18px; display: flex; align-items: flex-end; gap: 12px;
@@ -756,7 +768,7 @@
 
                             <div class="form-group">
                                 <label>Examination Type</label>
-                                <select id="tos-period">
+                                <select id="tos-period" onchange="updateSharedTosNotice()">
                                     <option value="" disabled selected>Select type</option>
                                     <option value="Prelim">Prelim Examination</option>
                                     <option value="Midterm">Midterm Examination</option>
@@ -781,6 +793,7 @@
                             </div>
 
                             <button class="btn-generate" type="button" onclick="generateTOS()">Generate TOS</button>
+                            <div class="shared-tos-note" id="shared-tos-note" role="status" hidden></div>
                         </div>
 
                         <div class="obe-section">
@@ -810,6 +823,21 @@
 
             {{-- Exam Builder Tab --}}
             <div class="tab-content" id="tab-exam-builder">
+
+                @if($sharedExams->isNotEmpty())
+                    <div class="shared-exams">
+                        <div class="shared-exams-title">👥 From your co-instructors <span>Same course, this term. Their TOS also lists you as an instructor, so you don't need to make your own.</span></div>
+                        @foreach($sharedExams as $sx)
+                            <div class="shared-exam">
+                                <div class="shared-exam-info">
+                                    <strong>{{ $sx->programAssignment->course->code }} — {{ $sx->title }}</strong>
+                                    <small>{{ $sx->grading_period }} · by {{ $sx->faculty->name ?? 'a co-instructor' }} · {{ $sx->isFinalized() ? 'Finalized' : 'Draft' }}</small>
+                                </div>
+                                <button type="button" class="btn-shared-tos" onclick="openSharedTos({{ $sx->id }})">📋 View TOS</button>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
 
                 {{-- Top form bar --}}
                 <div class="eb-form-bar">
@@ -1308,7 +1336,25 @@
         // ══════════════════════════════
         // TOS GENERATOR
         // ══════════════════════════════
-        function onTosSubjectChange() { /* topics are fetched fresh on Generate */ }
+        function onTosSubjectChange() { updateSharedTosNotice(); /* topics are fetched fresh on Generate */ }
+
+        // Co-instructors' exams (same course, this term). Picking that subject and exam
+        // type here points to the TOS they already made, so it isn't made twice.
+        var SHARED_TOS = @json($sharedExamsData);
+        var ASSIGNMENT_COURSE = @json($assignments->pluck('course_id', 'id'));
+        function updateSharedTosNotice() {
+            var note = document.getElementById('shared-tos-note');
+            var course = ASSIGNMENT_COURSE[document.getElementById('tos-subject').value];
+            var period = document.getElementById('tos-period').value;
+            var found = SHARED_TOS.filter(function (e) { return e.course_id === course && (!period || e.period === period); });
+            if (!course || !found.length) { note.hidden = true; note.innerHTML = ''; return; }
+            note.innerHTML = found.map(function (e) {
+                return '<div class="shared-tos-row"><span>👥 <strong>' + escapeHtml(e.by) + '</strong> already made the ' + escapeHtml(e.period) + ' exam for this subject'
+                    + (e.finalized ? '' : ' (still a draft)') + '. You can use their TOS instead of making another one.</span>'
+                    + '<button type="button" class="btn-shared-tos" onclick="openSharedTos(' + e.id + ')">📋 View TOS</button></div>';
+            }).join('');
+            note.hidden = false;
+        }
 
         var TOS_BLOOM_LEVELS = ['Remembering', 'Understanding', 'Applying', 'Analyzing', 'Evaluating', 'Creating'];
         // How many tests the exam starts with. The instructor chooses their question types
@@ -2803,33 +2849,41 @@
         // download only appear when the exam is complete; until then it says what's missing.
         async function openExamTos() {
             if (!(await saveExam(true))) return;
+            await showExamTos(currentExam.id, false);
+        }
 
+        // A co-instructor's exam for a course this faculty also teaches: view its TOS only.
+        async function openSharedTos(examId) {
+            await showExamTos(examId, true);
+        }
+
+        async function showExamTos(examId, shared) {
             var tos;
             try {
-                tos = await api('/faculty/exam-generator/' + currentExam.id + '/tos');
+                tos = await api('/faculty/exam-generator/' + examId + '/tos');
             } catch (e) {
-                openSaveResult(false, e.message);
+                if (shared) showToast(e.message, 'error'); else openSaveResult(false, e.message);
                 return;
             }
 
             var ready = tos.issues.length === 0;
             var issues = document.getElementById('exam-tos-issues');
             issues.style.display = ready ? 'none' : 'block';
-            issues.textContent = ready ? '' : 'Finish these to complete the TOS:\n' + tos.issues.join('\n');
-            document.getElementById('exam-tos-note').textContent = ready
-                ? 'Shown exactly as it downloads, with the header and footer from System CMS → Document Layouts.'
-                : 'The printed TOS appears here once the exam is complete.';
+            issues.textContent = ready ? '' : (shared ? (tos.made_by || 'Your co-instructor') + ' is still finishing this exam:\n' : 'Finish these to complete the TOS:\n') + tos.issues.join('\n');
+            var who = (tos.instructors || []).length > 1 ? ' Instructors on it: ' + tos.instructors.join(', ') + '.' : '';
+            document.getElementById('exam-tos-note').textContent = (shared ? 'Made by ' + (tos.made_by || 'your co-instructor') + ', your co-instructor. ' : '')
+                + (ready ? 'Shown exactly as it downloads, with the header and footer from System CMS → Document Layouts.' : 'The printed TOS appears here once the exam is complete.') + who;
             var box = document.getElementById('exam-tos-table');
             var tableHtml = '<div class="pv-plain">' + tosTableHtml(tos, ready) + '</div>';
             var download = document.getElementById('exam-tos-download');
             download.style.display = ready ? '' : 'none';
-            download.href = '/faculty/exam-generator/' + currentExam.id + '/tos/download';
+            download.href = '/faculty/exam-generator/' + examId + '/tos/download';
             var run = ++tosPreviewRun;
             box.innerHTML = ready ? '<div class="pv-loading"><div class="spin"></div>Preparing the TOS as it will download…</div>' : tableHtml;
             document.getElementById('exam-tos-overlay').classList.add('open');
             if (!ready) return;
             try {
-                await renderDocxInto(box, '/faculty/exam-generator/' + currentExam.id + '/tos/preview/file', function() { return run === tosPreviewRun; });
+                await renderDocxInto(box, '/faculty/exam-generator/' + examId + '/tos/preview/file', function() { return run === tosPreviewRun; });
             } catch (e) {
                 if (run !== tosPreviewRun) return;
                 box.innerHTML = '<div class="pv-warn">The print layout could not be shown here (' + escapeHtml(e.message) + '). This is the TOS without the header and footer; the download has them.</div>' + tableHtml;

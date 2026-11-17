@@ -72,7 +72,28 @@ class ExamGeneratorController extends Controller
             return [$assignment->id => $periods];
         });
 
-        return view('faculty.exam-generator', compact('assignments', 'exams', 'topicsByAssignment', 'tosByAssignment'));
+        // Exams a co-instructor made for a course this faculty also teaches this term:
+        // their TOS can be viewed and downloaded here, so it isn't made twice.
+        $sharedExams = Exam::with(['programAssignment.course', 'faculty'])
+            ->where('faculty_id', '!=', $facultyId)
+            ->whereHas('programAssignment', fn ($q) => $q
+                ->whereIn('course_id', $assignments->pluck('course_id'))
+                ->where('school_year', AcademicTerm::currentSchoolYear())
+                ->where('semester', AcademicTerm::currentSemester()))
+            ->orderBy('grading_period')
+            ->latest()
+            ->get();
+
+        $sharedExamsData = $sharedExams->map(fn ($e) => [
+            'id'        => $e->id,
+            'course_id' => $e->programAssignment->course_id,
+            'period'    => $e->grading_period,
+            'title'     => $e->title,
+            'by'        => $e->faculty->name ?? 'A co-instructor',
+            'finalized' => $e->isFinalized(),
+        ])->values();
+
+        return view('faculty.exam-generator', compact('assignments', 'exams', 'topicsByAssignment', 'tosByAssignment', 'sharedExams', 'sharedExamsData'));
     }
 
     public function store(Request $request)
@@ -387,13 +408,17 @@ class ExamGeneratorController extends Controller
         }
     }
 
+    // The exam's instructor, or a co-instructor of the course this term (read-only).
     public function tos(Exam $exam)
     {
-        abort_unless($exam->faculty_id === auth()->id(), 403);
+        abort_unless($exam->tosVisibleTo(auth()->user()), 403);
 
-        $exam->load('sections.questions.children', 'programAssignment');
+        $exam->load('sections.questions.children', 'programAssignment', 'faculty');
 
-        return response()->json($exam->finalTos());
+        return response()->json($exam->finalTos() + [
+            'made_by'     => $exam->faculty->name ?? null,
+            'instructors' => $exam->courseInstructors()->pluck('name')->all(),
+        ]);
     }
 
     // TOS Generator preview (Panel comment #8: Total Hours auto-fetched from OBE data,
@@ -470,15 +495,15 @@ class ExamGeneratorController extends Controller
     // Only for a finished exam, because the Bloom's levels come from its questions.
     public function tosDownload(Exam $exam)
     {
-        abort_unless($exam->faculty_id === auth()->id(), 403);
+        abort_unless($exam->tosVisibleTo(auth()->user()), 403);
 
-        $exam->load('sections.questions.children', 'programAssignment.course');
+        $exam->load('sections.questions.children', 'programAssignment.course', 'faculty');
 
         $tos = $exam->finalTos();
         abort_unless(empty($tos['issues']), 422, "The TOS isn't ready yet:\n" . implode("\n", $tos['issues']));
 
         $course = $exam->programAssignment->course;
-        $path = (new TosDocumentBuilder())->build($course, $exam->grading_period, $tos, auth()->user());
+        $path = (new TosDocumentBuilder())->build($course, $exam->grading_period, $tos, $exam->faculty, $exam->courseInstructors());
 
         return response()->download($path, 'TOS-' . $course->code . '-' . $exam->grading_period . '.docx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -488,14 +513,14 @@ class ExamGeneratorController extends Controller
     // The TOS file the download makes, for the TOS preview in the Exam Builder.
     public function tosPreviewFile(Request $request, Exam $exam)
     {
-        abort_unless($exam->faculty_id === auth()->id(), 403);
+        abort_unless($exam->tosVisibleTo(auth()->user()), 403);
 
-        $exam->load('sections.questions.children', 'programAssignment.course');
+        $exam->load('sections.questions.children', 'programAssignment.course', 'faculty');
 
         $tos = $exam->finalTos();
         abort_unless(empty($tos['issues']), 422, "The TOS isn't ready yet:\n" . implode("\n", $tos['issues']));
 
-        $path = (new TosDocumentBuilder())->build($exam->programAssignment->course, $exam->grading_period, $tos, auth()->user());
+        $path = (new TosDocumentBuilder())->build($exam->programAssignment->course, $exam->grading_period, $tos, $exam->faculty, $exam->courseInstructors());
 
         return $this->previewResponse($request, $path);
     }

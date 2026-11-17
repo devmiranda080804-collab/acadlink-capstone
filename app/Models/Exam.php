@@ -37,6 +37,43 @@ class Exam extends Model
         return $this->hasMany(ExamSection::class)->orderBy('order');
     }
 
+    // Everyone assigned to teach this exam's course in the same term (Program Assignment),
+    // the exam's own instructor first. They share one TOS, so co-instructors don't each
+    // have to make it.
+    public function courseInstructors()
+    {
+        $assignment = $this->programAssignment;
+        if (!$assignment) {
+            return collect([$this->faculty])->filter();
+        }
+
+        $others = User::whereIn('id', ProgramAssignment::where('course_id', $assignment->course_id)
+                ->where('school_year', $assignment->school_year)
+                ->where('semester', $assignment->semester)
+                ->pluck('faculty_id'))
+            ->whereNull('archived_at')
+            ->where('id', '!=', $this->faculty_id)
+            ->orderBy('name')
+            ->get();
+
+        return collect([$this->faculty])->filter()->concat($others)->values();
+    }
+
+    // The exam's instructor, or a co-instructor of its course this term: may see its TOS.
+    public function tosVisibleTo(User $user): bool
+    {
+        if ($this->faculty_id === $user->id) {
+            return true;
+        }
+        $assignment = $this->programAssignment;
+
+        return $assignment && ProgramAssignment::where('faculty_id', $user->id)
+            ->where('course_id', $assignment->course_id)
+            ->where('school_year', $assignment->school_year)
+            ->where('semester', $assignment->semester)
+            ->exists();
+    }
+
     public function isFinalized(): bool
     {
         return $this->status === 'finalized';
