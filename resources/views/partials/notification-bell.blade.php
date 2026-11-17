@@ -16,6 +16,7 @@
     .nb-count { position: absolute; top: 2px; right: 1px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; line-height: 17px; text-align: center; font-family: Arial, sans-serif; }
     .nb-panel { display: none; position: absolute; top: 44px; right: 0; width: 360px; max-width: calc(100vw - 24px); background: #fff; border: 1px solid #e4e4e4; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.16); z-index: 1200; font-family: Arial, sans-serif; overflow: hidden; }
     .nb-panel.open { display: block; }
+    .nb-panel.nb-floating { position: fixed; z-index: 3000; }
     .nb-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid #f0f0f0; }
     .nb-head strong { font-size: 13.5px; color: #1a1a2e; }
     .nb-read-all { background: none; border: none; color: #1d4ed8; font-size: 11.5px; font-weight: 600; cursor: pointer; padding: 0; }
@@ -63,15 +64,35 @@
     </div>
 </div>
 <script>
+    // The panel is moved to <body> and placed under the bell, so no part of a page
+    // (a dashboard banner, cards, a table) can cover it, whatever the page's layout.
+    function placeNotifications() {
+        var panel = document.getElementById('nb-panel');
+        if (!panel.classList.contains('open') || window.innerWidth <= 600) {
+            panel.style.top = panel.style.right = '';
+            return;
+        }
+        var bell = document.getElementById('nb-button').getBoundingClientRect();
+        panel.style.top = Math.round(bell.bottom + 8) + 'px';
+        panel.style.right = Math.max(12, Math.round(document.documentElement.clientWidth - bell.right)) + 'px';
+    }
     function toggleNotifications() {
         var panel = document.getElementById('nb-panel');
+        if (panel.parentNode !== document.body) {
+            document.body.appendChild(panel);
+            panel.classList.add('nb-floating');
+        }
         var open = !panel.classList.contains('open');
         panel.classList.toggle('open', open);
+        placeNotifications();
         document.getElementById('nb-button').setAttribute('aria-expanded', open ? 'true' : 'false');
     }
+    window.addEventListener('resize', placeNotifications);
+    window.addEventListener('scroll', placeNotifications, true);
     document.addEventListener('click', function (e) {
         var wrap = document.querySelector('.nb-wrap');
-        if (wrap && !wrap.contains(e.target)) {
+        var panel = document.getElementById('nb-panel');
+        if (wrap && !wrap.contains(e.target) && !(panel && panel.contains(e.target))) {
             document.getElementById('nb-panel').classList.remove('open');
             document.getElementById('nb-button').setAttribute('aria-expanded', 'false');
         }
