@@ -132,7 +132,8 @@
                 <ul class="sb-list">
                     @foreach($items as [$perm, $label, $url, $pattern, $icon, $badgeVar])
                         @php
-                            $active = request()->is($pattern);
+                            // A page shown for another (the file viewer) can say which item stays highlighted.
+                            $active = isset($sbActivePath) ? \Illuminate\Support\Str::is($pattern, $sbActivePath) : request()->is($pattern);
                             $badge = $badgeVar ? ($sbBadges[$badgeVar] ?? 0) : 0;
                         @endphp
                         <li>
