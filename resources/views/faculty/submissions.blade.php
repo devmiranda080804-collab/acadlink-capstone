@@ -91,6 +91,9 @@
 
         .upload-form { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
         .course-row { border-top: 1px solid #f0f0f0; margin-top: 10px; padding-top: 10px; }
+        .count-line { margin-top: 10px; font-size: 12px; color: #475467; }
+        .count-line strong { color: #0f2557; }
+        .count-line span { color: #6b7280; }
         .course-row .upload-form { margin-top: 8px; }
         .course-row-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
         .course-code { font-size: 12px; font-weight: 700; color: #0f2557; }
@@ -220,6 +223,12 @@
                         @endif
 
                         @if($req['per_course'])
+                            @if($req['courses']->isNotEmpty())
+                                <div class="count-line">
+                                    Counted for you: <strong>{{ $req['counted'] }} of {{ $req['courses']->count() }} {{ $req['courses']->count() === 1 ? 'course' : 'courses' }}</strong>
+                                    @if($req['from_others'])<span>· {{ $req['from_others'] }} submitted by a co-instructor who teaches the same course</span>@endif
+                                </div>
+                            @endif
                             @forelse($req['courses'] as $row)
                                 @php $cs = $row['submission']; $mine = $cs && $cs->faculty_id === auth()->id(); @endphp
                                 <div class="course-row">

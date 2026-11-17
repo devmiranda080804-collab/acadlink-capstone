@@ -32,6 +32,7 @@ class SubmissionController extends Controller
         foreach ($requirements as $req) {
             $covered = $req->per_course ? collect() : $req->coveringSubmissions();
             $req->setAttribute('covered', $covered);
+            $req->setAttribute('per_instructor', $req->instructorCounts());
             $req->setAttribute('expected', $req->per_course ? $req->courses()->count() : $facultyCount);
             $req->setAttribute('submitted_count', $req->per_course
                 ? $req->submissions->whereNotNull('course_id')->unique('course_id')->count()

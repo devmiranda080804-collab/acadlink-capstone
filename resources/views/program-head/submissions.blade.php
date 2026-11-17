@@ -101,6 +101,11 @@
         .submitters-list { display: none; margin-top: 12px; border-top: 1px solid #f0f0f0; padding-top: 12px; }
         .submitters-list.open { display: block; }
         .submitter-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; font-size: 12px; }
+        .per-instructor { margin-top: 10px; padding-top: 10px; border-top: 1px dashed #e4e7ee; }
+        .per-instructor-title { font-size: 11px; font-weight: 800; color: #0f2557; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 2px; }
+        .per-instructor-title span { text-transform: none; letter-spacing: 0; font-weight: 500; color: #6b7280; margin-left: 6px; }
+        .per-count { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: #fef3c7; color: #92400e; white-space: nowrap; }
+        .per-count.done { background: #dcfce7; color: #166534; }
         .submitter-name { color: #333; font-weight: 600; }
         .submitter-status { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 10px; }
         .status-submitted { background: #d1fae5; color: #065f46; }
@@ -265,6 +270,19 @@
                                     <div style="font-size:12px; color:#bbb;">No one has submitted yet.</div>
                                 @endif
                             @endforelse
+                            @if($req->per_course && $req->per_instructor->isNotEmpty())
+                                <div class="per-instructor">
+                                    <div class="per-instructor-title">Per instructor <span>A course's file counts for everyone who teaches that course.</span></div>
+                                    @foreach($req->per_instructor as $row)
+                                        <div class="submitter-row">
+                                            <span class="submitter-name">{{ $row['faculty']->name }}
+                                                @if($row['from_others'])<span style="color:#6b7280;font-size:11px;"> · {{ $row['from_others'] }} from a co-instructor</span>@endif
+                                            </span>
+                                            <span class="per-count {{ $row['counted'] >= $row['courses'] ? 'done' : '' }}">{{ $row['counted'] }} of {{ $row['courses'] }} {{ $row['courses'] === 1 ? 'course' : 'courses' }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                             @foreach($req->covered as $sub)
                                 <div class="submitter-row">
                                     <span class="submitter-name">{{ $sub->faculty->name }} <span style="color:#6b7280;font-size:11px;">· counted from {{ $sub->requirement->program }} – {{ $sub->requirement->title }} (teaches in more than one program)</span></span>

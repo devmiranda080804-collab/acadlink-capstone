@@ -62,6 +62,10 @@ class SubmissionController extends Controller
                     // Done once every course (or their own file) has something submitted.
                     'done'        => $missing === 0 && (!$req->per_course || $courses->isNotEmpty()),
                     'missing'     => $missing,
+                    // Per course: courses that count for this faculty member, and how many of
+                    // those files a co-instructor sent (they count here too).
+                    'counted'     => $req->per_course ? $courses->whereNotNull('submission')->count() : null,
+                    'from_others' => $req->per_course ? $courses->filter(fn ($c) => $c['submission'] && $c['submission']->faculty_id !== $faculty->id)->count() : null,
                     'returned'    => $returned,
                 ];
             });

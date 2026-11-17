@@ -114,6 +114,43 @@ class SubmissionRequirement extends Model
         return Course::whereIn('id', $courseIds)->where('program', $this->program)->orderBy('code')->get();
     }
 
+    // Per-course requirements: how many of each instructor's courses have a file. A course's
+    // file counts for everyone who teaches that course this term, whoever sent it; so an
+    // instructor sharing course A with one colleague and course B with another counts 2,
+    // and each colleague counts 1. One-per-faculty requirements aren't shared this way.
+    // @return Collection of ['faculty' => User, 'courses' => int, 'counted' => int, 'from_others' => int]
+    public function instructorCounts()
+    {
+        if (!$this->per_course) {
+            return collect();
+        }
+
+        $courseIds = $this->courses()->pluck('id');
+        $byCourse = ($this->relationLoaded('submissions') ? $this->submissions : $this->submissions()->get())
+            ->whereNotNull('course_id')->sortByDesc('id')->unique('course_id')->keyBy('course_id');
+
+        return ProgramAssignment::with('faculty')
+            ->where('school_year', $this->termSchoolYear())
+            ->where('semester', $this->termSemester())
+            ->whereIn('course_id', $courseIds)
+            ->get()
+            ->filter(fn ($a) => $a->faculty && !$a->faculty->archived_at)
+            ->groupBy('faculty_id')
+            ->map(function ($assignments) use ($byCourse) {
+                $courses = $assignments->pluck('course_id')->unique();
+                $files = $courses->map(fn ($id) => $byCourse->get($id))->filter();
+
+                return [
+                    'faculty'     => $assignments->first()->faculty,
+                    'courses'     => $courses->count(),
+                    'counted'     => $files->count(),
+                    'from_others' => $files->where('faculty_id', '!=', $assignments->first()->faculty_id)->count(),
+                ];
+            })
+            ->sortBy(fn ($row) => $row['faculty']->name)
+            ->values();
+    }
+
     // Whether $faculty still has something to submit: a course of theirs with no file yet
     // (anyone teaching it may submit), or their own file when it is one per faculty member.
     public function isMissingFor(User $faculty): bool
