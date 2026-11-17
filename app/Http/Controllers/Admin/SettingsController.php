@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\CmsOption;
+use App\Support\CmsLists;
 use App\Models\Setting;
 use App\Support\AcademicTerm;
 use App\Support\Signatories;
@@ -24,7 +26,58 @@ class SettingsController extends Controller
                 'current'     => AcademicTerm::currentSemester() . ', A.Y. ' . AcademicTerm::currentSchoolYear(),
                 'calendar'    => AcademicTerm::calendarSemester() . ', A.Y. ' . AcademicTerm::calendarSchoolYear(),
             ],
+            // The academic years offered across the system (every A.Y. dropdown reads this list).
+            'schoolYears'     => CmsOption::where('list', CmsLists::SCHOOL_YEARS)->orderBy('sort_order')->orderBy('id')->get(),
+            'schoolYearUsage' => CmsLists::usage(CmsLists::SCHOOL_YEARS),
         ]);
+    }
+
+    // Settings → Academic Term → Add academic year. It shows up right away in every
+    // academic-year dropdown of the system (term filters, assignments, requirements...).
+    public function addSchoolYear(Request $request)
+    {
+        $request->merge(['school_year' => preg_replace('/\s*[–—-]\s*/u', '-', trim((string) $request->school_year))]);
+        $request->validate([
+            'school_year' => ['required', function ($attribute, $value, $fail) {
+                if (!AcademicTerm::isValidSchoolYear($value)) {
+                    $fail('Write the academic year as two years in a row, for example 2027-2028.');
+                }
+            }, Rule::unique('cms_options', 'key')->where('list', CmsLists::SCHOOL_YEARS)],
+        ], ['school_year.unique' => 'That academic year is already on the list.'], ['school_year' => 'Academic year']);
+
+        CmsOption::create([
+            'list'       => CmsLists::SCHOOL_YEARS,
+            'key'        => $request->school_year,
+            'label'      => $request->school_year,
+            'sort_order' => (int) CmsOption::where('list', CmsLists::SCHOOL_YEARS)->max('sort_order') + 1,
+        ]);
+        CmsLists::sortSchoolYears();
+        AuditLog::record('Academic Year Added', "A.Y. {$request->school_year} added by " . auth()->user()->name);
+
+        return back()->with('success', "A.Y. {$request->school_year} added. It can now be picked everywhere in the system.");
+    }
+
+    // Hide an academic year from new choices (records that use it keep it), or show it again.
+    public function toggleSchoolYear(Request $request, CmsOption $option)
+    {
+        abort_unless($option->list === CmsLists::SCHOOL_YEARS, 404);
+        $request->validate(['is_active' => 'required|boolean']);
+        $show = $request->boolean('is_active');
+
+        if (!$show && $option->is_active) {
+            if ($option->key === AcademicTerm::currentSchoolYear()) {
+                return back()->withErrors(['school_year' => "A.Y. {$option->key} is the current term, so it can't be hidden. Set another term first."]);
+            }
+            if (CmsOption::where('list', CmsLists::SCHOOL_YEARS)->where('is_active', true)->count() <= 1) {
+                return back()->withErrors(['school_year' => 'At least one academic year has to stay shown.']);
+            }
+        }
+
+        $option->update(['is_active' => $show]);
+        CmsLists::flush();
+        AuditLog::record('Academic Year Updated', "A.Y. {$option->key} " . ($show ? 'shown again' : 'hidden') . ' by ' . auth()->user()->name);
+
+        return back()->with('success', "A.Y. {$option->key} " . ($show ? 'is shown again.' : 'is hidden from new choices.'));
     }
 
     // Each card on the page saves on its own.

@@ -19,10 +19,12 @@
 
 <div class="site-card-sub" style="margin-bottom:14px;">
     The choices people pick from in dropdowns across the system. Hiding an item takes it out of new choices only; records that already use it keep it. Nothing here is deleted.
+    Academic years are managed in <a href="{{ url('/admin/settings') }}#school-years" onclick="try { localStorage.setItem('settings-tab', 'term'); } catch (e) {}">Settings → Academic Term</a>.
 </div>
 
 @php
-    $cmsLists = \App\Support\CmsLists::LISTS;
+    // Academic years moved to Settings → Academic Term; the rest stay here.
+    $cmsLists = collect(\App\Support\CmsLists::LISTS)->except(\App\Support\CmsLists::SCHOOL_YEARS)->all();
     $openList = session('cms_list') ?: old('list');
     $openList = isset($cmsLists[$openList]) ? $openList : array_key_first($cmsLists);
     $listItems = collect($cmsLists)->map(fn ($s, $list) => \App\Models\CmsOption::where('list', $list)->orderBy('sort_order')->orderBy('id')->get());

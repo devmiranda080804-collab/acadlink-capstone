@@ -81,7 +81,7 @@
         <div class="content">
             @php
                 $deanSet = filled($deanName);
-                $termErrors = $errors->hasAny(['term_mode', 'term_school_year', 'term_semester']);
+                $termErrors = $errors->hasAny(['term_mode', 'term_school_year', 'term_semester', 'school_year']);
                 $deanErrors = $errors->hasAny(['dean_name', 'dean_title']);
             @endphp
             <style>
@@ -100,6 +100,24 @@
                 .st-dot.ok { background: #ecfdf3; color: #15803d; }
                 .st-dot.warn { background: #fff7e6; color: #b45309; }
                 .st-panel { display: none; flex-direction: column; gap: 16px; animation: st-in .25s ease-out; }
+                .sy-add { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+                .sy-add .st-field { flex: 0 1 260px; margin: 0; }
+                .sy-add .btn-save { margin: 0; }
+                .st-error { margin-top: 8px; font-size: 12.5px; color: #b91c1c; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 8px 10px; }
+                .sy-summary { display: flex; gap: 8px; margin: 18px 0 8px; }
+                .sy-summary span { font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: #eef2ff; color: #3730a3; }
+                .sy-summary span.off { background: #f1f2f5; color: #667085; }
+                .sy-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+                .sy-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; border: 1px solid #eef0f5; border-radius: 12px; background: #fafbfd; }
+                .sy-row.is-hidden { opacity: .65; }
+                .sy-text { min-width: 0; }
+                .sy-text strong { font-size: 14px; color: #0f2557; }
+                .sy-text small { display: block; font-size: 11.5px; color: #667085; margin-top: 2px; }
+                .sy-tag { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-left: 4px; background: #f1f2f5; color: #667085; vertical-align: middle; }
+                .sy-tag.now { background: #dcfce7; color: #166534; }
+                .sy-btn { flex-shrink: 0; background: #fff; border: 1px solid #c9d1e2; color: #0f2557; font: 700 12px inherit; font-family: inherit; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+                .sy-btn.danger { color: #b91c1c; border-color: #fca5a5; }
+                .sy-btn:disabled, .sy-btn.danger:disabled { color: #a0a6b4 !important; border-color: #e4e7ee !important; background: #f5f6f9 !important; cursor: not-allowed; }
                 .st-panel.is-active { display: flex; }
                 @keyframes st-in { from { opacity: 0; } to { opacity: 1; } }
                 .st-card { background: #fff; border: 1px solid #e7eaf1; border-radius: 16px; padding: 20px 22px; box-shadow: 0 1px 2px rgba(15, 37, 87, .04), 0 6px 18px rgba(15, 37, 87, .05); }
@@ -221,6 +239,48 @@
 
                                     <div class="st-actions"><button type="submit" class="btn-save">Save term</button></div>
                                 </form>
+                            </div>
+
+                            {{-- The academic years every A.Y. dropdown of the system offers. --}}
+                            <div class="st-card" id="school-years">
+                                <div class="st-card-title">{!! \App\Support\SidebarMenu::icon('calendar', 'st-icon') !!} Academic Years</div>
+                                <div class="st-card-sub">The academic years people can pick everywhere in the system: the term filters, Program Assignment, submission requirements and documents. A year added here shows up in all of them right away.</div>
+
+                                <form method="POST" action="{{ url('/admin/settings/school-years') }}" class="sy-add">
+                                    @csrf
+                                    <div class="st-field">
+                                        <label for="new_school_year">Add academic year</label>
+                                        @php $syLast = $schoolYears->pluck('key')->sort()->last() ?? \App\Support\AcademicTerm::currentSchoolYear(); $syNext = (int) explode('-', $syLast)[0] + 1; @endphp
+                                        <input type="text" id="new_school_year" name="school_year" maxlength="9" inputmode="numeric" placeholder="e.g. {{ $syNext }}-{{ $syNext + 1 }}" value="{{ old('school_year') }}" required>
+                                    </div>
+                                    <button type="submit" class="btn-save">Add</button>
+                                </form>
+                                @error('school_year')<div class="st-error" role="alert">{{ $message }}</div>@enderror
+
+                                <div class="sy-summary">
+                                    <span>{{ $schoolYears->where('is_active', true)->count() }} shown</span>
+                                    <span class="off">{{ $schoolYears->where('is_active', false)->count() }} hidden</span>
+                                </div>
+                                <div class="sy-list">
+                                    @foreach($schoolYears as $year)
+                                        @php $isCurrent = $year->key === \App\Support\AcademicTerm::currentSchoolYear(); $used = $schoolYearUsage[$year->key] ?? 0; @endphp
+                                        <div class="sy-row {{ $year->is_active ? '' : 'is-hidden' }}">
+                                            <div class="sy-text">
+                                                <strong>A.Y. {{ $year->key }}</strong>
+                                                @if($isCurrent)<span class="sy-tag now">Current term</span>@endif
+                                                @unless($year->is_active)<span class="sy-tag">Hidden</span>@endunless
+                                                <small>Used by {{ $used }} {{ $used === 1 ? 'record' : 'records' }}</small>
+                                            </div>
+                                            <form method="POST" action="{{ url('/admin/settings/school-years/' . $year->id) }}">
+                                                @csrf
+                                                @method('PUT')
+                                                <input type="hidden" name="is_active" value="{{ $year->is_active ? 0 : 1 }}">
+                                                <button type="submit" class="sy-btn {{ $year->is_active ? 'danger' : '' }}" @disabled($year->is_active && $isCurrent) title="{{ $year->is_active && $isCurrent ? 'This is the current term. Set another term first.' : ($year->is_active ? 'Hide from new choices; records that use it keep it' : 'Offer it again in every dropdown') }}">{{ $year->is_active ? 'Hide' : 'Show' }}</button>
+                                            </form>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <div class="st-note">{!! \App\Support\SidebarMenu::icon('clock', 'st-icon') !!}<span>Hiding a year takes it out of new choices only. Records that already use it keep it, and nothing is deleted.</span></div>
                             </div>
                         </section>
 

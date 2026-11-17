@@ -220,6 +220,8 @@ Route::middleware('role:admin')->prefix('admin')->group(function () {
     Route::get('/analytics', [AdminAnalyticsController::class, 'index']);
     Route::get('/settings', [AdminSettingsController::class, 'index']);
     Route::put('/settings', [AdminSettingsController::class, 'update']);
+    Route::post('/settings/school-years', [AdminSettingsController::class, 'addSchoolYear']);
+    Route::put('/settings/school-years/{option}', [AdminSettingsController::class, 'toggleSchoolYear']);
     Route::get('/system-cms', [SystemCmsController::class, 'index']);
     Route::put('/system-cms/site', [SystemCmsController::class, 'updateSite']);
     Route::post('/system-cms/lists', [\App\Http\Controllers\Admin\CmsListController::class, 'store']);

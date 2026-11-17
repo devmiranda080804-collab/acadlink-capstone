@@ -26,8 +26,8 @@
             $count = fn ($list) => \App\Models\CmsOption::where('list', $list)->where('is_active', true)->count();
             $icon = 'clipboard';
             $title = 'Dropdown choices across the system';
-            $sub = 'What people can pick in programs, academic years and semesters.';
-            $facts = ['Programs' => $count('programs'), 'Academic years' => $count('school_years'), 'Semesters' => $count('semesters')];
+            $sub = 'What people can pick in programs and semesters. Academic years are in Settings → Academic Term.';
+            $facts = ['Programs' => $count('programs'), 'Semesters' => $count('semesters')];
             break;
         default:
             $texts = collect(array_keys(\App\Support\SiteContent::TEXTS))->filter(fn ($k) => \App\Support\SiteContent::text($k) !== \App\Support\SiteContent::TEXTS[$k]['default'])->count();

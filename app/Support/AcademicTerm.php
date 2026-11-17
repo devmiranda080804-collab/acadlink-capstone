@@ -84,7 +84,7 @@ class AcademicTerm
         ];
     }
 
-    // Years offered in a document page's term filter, newest first: the list from System CMS
+    // Years offered in a document page's term filter, newest first: the list from Settings → Academic Term
     // plus every year a document was uploaded in, so older documents can still be found.
     public static function documentYears(): array
     {

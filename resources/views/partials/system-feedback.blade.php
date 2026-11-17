@@ -405,7 +405,8 @@
         // Disabled just after the browser has read the form, so the pressed button's own
         // name and value (e.g. name="reset" value="1") are still sent.
         setTimeout(function () {
-            form.querySelectorAll('button[type=submit], input[type=submit]').forEach(function (btn) { btn.disabled = true; });
+            // Only buttons that were enabled; marked so they (and only they) are enabled again later.
+            form.querySelectorAll('button[type=submit]:not([disabled]), input[type=submit]:not([disabled])').forEach(function (btn) { btn.disabled = true; btn.dataset.sfDisabled = '1'; });
         }, 0);
         var label = loadingLabel(form, submitter || form.querySelector('button[type=submit], input[type=submit], button:not([type])'));
         showLoading(label[0], label[1]);
@@ -519,7 +520,8 @@
         window.hideLoading();
         pending = 0;
         progress.classList.remove('active');
-        document.querySelectorAll('button[type=submit][disabled], input[type=submit][disabled]').forEach(function (btn) { btn.disabled = false; });
+        // Only the buttons this page disabled while saving; buttons disabled on purpose stay disabled.
+        document.querySelectorAll('[data-sf-disabled]').forEach(function (btn) { btn.disabled = false; delete btn.dataset.sfDisabled; });
     });
 
     // Responses from the server (after a redirect).

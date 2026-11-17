@@ -78,6 +78,14 @@ class CmsLists
         self::$cache = [];
     }
 
+    // Academic years always read oldest to newest.
+    public static function sortSchoolYears(): void
+    {
+        \App\Models\CmsOption::where('list', self::SCHOOL_YEARS)->orderBy('key')->get()
+            ->each(fn ($year, $i) => $year->update(['sort_order' => $i + 1]));
+        self::flush();
+    }
+
     // How many records use each key, so the Admin sees what a change affects.
     public static function usage(string $list): array
     {

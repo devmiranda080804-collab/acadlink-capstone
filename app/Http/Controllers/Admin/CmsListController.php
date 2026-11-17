@@ -16,30 +16,20 @@ class CmsListController extends Controller
 {
     public function store(Request $request)
     {
-        $request->validate(['list' => ['required', Rule::in(array_keys(array_filter(CmsLists::LISTS, fn ($l) => $l['add'])))]]);
+        // Academic years are added in Settings → Academic Term (Admin\SettingsController).
+        $request->validate(['list' => ['required', Rule::in(array_keys(array_filter(CmsLists::LISTS, fn ($l, $key) => $l['add'] && $key !== CmsLists::SCHOOL_YEARS, ARRAY_FILTER_USE_BOTH)))]]);
         $list = $request->list;
 
-        if ($list === CmsLists::PROGRAMS) {
-            $request->merge(['key' => strtoupper(trim((string) $request->key))]);
-            $request->validate([
-                'key'   => ['required', 'regex:/^[A-Z0-9][A-Z0-9-]{1,19}$/', Rule::unique('cms_options', 'key')->where('list', $list)],
-                'label' => 'required|string|max:200',
-            ], [
-                'key.regex'  => 'Use 2 to 20 capital letters, numbers or dashes for the code, for example BSBA-OM.',
-                'key.unique' => 'That program code is already on the list.',
-            ], ['key' => 'Program code', 'label' => 'Full name']);
-            $label = trim($request->label);
-        } else {
-            $request->merge(['key' => trim((string) $request->key)]);
-            $request->validate([
-                'key' => ['required', function ($attribute, $value, $fail) {
-                    if (!AcademicTerm::isValidSchoolYear($value)) {
-                        $fail('Write the academic year as two years in a row, for example 2027-2028.');
-                    }
-                }, Rule::unique('cms_options', 'key')->where('list', $list)],
-            ], ['key.unique' => 'That academic year is already on the list.'], ['key' => 'Academic year']);
-            $label = $request->key;
-        }
+        // Only Programs can be added here.
+        $request->merge(['key' => strtoupper(trim((string) $request->key))]);
+        $request->validate([
+            'key'   => ['required', 'regex:/^[A-Z0-9][A-Z0-9-]{1,19}$/', Rule::unique('cms_options', 'key')->where('list', $list)],
+            'label' => 'required|string|max:200',
+        ], [
+            'key.regex'  => 'Use 2 to 20 capital letters, numbers or dashes for the code, for example BSBA-OM.',
+            'key.unique' => 'That program code is already on the list.',
+        ], ['key' => 'Program code', 'label' => 'Full name']);
+        $label = trim($request->label);
 
         CmsOption::create([
             'list'       => $list,
@@ -47,9 +37,6 @@ class CmsListController extends Controller
             'label'      => $label,
             'sort_order' => (int) CmsOption::where('list', $list)->max('sort_order') + 1,
         ]);
-        if ($list === CmsLists::SCHOOL_YEARS) {
-            $this->sortYears();
-        }
         CmsLists::flush();
 
         $title = CmsLists::LISTS[$list]['title'];
@@ -61,6 +48,7 @@ class CmsListController extends Controller
     public function update(Request $request, CmsOption $option)
     {
         $settings = CmsLists::LISTS[$option->list] ?? abort(404);
+        abort_if($option->list === CmsLists::SCHOOL_YEARS, 404); // managed in Settings → Academic Term
         $request->validate([
             'label'     => $settings['rename'] ? 'sometimes|required|string|max:200' : 'prohibited',
             'is_active' => 'sometimes|boolean',
@@ -90,10 +78,4 @@ class CmsListController extends Controller
         return back()->with(['success' => "{$option->key} {$what}.", 'cms_panel' => 'panel-lists', 'cms_list' => $option->list]);
     }
 
-    // Academic years always read oldest to newest.
-    protected function sortYears(): void
-    {
-        CmsOption::where('list', CmsLists::SCHOOL_YEARS)->orderBy('key')->get()
-            ->each(fn ($year, $i) => $year->update(['sort_order' => $i + 1]));
-    }
 }
