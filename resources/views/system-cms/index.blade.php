@@ -99,6 +99,13 @@
         .site-field input[type=text]:focus, .site-field textarea:focus, .modal-box input[type=text]:focus, .modal-box textarea:focus { border-color: #0f2557; }
         .site-hint { font-size: 11px; color: #999; margin-top: 4px; }
         .image-row { display: flex; gap: 16px; align-items: center; padding: 12px 0; border-top: 1px solid #f0f0f0; }
+        /* Site Content → Images: even tiles, two per row. */
+        .site-images { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+        .site-images .image-row { border: 1px solid #eef0f5; border-radius: 12px; background: #fafbfd; padding: 14px; align-items: flex-start; min-width: 0; }
+        .site-images .image-preview { width: 96px; height: 72px; background-color: #fff; border-radius: 8px; }
+        .site-images .image-info input[type=file] { font-size: 11.5px; max-width: 100%; }
+        .site-doc .site-field textarea { width: 100%; }
+        @media (max-width: 760px) { .site-images { grid-template-columns: 1fr; } }
         .image-preview { width: 110px; height: 70px; flex-shrink: 0; background: #f4f5f8 center/contain no-repeat; border: 1px solid #e4e4e4; border-radius: 6px; }
         .image-info { flex: 1; min-width: 0; }
         .image-name { font-size: 12.5px; font-weight: 700; color: #333; margin-bottom: 2px; }
@@ -149,6 +156,8 @@
 
             <div class="cms-main">
 
+            @include('system-cms.partials.switcher')
+
             <div class="cms-panel active" id="panel-elements">
                 @include('system-cms.partials.status', ['panel' => 'elements'])
                 @include('system-cms.partials.template-elements')
@@ -167,13 +176,29 @@
 
                 <div class="cms-panel" id="panel-site">
                     @include('system-cms.partials.status', ['panel' => 'site'])
-                    <form method="POST" action="{{ url('/admin/system-cms/site') }}" enctype="multipart/form-data">
+                    @php
+                        $siteImageErrors = collect($errors->keys())->contains(fn ($k) => str_starts_with($k, 'image_'));
+                        $sitePart = session('cms_site') ?: ($siteImageErrors ? 'images' : 'wording');
+                    @endphp
+                    <div class="site-card-sub" style="margin-bottom:14px;">The wording and images shown around the system, such as on the sign-in page, the sidebar and printed documents.</div>
+                    <div class="layout-switch" role="tablist" aria-label="Site Content">
+                        <button type="button" role="tab" data-part-group="site" data-part-key="wording" aria-selected="{{ $sitePart === 'wording' ? 'true' : 'false' }}" onclick="showCmsPart('site', 'wording')">Wording <small>{{ count(\App\Support\SiteContent::TEXTS) }}</small></button>
+                        <button type="button" role="tab" data-part-group="site" data-part-key="images" aria-selected="{{ $sitePart === 'images' ? 'true' : 'false' }}" onclick="showCmsPart('site', 'images')">Images <small>{{ count(\App\Support\SiteContent::IMAGES) }}</small></button>
+                    </div>
+                    <form method="POST" action="{{ url('/admin/system-cms/site') }}" enctype="multipart/form-data" class="layout-doc site-doc">
                         @csrf
                         @method('PUT')
-                        <div class="site-card">
-                            <div class="page-title" style="font-size:14px;margin-bottom:14px;">Wording</div>
+                        <input type="hidden" name="part" id="site-part" value="{{ $sitePart }}">
+                        <div data-part-panel="site" data-part-key="wording" @if($sitePart !== 'wording') hidden @endif>
+                            <div class="layout-doc-head">
+                                <div>
+                                    <div class="layout-doc-title">Wording</div>
+                                    <div class="layout-doc-sub">Names, taglines and notes. Leave a field as it is to keep the current wording.</div>
+                                </div>
+                            </div>
+                            <div class="layout-fields" style="margin-top:18px;">
                             @foreach(\App\Support\SiteContent::TEXTS as $key => $text)
-                                <div class="site-field">
+                                <div class="site-field {{ ($text['multiline'] ?? false) ? 'wide' : '' }}">
                                     <label for="site-{{ $key }}">{{ $text['label'] }}</label>
                                     @if($text['multiline'] ?? false)
                                         <textarea id="site-{{ $key }}" name="{{ $key }}" rows="3" maxlength="500" required>{{ old($key, \App\Support\SiteContent::text($key)) }}</textarea>
@@ -183,11 +208,17 @@
                                     <div class="site-hint">{{ $text['hint'] }}</div>
                                 </div>
                             @endforeach
+                            </div>
                         </div>
 
-                        <div class="site-card">
-                            <div class="page-title" style="font-size:14px;margin-bottom:6px;">Images</div>
-                            <div class="site-hint" style="margin-bottom:10px;">JPG or PNG, max 5MB. Use a square-ish image for the logos so they aren't stretched.</div>
+                        <div data-part-panel="site" data-part-key="images" @if($sitePart !== 'images') hidden @endif>
+                            <div class="layout-doc-head">
+                                <div>
+                                    <div class="layout-doc-title">Images</div>
+                                    <div class="layout-doc-sub">JPG or PNG, max 5MB. Use a square-ish image for the logos so they aren't stretched.</div>
+                                </div>
+                            </div>
+                            <div class="site-images" style="margin-top:18px;">
                             @foreach(\App\Support\SiteContent::IMAGES as $key => $image)
                                 <div class="image-row">
                                     <div class="image-preview" style="background-image:url('{{ \App\Support\SiteContent::imageUrl($key) }}')"></div>
@@ -201,10 +232,25 @@
                                     </div>
                                 </div>
                             @endforeach
+                            </div>
                         </div>
 
-                        <button type="submit" class="btn-save">Save Site Content</button>
+                        <div class="layout-actions">
+                            <button type="submit" class="btn-save">Save Site Content</button>
+                            <span class="site-hint" style="margin:0;">Saves both Wording and Images.</span>
+                        </div>
                     </form>
+                    <script>
+                        restoreCmsPart('site', @json((bool) (session('cms_site') || $errors->any())));
+                        // Saving comes back to the same part.
+                        document.querySelectorAll('[data-part-group="site"]').forEach(function (tab) {
+                            tab.addEventListener('click', function () { document.getElementById('site-part').value = tab.dataset.partKey; });
+                        });
+                        (function () {
+                            var open = document.querySelector('[data-part-group="site"][aria-selected="true"]');
+                            if (open) document.getElementById('site-part').value = open.dataset.partKey;
+                        })();
+                    </script>
                 </div>
             @endif
             </div>{{-- .cms-main --}}

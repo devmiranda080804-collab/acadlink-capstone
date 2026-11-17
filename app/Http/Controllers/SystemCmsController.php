@@ -193,7 +193,9 @@ class SystemCmsController extends Controller
 
         AuditLog::record('Site Content Updated', 'System content updated by ' . auth()->user()->name);
 
-        return back()->with(['success' => 'Site content saved.', 'site_saved' => true]);
+        $part = in_array($request->input('part'), ['wording', 'images'], true) ? $request->input('part') : 'wording';
+
+        return back()->with(['success' => 'Site content saved.', 'site_saved' => true, 'cms_site' => $part]);
     }
 
     // Public, because the login page shows these before anyone has signed in.

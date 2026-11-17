@@ -71,7 +71,7 @@
 <div class="layout-switch" role="tablist" aria-label="Documents">
     @foreach($layoutDocs as $doc => $meta)
         @php $docChanged = collect(DocumentLayouts::fields($doc))->keys()->contains(fn ($field) => DocumentLayouts::isChanged($doc, $field)); @endphp
-        <button type="button" role="tab" id="layout-tab-{{ $doc }}" data-layout-tab="{{ $doc }}" aria-controls="layout-{{ $doc }}" aria-selected="{{ $doc === $openLayout ? 'true' : 'false' }}" onclick="showLayoutDoc('{{ $doc }}')">
+        <button type="button" role="tab" id="layout-tab-{{ $doc }}" data-layout-tab="{{ $doc }}" data-part-group="layouts" data-part-key="{{ $doc }}" aria-controls="layout-{{ $doc }}" aria-selected="{{ $doc === $openLayout ? 'true' : 'false' }}" onclick="showCmsPart('layouts', '{{ $doc }}')">
             {{ $meta['title'] }}
             @if(!empty($meta['template']))<small>Template</small>@endif
             @if($docChanged)<span class="dot" title="Changed from the default"></span>@endif
@@ -82,7 +82,7 @@
 <div class="layouts-docs">
     @foreach($layoutDocs as $doc => $meta)
         @php $fields = DocumentLayouts::fields($doc); @endphp
-        <section class="layout-doc" id="layout-{{ $doc }}" role="tabpanel" aria-labelledby="layout-tab-{{ $doc }}" @if($doc !== $openLayout) hidden @endif>
+        <section class="layout-doc" id="layout-{{ $doc }}" data-part-panel="layouts" data-part-key="{{ $doc }}" role="tabpanel" aria-labelledby="layout-tab-{{ $doc }}" @if($doc !== $openLayout) hidden @endif>
             <div class="layout-doc-head">
                 <div>
                     <div class="layout-doc-title">{{ $meta['title'] }}</div>
@@ -190,23 +190,8 @@
 </div>
 
 <script>
-    // One document at a time; the last one opened is remembered on this browser.
-    function showLayoutDoc(doc) {
-        document.querySelectorAll('[data-layout-tab]').forEach(function (tab) {
-            tab.setAttribute('aria-selected', tab.dataset.layoutTab === doc ? 'true' : 'false');
-        });
-        document.querySelectorAll('.layout-doc').forEach(function (panel) {
-            panel.hidden = panel.id !== 'layout-' + doc;
-        });
-        try { localStorage.setItem('cms-layout', doc); } catch (e) {}
-    }
-    (function () {
-        // After saving, the server reopens the saved one; otherwise the last one used.
-        if (@json((bool) session('cms_layout'))) return;
-        var last = null;
-        try { last = localStorage.getItem('cms-layout'); } catch (e) {}
-        if (last && document.getElementById('layout-' + last)) showLayoutDoc(last);
-    })();
+    // One document at a time (partials.switcher): after saving, the saved one; else the last used.
+    restoreCmsPart('layouts', @json((bool) session('cms_layout')));
 
     // Keeps each document's preview in step with what the Admin types or picks.
     (function () {

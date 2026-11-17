@@ -55,7 +55,7 @@ class CmsListController extends Controller
         $title = CmsLists::LISTS[$list]['title'];
         AuditLog::record('Dropdown List Updated', "{$request->key} added to {$title} by " . auth()->user()->name);
 
-        return back()->with(['success' => "{$request->key} added to {$title}.", 'cms_panel' => 'panel-lists']);
+        return back()->with(['success' => "{$request->key} added to {$title}.", 'cms_panel' => 'panel-lists', 'cms_list' => $list]);
     }
 
     public function update(Request $request, CmsOption $option)
@@ -68,11 +68,11 @@ class CmsListController extends Controller
 
         if ($request->has('is_active') && !$request->boolean('is_active') && $option->is_active) {
             if (CmsOption::where('list', $option->list)->where('is_active', true)->count() <= 1) {
-                return back()->withErrors(['cms_list' => 'At least one item has to stay shown in ' . $settings['title'] . '.'])->with('cms_panel', 'panel-lists');
+                return back()->withErrors(['cms_list' => 'At least one item has to stay shown in ' . $settings['title'] . '.'])->with(['cms_panel' => 'panel-lists', 'cms_list' => $option->list]);
             }
             $current = [CmsLists::SCHOOL_YEARS => AcademicTerm::currentSchoolYear(), CmsLists::SEMESTERS => AcademicTerm::currentSemester()][$option->list] ?? null;
             if ($current === $option->key) {
-                return back()->withErrors(['cms_list' => $option->key . ' is the current term, so it can\'t be hidden. Change the term in Settings first.'])->with('cms_panel', 'panel-lists');
+                return back()->withErrors(['cms_list' => $option->key . ' is the current term, so it can\'t be hidden. Change the term in Settings first.'])->with(['cms_panel' => 'panel-lists', 'cms_list' => $option->list]);
             }
         }
 
@@ -87,7 +87,7 @@ class CmsListController extends Controller
             AuditLog::record('Dropdown List Updated', "{$option->key} in {$settings['title']} {$what} by " . auth()->user()->name);
         }
 
-        return back()->with(['success' => "{$option->key} {$what}.", 'cms_panel' => 'panel-lists']);
+        return back()->with(['success' => "{$option->key} {$what}.", 'cms_panel' => 'panel-lists', 'cms_list' => $option->list]);
     }
 
     // Academic years always read oldest to newest.
